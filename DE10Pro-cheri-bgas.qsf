@@ -1626,6 +1626,10 @@ set_global_assignment -name IP_FILE ip/toplevel/emif_hps_ddra.ip
 set_global_assignment -name IP_FILE ip/toplevel/emif_ddrb.ip
 set_global_assignment -name IP_FILE ip/toplevel/CHERI_BGAS_Top.ip
 set_global_assignment -name IP_FILE ip/toplevel/ddrb_mm_clock_crossing_bridge.ip
+#set_global_assignment -name IP_FILE ip/toplevel/ddrc_mm_clock_crossing_bridge.ip
+set_global_assignment -name IP_FILE ip/toplevel/ddrd_mm_clock_crossing_bridge.ip
+set_global_assignment -name IP_FILE ip/toplevel/emif_ddrd.ip
+set_global_assignment -name IP_FILE "\$env(BLUESTUFFDIR)Stratix10ChipID/chipid.ip"
 set_global_assignment -name ENABLE_SIGNALTAP ON
 #set_global_assignment -name USE_SIGNALTAP_FILE ddrb_channel.stp
 #set_global_assignment -name SIGNALTAP_FILE ddrb_channel.stp
@@ -1633,9 +1637,6 @@ set_global_assignment -name ENABLE_SIGNALTAP ON
 #set_global_assignment -name SIGNALTAP_FILE h2f_lw.stp
 set_global_assignment -name USE_SIGNALTAP_FILE cheri_bgas_top_axi.stp
 set_global_assignment -name SIGNALTAP_FILE cheri_bgas_top_axi.stp
-#set_global_assignment -name IP_FILE ip/toplevel/ddrc_mm_clock_crossing_bridge.ip
-set_global_assignment -name IP_FILE ip/toplevel/ddrd_mm_clock_crossing_bridge.ip
-set_global_assignment -name IP_FILE ip/toplevel/emif_ddrd.ip
 set_global_assignment -name OPTIMIZATION_MODE "OPTIMIZE NETLIST FOR ROUTABILITY"
 set_global_assignment -name ALLOW_REGISTER_RETIMING OFF
 set_global_assignment -name SEED 4

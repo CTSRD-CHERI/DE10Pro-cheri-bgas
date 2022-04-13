@@ -12,6 +12,7 @@ import AXI4 :: *;
 import AXI4Lite :: *;
 import AXI4Stream :: *;
 import AXI4_AXI4Lite_Bridges :: *;
+import Stratix10ChipID :: *;
 import Vector :: *;
 import Clocks :: *;
 import Connectable :: *;
@@ -500,8 +501,11 @@ module mkCHERI_BGAS_Top (DE10ProIfc)
   // addr[17:16]: 2'b00 -> system 0
   //              2'b01 -> system 1
   //              2'b10 -> system 2
-  //              2'b11 -> h2f system selector (device to select which system is
-  //                       accessed upon h2f device reads/writes)
+  //              2'b11 -> common AXI4 Lite subordinates:
+  //                       addr[15]: 1'b0 -> h2f system selector (device to
+  //                                         select which system is accessed
+  //                                         upon h2f device reads/writes)
+  //                                 1'b1 -> Stratix10 ChipID
 
   // AXI lite shim
   AXI4Lite_Shim #( `H2F_LW_ADDR, `H2F_LW_DATA
@@ -509,16 +513,22 @@ module mkCHERI_BGAS_Top (DE10ProIfc)
                  , `H2F_LW_ARUSER, `H2F_LW_RUSER )
     h2flwShim <- mkAXI4LiteShimFF (reset_by newRst.new_rst);
   // actual subordinates
-  Vector #(4, ctrlSub_t) h2flwSubs = replicate (culDeSac);
+  Vector #(5, ctrlSub_t) h2flwSubs = replicate (culDeSac);
   for (Integer i = 0; i < nbCheriBgasSystems; i = i + 1)
     h2flwSubs[i] = mask_AXI4Lite_Slave_addr ( zeroExtend (16'hffff)
                                             , getH2FLW (sys[i]) );
   // assign h2f system selector device
   h2flwSubs[3] = culDeSac; // XXX TODO
+  // assign ChipID reader device
+  let stratix10ChipID <- mkAXI4_Stratix10ChipID;
+  h2flwSubs[4] = stratix10ChipID;
   // control traffic routing function
   function route_lw (addr);
-    Vector #(4, Bool) res = replicate (False);
-    res[addr[17:16]] = True;
+    Vector #(5, Bool) res = replicate (False);
+    case (addr[17:16]) matches
+      2'b11: if (addr[15] == 1'b0) res[3] = True; else res[4] = True;
+      .x: res[x] = True;
+    endcase
     return res;
   endfunction
   // wire up
