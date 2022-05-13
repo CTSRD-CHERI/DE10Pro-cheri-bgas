@@ -35,7 +35,9 @@ endinterface
 // The plan is to later multiplex these channels and limit the size of the sData
 // field in the AXI4Streams, and make use of the appropriate fields to enable
 // proper routing.
-module mkCHERI_BGAS_Bridge
+// It receives a function to turn arriving "global" requests into "local"
+// requests
+module mkCHERI_BGAS_Bridge #(function mngr_port_t toLocal (mngr_port_t m))
   (CHERI_BGAS_Bridge_Ifc #( mid_X, sid_X, mid_Y, sid_Y, addr_, data_
                           , awuser_, wuser_, buser_, aruser_, ruser_
                           , sId_, sData_, sDest_, sUser_))
@@ -51,6 +53,10 @@ module mkCHERI_BGAS_Bridge
            , Alias #(AXI4_BFlit  #(mid_Y, buser_)        , rx_bflit)
            , Alias #(AXI4_ARFlit #(sid_Y, addr_, aruser_), rx_arflit)
            , Alias #(AXI4_RFlit  #(mid_Y, data_, ruser_) , rx_rflit)
+             // Manager port alias
+           , Alias #( AXI4_Master #( mid_X, addr_, data_
+                                   , awuser_, wuser_, buser_, aruser_, ruser_ )
+                    , mngr_port_t )
              // XXX everything in parallel as a first quick and dirty cut
            , Alias #(Tuple5 #( Maybe #(tx_awflit)
                              , Maybe #(tx_wflit)
@@ -204,7 +210,7 @@ module mkCHERI_BGAS_Bridge
   // Wire-up shims to interface
   //////////////////////////////////////////////////////////////////////////////
   return interface CHERI_BGAS_Bridge_Ifc;
-    interface manager = mXsYIdCrossMngr;
+    interface manager = toLocal (mXsYIdCrossMngr);
     interface subordinate = mYsXIdCrossSub;
     interface tx = txShim.master;
     interface rx = rxShim.slave;

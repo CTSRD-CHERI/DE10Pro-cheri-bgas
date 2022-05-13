@@ -76,12 +76,6 @@ SoC_Map_Struct {
    };
 
 // ================================================================
-
-function Bool addr_function(Fabric_Addr base, Fabric_Addr size, Fabric_Addr addr);
-   return (base <= addr) && (addr < (base + size));
-endfunction
-
-// ================================================================
 // Interface and module for the address map
 
 interface SoC_Map_IFC;
@@ -211,8 +205,8 @@ module mkSoC_Map (SoC_Map_IFC);
    // BGAS Bridge
 
    let bgas_bridge_addr_range = Range {
-      base: 'h_2_0000_0000,
-      size: 'h_4000_0000    // 1G
+      base: 'h_0001_0000_0000_0000,
+      size: 'h_FFFF_0000_0000_0000
    };
 
    // ----------------------------------------------------------------
@@ -220,19 +214,8 @@ module mkSoC_Map (SoC_Map_IFC);
 
    let f2h_addr_range = Range {
       base: 'h_0000_0100_0000_0000, // just some 1TB aligned base region not already taken
-      size: 'h_0000_0100_0000_0000    // 1TB
+      size: 'h_0000_0100_0000_0000  // 1TB
    };
-
-   // ----------------------------------------------------------------
-
-   function fn_is_flash_regs_addr = addr_function('h6240_0000, 'h1000);
-   function fn_is_i2c_addr = addr_function('h6231_0000, 'h1000);
-   function fn_is_spi_addr = addr_function('h6232_0000, 'h1000);
-   function fn_is_gpio1_addr = addr_function('h6233_0000, 'h1000);
-   function fn_is_gpio2_addr = addr_function('h6237_0000, 'h1000);
-
-   function fn_is_xdma_control = addr_function('h2000_0000, 'h1000_0000);
-   function fn_is_xdma_ecam = addr_function('h3000_0000, 'h1000_0000);
 
    // ----------------------------------------------------------------
    // Memory address predicate
@@ -242,35 +225,6 @@ module mkSoC_Map (SoC_Map_IFC);
    function Bool fn_is_mem_addr (Fabric_Addr addr) =
       inRange (ddr4_0_cached_addr_range, addr);
 
-   // ----------------------------------------------------------------
-   // I/O address predicate
-   // Identifies I/O addresses in the Fabric.
-   // (Caches needs this information to avoid cacheing these addresses.)
-
-   //function Bool fn_is_IO_addr (Fabric_Addr addr, Bool imem_not_dmem);
-   //   return (   inRange(boot_rom_addr_range, addr)
-   //       || inRange(ddr4_0_uncached_addr_range, addr)
-   //       || inRange(flash_mem_addr_range, addr)
-   //       || (   (! imem_not_dmem)
-   // 	  && (   inRange(plic_addr_range, addr)
-   // 	      || inRange(near_mem_io_addr_range, addr)
-   // 	      || inRange(ethernet_0_addr_range, addr)
-   // 	      || inRange(dma_0_addr_range, addr)
-   // 	      || inRange(uart_0_addr_range, addr)
-   // 	      || inRange(uart_1_addr_range, addr)
-   // 	      || inRange(bgas_bridge_addr_range, addr)
-   // 	      || inRange(gpio_0_addr_range, addr)
-   // 	      || fn_is_flash_regs_addr (addr)
-   // 	      || fn_is_i2c_addr (addr)
-   // 	      || fn_is_spi_addr (addr)
-   // 	      || fn_is_gpio1_addr (addr)
-   // 	      || fn_is_gpio2_addr (addr)
-   // 	      || fn_is_xdma_control (addr)
-   // 	      || fn_is_xdma_ecam (addr)
-   // 	      )
-   // 	  )
-   //       );
-   //endfunction
    function Bool fn_is_IO_addr (Fabric_Addr addr, Bool imem_not_dmem) =
          inRange(ddr4_0_uncached_addr_range, addr)
       || inRange(boot_rom_addr_range, addr)

@@ -228,14 +228,26 @@ module mkSingleCHERI_BGAS_Top (Tuple2 #(DE10ProIfc, bgas_streams_t))
     newRst.assertReset;
   endrule
 
+  // instanciate the SoC_Map
+  //////////////////////////////////////////////////////////////////////////////
+
+  SoC_Map_IFC soc_map <- mkSoC_Map (reset_by newRst.new_rst);
+
   // declare CHERI BGAS Bridge
   //////////////////////////////////////////////////////////////////////////////
+
+  // XXX NOTE This functions localises the received "global" requests.
+  //          It currently does this by masking off the top bits.
+  //          This should be manually kept coherent with the information in
+  //          SoC_Map.bsv
+  function localiseAddr (globalAddr) =
+    globalAddr & (~ rangeSize (soc_map.m_bgas_bridge_addr_range));
   CHERI_BGAS_Bridge_Ifc #( TSub #(Wd_CoreW_Bus_MId, 1), bus_sid_w
                          , outer_id_w, outer_id_w
                          , Wd_Addr, Wd_Data
                          , 0, 0, 0, 0, 0
                          , 0, stream_data_w, 0, 0)
-    bridge <- mkCHERI_BGAS_Bridge;
+    bridge <- mkCHERI_BGAS_Bridge (mapAXI4_Master_addr (localiseAddr));
 
   // declare extra AXI4 lite ctrl subordinates
   //////////////////////////////////////////////////////////////////////////////
@@ -379,7 +391,6 @@ module mkSingleCHERI_BGAS_Top (Tuple2 #(DE10ProIfc, bgas_streams_t))
   ss[5] = bridge.subordinate;
 
   // build route
-  SoC_Map_IFC soc_map <- mkSoC_Map (reset_by newRst.new_rst);
   function Vector #(6, Bool) route (Bit #(Wd_Addr) addr);
     Vector #(6, Bool) x = unpack (6'b000000);
     if (inRange (soc_map.m_bgas_bridge_addr_range, addr))
