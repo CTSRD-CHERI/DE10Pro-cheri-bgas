@@ -606,14 +606,14 @@ provisos (
   interface axm_ddrc = debugAXI4_Master (culDeSac, $format ("ddrd"));
   interface axm_ddrd = debugAXI4_Master (ddr[1], $format ("ddrd"));
   // XXX
-  interface tx_north = tileNorthPort.tx;
-  interface rx_north = tileNorthPort.rx;
-  interface  tx_east = tileEastPort.tx;
-  interface  rx_east = tileEastPort.rx;
-  interface tx_south = tileSouthPort.tx;
-  interface rx_south = tileSouthPort.rx;
-  interface  tx_west = tileWestPort.tx;
-  interface  rx_west = tileWestPort.rx;
+  interface axstrm_tx_north = tileNorthPort.tx;
+  interface axstrs_rx_north = tileNorthPort.rx;
+  interface  axstrm_tx_east = tileEastPort.tx;
+  interface  axstrs_rx_east = tileEastPort.rx;
+  interface axstrm_tx_south = tileSouthPort.tx;
+  interface axstrs_rx_south = tileSouthPort.rx;
+  interface  axstrm_tx_west = tileWestPort.tx;
+  interface  axstrs_rx_west = tileWestPort.rx;
   interface     irqs = allIrqs;
 endmodule
 
