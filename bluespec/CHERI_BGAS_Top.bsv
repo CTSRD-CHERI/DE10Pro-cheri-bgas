@@ -97,6 +97,13 @@ Integer nbCheriBgasSystems = valueOf (NBCheriBgasSystems);
 `define DRAM_ARUSER   0
 `define DRAM_RUSER    0
 
+// High speed links AXI4Stream parameters
+
+`define GLBL_ID         0
+`define GLBL_DATA     512
+`define GLBL_DEST       0
+`define GLBL_USER       0
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -148,8 +155,14 @@ typedef DE10Pro_bsv_shell #( `H2F_LW_ADDR
                            , `DRAM_BUSER
                            , `DRAM_ARUSER
                            , `DRAM_RUSER
-                           , Bit #(512)
-                           , Bit #(512) ) DE10ProIfc;
+                           , `GLBL_ID
+                           , `GLBL_DATA
+                           , `GLBL_DEST
+                           , `GLBL_USER
+                           , `GLBL_ID
+                           , `GLBL_DATA
+                           , `GLBL_DEST
+                           , `GLBL_USER ) DE10ProIfc;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -217,7 +230,12 @@ provisos (
 , NumAlias #(t_sys_axi_mngr2_aruser, 0)
 , NumAlias #(t_sys_axi_mngr2_ruser, 0)
   //////////////////////////////////////////////////////////////////////////////
-, Alias #(t_global_flit_container, Bit #(512))
+  // AXI4Stream global tx/rx for CHERI_BGAS_System - global traffic
+  //, Alias #(t_global_flit_container, Bit #(512))
+, NumAlias #(t_global_flit_tid, 0)
+, NumAlias #(t_global_flit_tdata, 512)
+, NumAlias #(t_global_flit_tdest, 0)
+, NumAlias #(t_global_flit_tuser, 0)
   //////////////////////////////////////////////////////////////////////////////
   // aliases for the CHERI-BGAS toplevel module
   // AXI4 global traffic ports
@@ -274,7 +292,6 @@ provisos (
     , t_sys_axi_mngr2_aruser, t_sys_axi_mngr2_ruser ) )
   //////////////////////////////////////////////////////////////////////////////
 
-, Alias #( t_global_flit, Bit #(512) )
 , Alias #( t_router_port
          , AXI4_Router_Port #(
                t_global_axi_id, t_global_axi_addr, t_global_axi_data
@@ -289,7 +306,8 @@ provisos (
              , t_global_axi_addr, t_global_axi_data
              , t_global_axi_awuser, t_global_axi_wuser, t_global_axi_buser
              , t_global_axi_aruser, t_global_axi_ruser
-             , t_global_flit ) )
+             , t_global_flit_tid, t_global_flit_tdata
+             , t_global_flit_tdest, t_global_flit_tuser ) )
 , Alias #( t_sys_axi_sub_0, AXI4_Slave #(
       t_sys_axi_sub_0_id, t_sys_axi_sub_0_addr, t_sys_axi_sub_0_data
     , t_sys_axi_sub_0_awuser, t_sys_axi_sub_0_wuser, t_sys_axi_sub_0_buser
@@ -420,15 +438,25 @@ provisos (
   // connect the CHERI BGAS systems together and aggregate their remaining ports
   //////////////////////////////////////////////////////////////////////////////
   // for the single system case:
-  Global_Port #(t_global_flit)  tileWestPort = router[0].westPort;
-  Global_Port #(t_global_flit) tileSouthPort = router[0].southPort;
-  Global_Port #(t_global_flit)  tileEastPort = router[0].eastPort;
-  Global_Port #(t_global_flit) tileNorthPort = router[0].northPort;
+  Global_Port #( t_global_flit_tid, t_global_flit_tdata
+               , t_global_flit_tdest, t_global_flit_tuser )
+    tileWestPort = router[0].westPort;
+  Global_Port #( t_global_flit_tid, t_global_flit_tdata
+               , t_global_flit_tdest, t_global_flit_tuser )
+    tileSouthPort = router[0].southPort;
+  Global_Port #( t_global_flit_tid, t_global_flit_tdata
+               , t_global_flit_tdest, t_global_flit_tuser )
+    tileEastPort = router[0].eastPort;
+  Global_Port #( t_global_flit_tid, t_global_flit_tdata
+               , t_global_flit_tdest, t_global_flit_tuser )
+    tileNorthPort = router[0].northPort;
   // no route tile helper
-  module noRoute (Global_Port #(t_global_flit));
+  module noRoute (Global_Port #( t_global_flit_tid, t_global_flit_tdata
+                               , t_global_flit_tdest, t_global_flit_tuser ));
     NumProxy #(2) proxyBufSz = ?;
     t_router_port noRouteRaw <- mkCHERI_BGAS_NoRouteTile;
-    Global_Port #(t_global_flit)
+    Global_Port #( t_global_flit_tid, t_global_flit_tdata
+                 , t_global_flit_tdest, t_global_flit_tuser )
       noRouteIfc <- mkCHERI_BGAS_StreamBridge (proxyBufSz, noRouteRaw);
     return noRouteIfc;
   endmodule
@@ -640,8 +668,14 @@ typedef DE10Pro_bsv_shell_Sig #( `H2F_LW_ADDR
                                , `DRAM_BUSER
                                , `DRAM_ARUSER
                                , `DRAM_RUSER
-                               , Bit #(512)
-                               , Bit #(512) ) DE10ProIfcSig;
+                               , `GLBL_ID
+                               , `GLBL_DATA
+                               , `GLBL_DEST
+                               , `GLBL_USER
+                               , `GLBL_ID
+                               , `GLBL_DATA
+                               , `GLBL_DEST
+                               , `GLBL_USER ) DE10ProIfcSig;
 
 (* synthesize *)
 module mkCHERI_BGAS_Top_Sig (DE10ProIfcSig);
@@ -697,8 +731,14 @@ typedef DE10Pro_bsv_shell_Sig_Avalon #( `H2F_LW_ADDR
                                       , `DRAM_BUSER
                                       , `DRAM_ARUSER
                                       , `DRAM_RUSER
-                                      , Bit #(512)
-                                      , Bit #(512) ) DE10ProIfcSigAvalon;
+                                      , `GLBL_ID
+                                      , `GLBL_DATA
+                                      , `GLBL_DEST
+                                      , `GLBL_USER
+                                      , `GLBL_ID
+                                      , `GLBL_DATA
+                                      , `GLBL_DEST
+                                      , `GLBL_USER ) DE10ProIfcSigAvalon;
 
 (* synthesize *)
 module mkCHERI_BGAS_Top_Sig_Avalon (DE10ProIfcSigAvalon);

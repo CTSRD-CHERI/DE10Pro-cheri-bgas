@@ -62,13 +62,18 @@ endinstance
 
 // A "global port" consists of a pair of one "payload source" and one
 // "payload sink"
-interface Global_Port #(type t_payload);
-  interface Source #(t_payload) tx;
-  interface Sink #(t_payload) rx;
+interface Global_Port #( numeric type t_tid
+                       , numeric type t_tdata
+                       , numeric type t_tdest
+                       , numeric type t_tuser );
+  interface AXI4Stream_Master#(t_tid, t_tdata, t_tdest, t_tuser) tx;
+  interface AXI4Stream_Slave#(t_tid, t_tdata, t_tdest, t_tuser) rx;
 endinterface
-instance Connectable #(Global_Port #(a), Global_Port #(a))
-  provisos (Bits #(a, a_sz));
-  module mkConnection #(Global_Port #(a) x, Global_Port #(a) y) (Empty);
+instance Connectable #( Global_Port #(t_tid, t_tdata, t_tdest, t_tuser)
+                      , Global_Port #(t_tid, t_tdata, t_tdest, t_tuser) );
+  module mkConnection #( Global_Port #(t_tid, t_tdata, t_tdest, t_tuser) x
+                       , Global_Port #(t_tid, t_tdata, t_tdest, t_tuser) y)
+                       (Empty);
     mkConnection (x.tx, y.rx);
     mkConnection (y.tx, x.rx);
   endmodule
@@ -239,7 +244,7 @@ module mkAXI4StreamBridge
    , AXI4_Router_Port #( t_id, t_addr, t_data
                        , t_awuser, t_wuser, t_buser
                        , t_aruser, t_ruser ) rPort )
-  (Global_Port #(t_global_flit_container))
+  (Global_Port #(t_tid, t_tdata, t_tdest, t_tuser))
   provisos (
   // local type aliases
     Alias #(t_aw_flit, AXI4_AWFlit #(t_id, t_addr, t_awuser))
@@ -256,9 +261,7 @@ module mkAXI4StreamBridge
   , Bits #(t_global_axi_flit, t_global_axi_flit_sz)
   , Bits #(t_global_credits_flit, 5)
   , Bits #(t_global_flit, t_global_flit_sz)
-  , Bits #(t_global_flit_container, t_global_flit_container_sz)
-  //, Add #(_, t_global_flit_sz, t_global_flit_container_sz)
-  , Add #(_, TAdd #(t_global_axi_flit_sz, 5), t_global_flit_container_sz)
+  , Add #(_a, TAdd #(t_global_axi_flit_sz, 5), t_tdata)
   );
 
   // local buffers and resources definitions
@@ -335,10 +338,19 @@ module mkAXI4StreamBridge
 
   // Module interface
   //////////////////////////////////////////////////////////////////////////////
-  function t_global_flit_container toContainer (t_global_flit x) =
-    unpack (zeroExtend (pack (x)));
-  function t_global_flit fromContainer (t_global_flit_container x) =
-    unpack (truncate (pack (x)));
+  function AXI4Stream_Flit #(t_tid, t_tdata, t_tdest, t_tuser)
+    toContainer (t_global_flit x) = AXI4Stream_Flit {
+      tdata: zeroExtend (pack (x))
+    , tstrb: ~0
+    , tkeep: ~0
+    , tlast: True
+    , tid: 0
+    , tdest: 0
+    , tuser: 0
+    };
+  function t_global_flit fromContainer
+    (AXI4Stream_Flit #(t_tid, t_tdata, t_tdest, t_tuser) x) =
+    unpack (truncate (x.tdata));
   interface tx = mapSource (toContainer, toSource (globalOutFF));
   interface rx = mapSink (fromContainer, toSink (globalInFF));
 
@@ -349,7 +361,7 @@ module mkCHERI_BGAS_StreamBridge
   , AXI4_Router_Port #( t_id, t_addr, t_data
                       , t_awuser, t_wuser, t_buser
                       , t_aruser, t_ruser ) inPort )
-  (Global_Port #(t_global_flit_container))
+  (Global_Port #(t_tid, t_tdata, t_tdest, t_tuser))
   provisos (
   // local type aliases
     Alias #(t_aw_flit, AXI4_AWFlit #(t_id, t_addr, t_awuser))
@@ -362,8 +374,7 @@ module mkCHERI_BGAS_StreamBridge
                      , Maybe# (t_ar_flit), Maybe# (t_r_flit) ) )
   // constraints
   , Bits #(t_global_axi_flit, t_global_axi_flit_sz)
-  , Bits #(t_global_flit_container, t_global_flit_container_sz)
-  , Add #(_, TAdd #(t_global_axi_flit_sz, 5), t_global_flit_container_sz)
+  , Add #(_a, TAdd #(t_global_axi_flit_sz, 5), t_tdata)
   );
 
   // flits bundling
@@ -482,7 +493,10 @@ interface CHERI_BGAS_Router_Ifc #(
 , numeric type t_awuser, numeric type t_wuser, numeric type t_buser
 , numeric type t_aruser, numeric type t_ruser
   // container type for global flits
-, type t_global_flit_container );
+, numeric type t_tid
+, numeric type t_tdata
+, numeric type t_tdest
+, numeric type t_tuser );
   interface AXI4_Slave #( t_mngnt_id, t_mngnt_addr, t_mngnt_data
                         , t_mngnt_awuser, t_mngnt_wuser, t_mngnt_buser
                         , t_mngnt_aruser, t_mngnt_ruser ) mngmntSubordinate;
@@ -492,10 +506,10 @@ interface CHERI_BGAS_Router_Ifc #(
   interface AXI4_Slave #( t_s_id, t_addr, t_data
                         , t_awuser, t_wuser, t_buser
                         , t_aruser, t_ruser ) localSubordinate;
-  interface Global_Port #(t_global_flit_container) westPort;
-  interface Global_Port #(t_global_flit_container) southPort;
-  interface Global_Port #(t_global_flit_container) eastPort;
-  interface Global_Port #(t_global_flit_container) northPort;
+  interface Global_Port #(t_tid, t_tdata, t_tdest, t_tuser) westPort;
+  interface Global_Port #(t_tid, t_tdata, t_tdest, t_tuser) southPort;
+  interface Global_Port #(t_tid, t_tdata, t_tdest, t_tuser) eastPort;
+  interface Global_Port #(t_tid, t_tdata, t_tdest, t_tuser) northPort;
 endinterface
 
 module mkCHERI_BGAS_Router #(Maybe #(RouterId #(t_x_sz, t_y_sz)) initRouterId)
@@ -505,7 +519,7 @@ module mkCHERI_BGAS_Router #(Maybe #(RouterId #(t_x_sz, t_y_sz)) initRouterId)
                           , t_s_id, t_m_id, t_addr, t_data
                           , t_awuser, t_wuser, t_buser
                           , t_aruser, t_ruser
-                          , t_global_flit_container ))
+                          , t_tid, t_tdata, t_tdest, t_tuser ))
   provisos (
     // local type aliases
     NumAlias #(t_id, TAdd #(t_s_id, t_router_id_sz))
@@ -527,8 +541,8 @@ module mkCHERI_BGAS_Router #(Maybe #(RouterId #(t_x_sz, t_y_sz)) initRouterId)
     // XXX t_mngnt_data is a multiple of 8
   , Mul #(TDiv #(t_mngnt_data, 8), 8, t_mngnt_data)
   , Bits #(t_global_axi_flit, t_global_axi_flit_sz)
-  , Bits #(t_global_flit_container, t_global_flit_container_sz)
-  , Add #(_, TAdd #(t_global_axi_flit_sz, 5), t_global_flit_container_sz) );
+  , Add #(_a, TAdd #(t_global_axi_flit_sz, 5), t_tdata)
+  );
 
   // CHERI BGAS router management
   let mngntShim <- mkAXI4Shim;
@@ -599,7 +613,7 @@ module mkCHERI_BGAS_Router #(Maybe #(RouterId #(t_x_sz, t_y_sz)) initRouterId)
 
   // wrap ports and return interface
   NumProxy #(32) maxCreditProxy = ?;
-  Vector #(4, Global_Port #(t_global_flit_container))
+  Vector #(4, Global_Port #(t_tid, t_tdata, t_tdest, t_tuser))
     remotePorts <- mapM ( mkCHERI_BGAS_StreamBridge (maxCreditProxy)
                         , tail (ports) );
   // interfaces
