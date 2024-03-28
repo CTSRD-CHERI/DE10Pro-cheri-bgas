@@ -120,3 +120,27 @@ mrproper-bluespec-rtl:
 
 mrproper: clean mrproper-bluespec-rtl mrproper-vipbundle
 	rm -rf $(CURDIR)/qdb $(CURDIR)/output_files
+
+
+# Docker variables
+USER=$(if $(shell id -u),$(shell id -u),9001)
+GROUP=$(if $(shell id -g),$(shell id -g),1000)
+
+# Build the docker image
+.PHONY: build-docker
+build-docker:
+	(cd docker; docker build --build-arg UID=$(USER) --build-arg GID=$(GROUP) . --tag de10-jammy)
+
+# Enter the docker image
+.PHONY: shell
+shell: build-docker
+	docker run -it --shm-size 256m --hostname de10-jammy \
+	  -u $(USER) \
+	  -v /home/$(shell whoami)/.ssh:/home/dev-user/.ssh  \
+	  -v $(shell pwd):/workspace \
+	  -v $(QUARTUS_ROOTDIR)/..:/quartusroot \
+	  -e QUARTUS_ROOTDIR=/quartusroot/quartus \
+	  -e LM_LICENSE_FILE=$(LM_LICENSE_FILE) \
+	  --net=host \
+	  de10-jammy:latest \
+	  /bin/bash -c 'export PATH=$$PATH:$$QUARTUS_ROOTDIR/bin:$$QUARTUS_ROOTDIR/sopc_builder/bin; export LC_CTYPE=C; /bin/bash'
