@@ -226,15 +226,15 @@ module mkSoC_Map (SoC_Map_IFC);
 
    let ddr4_0_uncached_addr_range = Range {
       base: 'h_8000_0000,
-      size: 'h_4000_0000    // 1G
+      size: 'h_0000_0000    // No uncached ddr4 in this configuraion
    };
 
    // ----------------------------------------------------------------
    // DDR memory 0 cached
 
    let ddr4_0_cached_addr_range = Range {
-      base: 'h_C000_0000,
-      size: 'h_C000_0000    // 3G
+      base: 'h0000_8000_0000,
+      size: 'h0001_0000_0000    // 4G
    };
 
    // ----------------------------------------------------------------
