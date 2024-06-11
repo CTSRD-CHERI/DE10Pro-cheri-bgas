@@ -558,6 +558,16 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
             , cons (h2fPostWindowShim.master, cons (globalShim.master, nil))
             , cons (core.subordinate_0, nil)
             , reset_by newRst.new_rst );
+  // incoming H2F traffic is passed through three layers...
+  // - toWider_AXI4_Slave   = split double-data-width transactions into halfs
+  // - zero_AXI4_Slave_user = ignore any user data supplied
+  // - h2fWindow.preWindow  = offset the access by the MMIO-writable "window" register
+  // ...before arriving at the core
+  let h2fExternalSub <- toWider_AXI4_Slave (
+    zero_AXI4_Slave_user (
+      h2fWindow.preWindow
+    )
+  );
 
   // prepare outside-world-facing IRQs
   //////////////////////////////////////////////////////////////////////////////
@@ -574,7 +584,7 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   //////////////////////////////////////////////////////////////////////////////
 
   interface axil_sub = core.control_subordinate; // incoming control traffic
-  interface axi_sub_0 = h2fWindow.preWindow;     // incoming H2F traffic, routed through a DmaWindow
+  interface axi_sub_0 = h2fExternalSub;          // incoming H2F traffic
   interface axi_sub_1 = globalShim.slave;        // incoming global traffic
   interface axi_mngr_0 = mngrShim[0].master;     // outgoing F2H traffic
   interface axi_mngr_1 = ddrShim.master;         // outgoing ddr traffic

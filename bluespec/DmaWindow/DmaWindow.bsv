@@ -142,12 +142,12 @@ module mkAddrOffsetDmaWindow#(
     AXI4_Slave#(
           t_post_window_id
         , t_post_window_addr
-        , t_post_window_data
-        , 0
-        , 0
-        , 0
-        , 0
-        , 0
+        , t_pre_window_data
+        , t_pre_window_awuser
+        , t_pre_window_wuser
+        , t_pre_window_buser
+        , t_pre_window_aruser
+        , t_pre_window_ruser
     ) postWindow
 )(DmaWindow#(
     // Window subordinate port (AXI4Lite)
@@ -186,8 +186,6 @@ module mkAddrOffsetDmaWindow#(
     // Fix t_pre_window_addr, t_post_window_addr to the ones we actually use for now.
     , Add #(0, 32, t_pre_window_addr)
     , Add #(0, 64, t_post_window_addr)
-    // Make sure post_window data width = 1/2 pre_window data width, required by toWider_AXI4_Slave
-    , Add #(t_post_window_data, t_post_window_data, t_pre_window_data)
     // Make sure the windowCtrl can evenly represent the post_window address with the windowCtrl data words
     , Mul#(TDiv#(t_post_window_addr, t_window_ctrl_data), t_window_ctrl_data, t_post_window_addr) // Evenly divisible
     // Make sure the windowCtrl has enough address bits to address every word of the t_post_window_addr
@@ -199,25 +197,20 @@ module mkAddrOffsetDmaWindow#(
 
     // H2F interface wrapping (extra address bits & data size shim)
     // h2fAddrCtrlRO is Bits#(t_post_window_addr) in size.
-    // toWider_AXI4_Slave produces a new AXI slave with double the data width of the argument.
     // prepend_AXI4_Slave_addr produces a new AXI slave from an argument,
     // where transactions to the new AXI slave (of *fewer* address bits) are passed to the argument with 
     // *extra* address bits prepended.
     // This address of {32'b0, 32'h2f_addr} is then OR-d with `h2fAddrCtrlRO` by `or_AXI4_Slave_addr`,
     // before arriving at the postWindow.
 
-    // TODO remove toWider_AXI4_Slave and zero_AXI4_Slave_user from here
-    t_pre_window preWindowIfc <- toWider_AXI4_Slave (
-        zero_AXI4_Slave_user (
+    t_pre_window preWindowIfc = 
             prepend_AXI4_Slave_addr (
                 32'b0,
                 or_AXI4_Slave_addr (
                     windowAddr,
                     postWindow
                 )
-            )
-        )
-    );
+            );
 
     interface windowCtrl = windowCtrlIfc;
     interface preWindow  = preWindowIfc;
