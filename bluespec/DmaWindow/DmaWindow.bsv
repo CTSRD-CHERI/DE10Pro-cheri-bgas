@@ -114,7 +114,7 @@ interface DmaWindow #(
     , numeric type t_window_ctrl_aruser
     , numeric type t_window_ctrl_ruser
     // Access subordinate port (AXI4)
-    , numeric type t_post_window_id
+    , numeric type t_pre_window_id
     , numeric type t_pre_window_addr
     , numeric type t_pre_window_data
     , numeric type t_pre_window_awuser
@@ -130,17 +130,19 @@ interface DmaWindow #(
     ) windowCtrl;
     
     interface AXI4_Slave #(
-          t_post_window_id, t_pre_window_addr, t_pre_window_data
+          t_pre_window_id, t_pre_window_addr, t_pre_window_data
         , t_pre_window_awuser, t_pre_window_wuser, t_pre_window_buser
         , t_pre_window_aruser, t_pre_window_ruser
     ) preWindow;
 endinterface
 
-// TODO make address-width independent
 // TODO prevent the DMA window from being changed during an access
 module mkAddrOffsetDmaWindow#(
+    // Take the post-window slave as an argument,
+    // we pump requests through from the pre-window
+    // and the parameters are the same except the address size
     AXI4_Slave#(
-          t_post_window_id
+          t_pre_window_id
         , t_post_window_addr
         , t_pre_window_data
         , t_pre_window_awuser
@@ -159,7 +161,7 @@ module mkAddrOffsetDmaWindow#(
     , t_window_ctrl_aruser
     , t_window_ctrl_ruser
     // Access subordinate port (AXI4)
-    , t_post_window_id
+    , t_pre_window_id
     , t_pre_window_addr
     , t_pre_window_data
     , t_pre_window_awuser
@@ -178,40 +180,26 @@ module mkAddrOffsetDmaWindow#(
              , t_window_ctrl_aruser, t_window_ctrl_ruser ))
     , Alias #( t_pre_window
              , AXI4_Slave #(
-                t_post_window_id, t_pre_window_addr, t_pre_window_data
+                t_pre_window_id, t_pre_window_addr, t_pre_window_data
                 , t_pre_window_awuser, t_pre_window_wuser, t_pre_window_buser
                 , t_pre_window_aruser, t_pre_window_ruser ))
     // numeric relations
     ////////////////////////////////////////////////////////////////////////////
-    // Fix t_pre_window_addr, t_post_window_addr to the ones we actually use for now.
-    , Add #(0, 32, t_pre_window_addr)
-    , Add #(0, 64, t_post_window_addr)
+    // t_post_window_addr may be larger than t_pre_window_addr (which gets zero extended)
+    , Add#(a__, t_pre_window_addr, t_post_window_addr)
     // Make sure the windowCtrl can evenly represent the post_window address with the windowCtrl data words
     , Mul#(TDiv#(t_post_window_addr, t_window_ctrl_data), t_window_ctrl_data, t_post_window_addr) // Evenly divisible
     // Make sure the windowCtrl has enough address bits to address every word of the t_post_window_addr
     // i.e. that t_window_ctrl_addr >= log2(number of windowCtrl data words in post_window_addr)
-    , Add#(a__, TLog#(TDiv#(t_post_window_addr, t_window_ctrl_data)), t_window_ctrl_addr)
+    , Add#(b__, TLog#(TDiv#(t_post_window_addr, t_window_ctrl_data)), t_window_ctrl_addr)
 );
     Tuple2 #(t_window_ctrl, ReadOnly #(Bit #(t_post_window_addr))) windowCtrlIfcs <- mkH2FAddrCtrl (0);
     match {.windowCtrlIfc, .windowAddr} = windowCtrlIfcs;
 
-    // H2F interface wrapping (extra address bits & data size shim)
-    // h2fAddrCtrlRO is Bits#(t_post_window_addr) in size.
-    // prepend_AXI4_Slave_addr produces a new AXI slave from an argument,
-    // where transactions to the new AXI slave (of *fewer* address bits) are passed to the argument with 
-    // *extra* address bits prepended.
-    // This address of {32'b0, 32'h2f_addr} is then OR-d with `h2fAddrCtrlRO` by `or_AXI4_Slave_addr`,
-    // before arriving at the postWindow.
-
-    t_pre_window preWindowIfc = 
-            prepend_AXI4_Slave_addr (
-                32'b0,
-                or_AXI4_Slave_addr (
-                    windowAddr,
-                    postWindow
-                )
-            );
+    // Function to generate the post-window address from the pre-window address
+    function mapAddr (preWindowAddr) = windowAddr | zeroExtend(preWindowAddr);
 
     interface windowCtrl = windowCtrlIfc;
-    interface preWindow  = preWindowIfc;
+    // The preWindow interface takes requests, applies the mapAddr function, then passes them to postWindow
+    interface preWindow  = mapAXI4_Slave_addr (mapAddr, postWindow);
 endmodule
