@@ -44,66 +44,7 @@ import WindCoreInterface :: *;
 import DE10Pro_bsv_shell :: *;
 import SoC_Map :: *;
 import VirtualDevice :: *;
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-// A straightforward axi lite subordinate to provide a banking mechanism for
-// the h2f window into the core's memory map.
-//
-// Exposes a readable/writable Wd_Addr at relative address 0x0
-// such that the LSB is bit 0 of address 0
-// and the MSB is bit 7 of address 0x3 or 0x7, if Wd_Addr is 32 or 64 respectively.
-// WSTRB is *ignored*.
-// This mapping is repeated over the remaining address space, so 0x8 maps to the same thing as 0x0.
-module mkH2FAddrCtrl #(Bit #(Wd_Addr) dfltAddrBits)
-  (Tuple2 #( AXI4Lite_Slave #( t_h2f_lw_addr, t_h2f_lw_data
-                             , t_h2f_lw_awuser, t_h2f_lw_wuser, t_h2f_lw_buser
-                             , t_h2f_lw_aruser, t_h2f_lw_ruser)
-           , ReadOnly #(Bit #(Wd_Addr)) ))
-  provisos (
-    NumAlias #( t_dats_per_addr, TDiv#(Wd_Addr, t_h2f_lw_data))
-  , NumAlias #( t_dat_select, TLog#(t_dats_per_addr))
-  , NumAlias #( t_sub_lw_word_addr_bits, TLog#(TDiv#(t_h2f_lw_data, 8)))
-  , Add#(a__, t_dat_select, t_h2f_lw_addr)
-  , Mul#(TDiv#(Wd_Addr, t_h2f_lw_data), t_h2f_lw_data, Wd_Addr) // Evenly divisible
-  );
-
-  // internal state and signals
-  Reg#(Vector#(t_dats_per_addr,Bit#(t_h2f_lw_data))) addrBits <- mkReg (unpack(dfltAddrBits));
-  let axiShim <- mkAXI4LiteShimFF;
-
-  // read requests handling (always answer with upper bits)
-  rule read_req;
-    let ar <- get (axiShim.master.ar);
-    // e.g. if lw_data is 32-bits = 4 bytes then shift down by log2(4) = 2
-    // so address 0x4 becomes 0b100 >> 2 = 0b1 = word 1 of addrBits
-    Bit#(t_dat_select) i = truncate(ar.araddr >> valueOf(t_sub_lw_word_addr_bits));
-    axiShim.master.r.put (AXI4Lite_RFlit { rdata: addrBits[i]
-                                         , rresp: OKAY
-                                         , ruser: ? });
-  endrule
-
-  // write requests handling (update the appropriate word of addrBits)
-  rule write_req;
-    let aw <- get (axiShim.master.aw);
-    // see read_req for explanation of shift
-    Bit#(t_dat_select) i = truncate(aw.awaddr >> valueOf(t_sub_lw_word_addr_bits));
-    let w <- get (axiShim.master.w);
-    addrBits[i] <= w.wdata;
-    axiShim.master.b.put (AXI4Lite_BFlit { bresp: OKAY
-                                         , buser: ? });
-  endrule
-
-  let readAddrBits = interface ReadOnly;
-    method _read = pack(addrBits);
-  endinterface;
-
-  // return the subordinate port and a ReadOnly interface to addrBits
-  return tuple2 (axiShim.slave, readAddrBits);// regToReadOnly (pack(dataBits));//addrBits));
-
-endmodule
+import DmaWindow :: *;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -384,6 +325,19 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
     newRst.assertReset;
   endrule
 
+  // Incoming interconnect (1, continued below)
+  //////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Shims for
+  //   - incoming H2F traffic
+  //   - incoming global traffic
+  Vector #(2, t_core_sub_shim)
+    subShim <- replicateM (mkAXI4ShimFF (reset_by newRst.new_rst));
+
+  // t_core_sub_shim h2fShim <- mkAXI4ShimFF (reset_by newRst.new_rst);
+  // t_core_sub_shim globalShim <- mkAXI4ShimFF (reset_by newRst.new_rst);
+
   // instanciate the SoC_Map
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
@@ -420,15 +374,17 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   let ctrSubUART1 =
         tuple2 (uart1s0, Range { base: 'h0000_4000, size: 'h0000_1000 });
 
-  // h2f address upper 32-bits banking register
+  // Expose the banking register (the "dma window") for h2f accesses
   // (h2f port only has 32-bit addresses, this mechanism is intended to enable
   // control over a full 64-bit address)
-  Tuple2 #(t_axil_sub, ReadOnly #(Bit #(Wd_Addr)))
-    h2fCtrlIfcs <- mkH2FAddrCtrl (0, reset_by newRst.new_rst);
-  match {.h2fAddrCtrlSub, .h2fAddrCtrlRO} = h2fCtrlIfcs;
-  // ctrl sub entry
+  // Create a DmaWindow which exposes a
+  // - H2F_LW AXI4Lite subordinate `h2fWindow.windowCtrlSub`, exposing a 64-bit "window" register
+  // - H2F AXI4 subordinate `h2fWindow.windowedSub` which converts 32-bit h2f accesses to 64-bit accesses offset by the window, then passes them to subShim[0].slave.
+  Tuple2#(t_axil_sub, t_h2f_sub) h2fWindowIfcs <- mkAddrOffsetDmaWindow(subShim[0].slave, reset_by newRst.new_rst);
+  match {.h2fWindowCtrlSub, .h2fWindowWindowedSub} = h2fWindowIfcs;
+  // Expose the windowCtrlSub on the AXI4 lite bus
   let ctrSubH2FAddrCtrl =
-    tuple2 (h2fAddrCtrlSub, Range { base: 'h0000_5000, size: 'h0000_1000 });
+    tuple2 (h2fWindowCtrlSub, Range { base: 'h0000_5000, size: 'h0000_1000 });
 
   // Virtual device for emulating control registers, e.g. for virtio.
   // (Has both a control interface and a virtualised interface;
@@ -595,32 +551,13 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   mkAXI4Bus (bus0_route, bus0_ms, bus0_ss, reset_by newRst.new_rst);
   mkAXI4Bus (bus1_route, bus1_ms, bus1_ss, reset_by newRst.new_rst);
 
-  // Incoming interconnect
+  // Incoming interconnect (2)
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
-  // Shims for
-  //   - incoming H2F traffic
-  //   - incoming global traffic
-  Vector #(2, t_core_sub_shim)
-    subShim <- replicateM (mkAXI4ShimFF (reset_by newRst.new_rst));
-
-  // H2F interface wrapping (extra address bits & data size shim)
-  // h2fAddrCtrlRO is Bits#(Wd_Addr) in size, i.e. 32-bit unless FABRIC64 is defined in which case 64-bit.
-  // FABRIC64 is usually defined.
-  // toWider_AXI4_Slave produces a new AXI slave with double the data width of the argument.
-  // prepend_AXI4_Slave_addr produces a new AXI slave from an argument,
-  // where transactions to the new AXI slave (of *fewer* address bits) are passed to the argument with 
-  // *extra* address bits prepended.
-  // This address of {32'b0, h2f_addr'32} is then OR-d with `h2fAddrCtrlRO` by `or_AXI4_Slave_addr`,
-  // before arriving at the shim.
-  t_h2f_sub h2fSub <- toWider_AXI4_Slave (
-                        zero_AXI4_Slave_user (
-                          prepend_AXI4_Slave_addr ( 32'b0
-                                                  , or_AXI4_Slave_addr ( h2fAddrCtrlRO
-                                                                       , subShim[0].slave)))
-                      , reset_by newRst.new_rst );
-
+  // Route all incoming requests from the h2f and global AXI4 interfaces
+  // to the core's subordinate port
+  // subShim[0].master is the set of requests from h2f after they've passed through the window.
   mkAXI4Bus ( constFn (cons (True, nil))
             , cons (subShim[0].master, cons (subShim[1].master, nil))
             , cons (core.subordinate_0, nil)
@@ -641,7 +578,7 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   //////////////////////////////////////////////////////////////////////////////
 
   interface axil_sub = core.control_subordinate; // incoming control traffic
-  interface axi_sub_0 = h2fSub;                  // incoming H2F traffic
+  interface axi_sub_0 = h2fWindowWindowedSub;   // incoming H2F traffic, routed through a DmaWindow
   interface axi_sub_1 = subShim[1].slave;        // incoming global traffic
   interface axi_mngr_0 = mngrShim[0].master;     // outgoing F2H traffic
   interface axi_mngr_1 = ddrShim.master;         // outgoing ddr traffic

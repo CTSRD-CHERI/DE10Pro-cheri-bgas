@@ -1,0 +1,10 @@
+= DmaWindow
+
+An interface and implementations of an access window, which takes in a "target" AXI subordinate interface and exposes
+
+* an AXI4Lite subordinate accepting writes to a "window" register
+* an AXI4 subordinate which takes requests, offsets them through the window, and pumps them through the passed-in subordinate interface 
+
+// producing equivalent requests from the input inside that window
+
+The exact form of the window is implementation-defined -- the most basic window is just an address offset, which the DE10 uses by default.
