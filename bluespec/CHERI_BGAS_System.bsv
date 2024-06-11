@@ -332,11 +332,8 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   // Shims for
   //   - incoming H2F traffic
   //   - incoming global traffic
-  Vector #(2, t_core_sub_shim)
-    subShim <- replicateM (mkAXI4ShimFF (reset_by newRst.new_rst));
-
-  // t_core_sub_shim h2fShim <- mkAXI4ShimFF (reset_by newRst.new_rst);
-  // t_core_sub_shim globalShim <- mkAXI4ShimFF (reset_by newRst.new_rst);
+  t_core_sub_shim h2fShim <- mkAXI4ShimFF (reset_by newRst.new_rst);
+  t_core_sub_shim globalShim <- mkAXI4ShimFF (reset_by newRst.new_rst);
 
   // instanciate the SoC_Map
   //////////////////////////////////////////////////////////////////////////////
@@ -379,8 +376,8 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   // control over a full 64-bit address)
   // Create a DmaWindow which exposes a
   // - H2F_LW AXI4Lite subordinate `h2fWindow.windowCtrlSub`, exposing a 64-bit "window" register
-  // - H2F AXI4 subordinate `h2fWindow.windowedSub` which converts 32-bit h2f accesses to 64-bit accesses offset by the window, then passes them to subShim[0].slave.
-  Tuple2#(t_axil_sub, t_h2f_sub) h2fWindowIfcs <- mkAddrOffsetDmaWindow(subShim[0].slave, reset_by newRst.new_rst);
+  // - H2F AXI4 subordinate `h2fWindow.windowedSub` which converts 32-bit h2f accesses to 64-bit accesses offset by the window, then passes them to h2fShim.slave.
+  Tuple2#(t_axil_sub, t_h2f_sub) h2fWindowIfcs <- mkAddrOffsetDmaWindow(h2fShim.slave, reset_by newRst.new_rst);
   match {.h2fWindowCtrlSub, .h2fWindowWindowedSub} = h2fWindowIfcs;
   // Expose the windowCtrlSub on the AXI4 lite bus
   let ctrSubH2FAddrCtrl =
@@ -557,9 +554,9 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
 
   // Route all incoming requests from the h2f and global AXI4 interfaces
   // to the core's subordinate port
-  // subShim[0].master is the set of requests from h2f after they've passed through the window.
+  // h2fShim.master is the set of requests from h2f after they've passed through the window.
   mkAXI4Bus ( constFn (cons (True, nil))
-            , cons (subShim[0].master, cons (subShim[1].master, nil))
+            , cons (h2fShim.master, cons (globalShim.master, nil))
             , cons (core.subordinate_0, nil)
             , reset_by newRst.new_rst );
 
@@ -579,7 +576,7 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
 
   interface axil_sub = core.control_subordinate; // incoming control traffic
   interface axi_sub_0 = h2fWindowWindowedSub;   // incoming H2F traffic, routed through a DmaWindow
-  interface axi_sub_1 = subShim[1].slave;        // incoming global traffic
+  interface axi_sub_1 = globalShim.slave;        // incoming global traffic
   interface axi_mngr_0 = mngrShim[0].master;     // outgoing F2H traffic
   interface axi_mngr_1 = ddrShim.master;         // outgoing ddr traffic
   interface axi_mngr_2 = mngrShim[1].master;     // outgoing global traffic
