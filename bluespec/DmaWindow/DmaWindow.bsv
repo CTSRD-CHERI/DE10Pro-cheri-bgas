@@ -47,30 +47,32 @@ import SoC_Map :: *;
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// A straightforward axi lite subordinate to provide a banking mechanism for
-// the h2f window into the core's memory map.
-//
-// Exposes a readable/writable t_post_window_addr at relative address 0x0
+// Exposes a readable/writable Bit#(t_data) at relative address 0x0
 // such that the LSB is bit 0 of address 0
-// and the MSB is bit 7 of address 0x3 or 0x7, if t_post_window_addr is 32 or 64 respectively.
-// WSTRB is *ignored*.
+// and the MSB is bit 7 of address 0x3 or 0x7, if t_data is 32 or 64 respectively.
+// WSTRB is *ignored*, TODO fix this.
 // This mapping is repeated over the remaining address space, so 0x8 maps to the same thing as 0x0.
-module mkH2FAddrCtrl #(Bit #(t_post_window_addr) dfltAddrBits)
-  (Tuple2 #( AXI4Lite_Slave #( t_window_ctrl_addr, t_window_ctrl_data
-                             , t_window_ctrl_awuser, t_window_ctrl_wuser, t_window_ctrl_buser
-                             , t_window_ctrl_aruser, t_window_ctrl_ruser)
-           , ReadOnly #(Bit #(t_post_window_addr)) ))
+module mkAXI4Lite_SubReg #(Bit #(t_data) def)
+  (Tuple2 #( AXI4Lite_Slave #( t_axil_addr, t_axil_data
+                             , t_axil_awuser, t_axil_wuser, t_axil_buser
+                             , t_axil_aruser, t_axil_ruser)
+           , ReadOnly #(Bit #(t_data)) ))
   provisos (
-    NumAlias #( t_dats_per_addr, TDiv#(t_post_window_addr, t_window_ctrl_data))
-  , NumAlias #( t_dat_select, TLog#(t_dats_per_addr))
-  , NumAlias #( t_sub_lw_word_addr_bits, TLog#(TDiv#(t_window_ctrl_data, 8)))
-  // Make sure there are enough window_addr bits to address all the selectable words
-  , Add#(a__, t_dat_select, t_window_ctrl_addr)
-  , Mul#(TDiv#(t_post_window_addr, t_window_ctrl_data), t_window_ctrl_data, t_post_window_addr) // Evenly divisible
+    // We store t_data as a vector of t_words_per_data axil words
+    NumAlias #( t_words_per_data, TDiv#(t_data, t_axil_data))
+    // Need log2(n) bits to select one of n words to write into
+  , NumAlias #( t_word_select, TLog#(t_words_per_data))
+    // We expose a byte-addressable interface, although we can expect the write data to be aligned to axil words.
+    // Figure out how much we need to shift a byte-address to make it a word-address
+  , NumAlias #( t_sub_axil_word_addr_bits, TLog#(TDiv#(t_axil_data, 8)))
+    // Make sure there are enough window_addr bits to address all the selectable words TODO this should be bytes
+  , Add#(a__, t_word_select, t_axil_addr)
+    // Make sure the t_data is evenly divisible by axil words
+  , Mul#(TDiv#(t_data, t_axil_data), t_axil_data, t_data) // Evenly divisible
   );
 
   // internal state and signals
-  Reg#(Vector#(t_dats_per_addr,Bit#(t_window_ctrl_data))) addrBits <- mkReg (unpack(dfltAddrBits));
+  Reg#(Vector#(t_words_per_data, Bit#(t_axil_data))) addrBits <- mkReg (unpack(def));
   let axiShim <- mkAXI4LiteShimFF;
 
   // read requests handling (always answer with upper bits)
@@ -78,7 +80,7 @@ module mkH2FAddrCtrl #(Bit #(t_post_window_addr) dfltAddrBits)
     let ar <- get (axiShim.master.ar);
     // e.g. if lw_data is 32-bits = 4 bytes then shift down by log2(4) = 2
     // so address 0x4 becomes 0b100 >> 2 = 0b1 = word 1 of addrBits
-    Bit#(t_dat_select) i = truncate(ar.araddr >> valueOf(t_sub_lw_word_addr_bits));
+    Bit#(t_word_select) i = truncate(ar.araddr >> valueOf(t_sub_axil_word_addr_bits));
     axiShim.master.r.put (AXI4Lite_RFlit { rdata: addrBits[i]
                                          , rresp: OKAY
                                          , ruser: ? });
@@ -88,7 +90,7 @@ module mkH2FAddrCtrl #(Bit #(t_post_window_addr) dfltAddrBits)
   rule write_req;
     let aw <- get (axiShim.master.aw);
     // see read_req for explanation of shift
-    Bit#(t_dat_select) i = truncate(aw.awaddr >> valueOf(t_sub_lw_word_addr_bits));
+    Bit#(t_word_select) i = truncate(aw.awaddr >> valueOf(t_sub_axil_word_addr_bits));
     let w <- get (axiShim.master.w);
     addrBits[i] <= w.wdata;
     axiShim.master.b.put (AXI4Lite_BFlit { bresp: OKAY
@@ -100,7 +102,7 @@ module mkH2FAddrCtrl #(Bit #(t_post_window_addr) dfltAddrBits)
   endinterface;
 
   // return the subordinate port and a ReadOnly interface to addrBits
-  return tuple2 (axiShim.slave, readAddrBits);// regToReadOnly (pack(dataBits));//addrBits));
+  return tuple2 (axiShim.slave, readAddrBits);
 
 endmodule
 
@@ -193,7 +195,9 @@ module mkAddrOffsetDmaWindow#(
     // i.e. that t_window_ctrl_addr >= log2(number of windowCtrl data words in post_window_addr)
     , Add#(b__, TLog#(TDiv#(t_post_window_addr, t_window_ctrl_data)), t_window_ctrl_addr)
 );
-    Tuple2 #(t_window_ctrl, ReadOnly #(Bit #(t_post_window_addr))) windowCtrlIfcs <- mkH2FAddrCtrl (0);
+    // Expose an AXI4Lite subordinate which read/writes a register we can read
+    // That register holds the window offset
+    Tuple2 #(t_window_ctrl, ReadOnly #(Bit #(t_post_window_addr))) windowCtrlIfcs <- mkAXI4Lite_SubReg (0);
     match {.windowCtrlIfc, .windowAddr} = windowCtrlIfcs;
 
     // Function to generate the post-window address from the pre-window address
