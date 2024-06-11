@@ -34,14 +34,6 @@ import Clocks :: *;
 import Connectable :: *;
 import BlueAXI4 :: *;
 import BlueBasics :: *;
-import AXI4_Fake_16550 :: *;
-import Routable :: *;
-import SourceSink :: *;
-import Fabric_Defs :: *;
-import CoreW :: *;
-import WindCoreInterface :: *;
-import DE10Pro_bsv_shell :: *;
-import SoC_Map :: *;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -106,7 +98,7 @@ module mkAXI4Lite_SubReg #(Bit #(t_data) def)
 
 endmodule
 
-interface DmaWindow #(
+interface AxiWindow #(
     // Window subordinate port (AXI4Lite)
       numeric type t_window_ctrl_addr
     , numeric type t_window_ctrl_data
@@ -138,8 +130,8 @@ interface DmaWindow #(
     ) preWindow;
 endinterface
 
-// TODO prevent the DMA window from being changed during an access
-module mkAddrOffsetDmaWindow#(
+// TODO prevent the window from being changed during an access
+module mkAddrOffsetAxiWindow#(
     // Take the post-window slave as an argument,
     // we pump requests through from the pre-window
     // and the parameters are the same except the address size
@@ -153,7 +145,7 @@ module mkAddrOffsetDmaWindow#(
         , t_pre_window_aruser
         , t_pre_window_ruser
     ) postWindow
-)(DmaWindow#(
+)(AxiWindow#(
     // Window subordinate port (AXI4Lite)
       t_window_ctrl_addr
     , t_window_ctrl_data

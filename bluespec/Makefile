@@ -64,7 +64,7 @@ include $(CORE_DIR)/builds/Resources/Include_RISCY_Config.mk
 
 VIRTUALDEVICE_DIRS ?= $(CURDIR)/VirtualDevice
 RECIPEDIR = $(CURDIR)/Recipe
-DMAWINDOWDIR = $(CURDIR)/DmaWindow
+AXIWINDOWDIR = $(CURDIR)/AxiWindow
 
 # generated files directories
 BUILDDIR ?= $(CURDIR)/build
@@ -74,7 +74,7 @@ VDIR ?= $(CURDIR)/verilogdir
 VERILATORDIR ?= $(CURDIR)/verilatordir
 
 # search path for bsc imports
-EXTRABSVPATH = +:$(DE10PROBSVSHELLDIR):$(RECIPEDIR):$(VIRTUALDEVICE_DIRS):$(DMAWINDOWDIR)
+EXTRABSVPATH = +:$(DE10PROBSVSHELLDIR):$(RECIPEDIR):$(VIRTUALDEVICE_DIRS):$(AXIWINDOWDIR)
 BSCFLAGS = $(BSC_PATH) -p $(EXTRABSVPATH)
 
 # design configuration variables

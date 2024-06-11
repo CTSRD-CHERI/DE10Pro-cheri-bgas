@@ -1,4 +1,4 @@
-= DmaWindow
+= AxiWindow
 
 An interface and implementations of an access window, which takes in a "target" AXI subordinate interface and exposes
 

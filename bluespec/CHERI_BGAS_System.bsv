@@ -44,7 +44,7 @@ import WindCoreInterface :: *;
 import DE10Pro_bsv_shell :: *;
 import SoC_Map :: *;
 import VirtualDevice :: *;
-import DmaWindow :: *;
+import AxiWindow :: *;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -371,13 +371,13 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   let ctrSubUART1 =
         tuple2 (uart1s0, Range { base: 'h0000_4000, size: 'h0000_1000 });
 
-  // Expose the banking register (the "dma window") for h2f accesses
+  // Expose the banking register (the "axi window") for h2f accesses
   // (h2f port only has 32-bit addresses, this mechanism is intended to enable
   // control over a full 64-bit address)
-  // Create a DmaWindow which exposes a
+  // Create an AxiWindow which exposes a
   // - H2F_LW AXI4Lite subordinate `h2fWindow.windowCtrl`, exposing a 64-bit "window" register
   // - H2F AXI4 subordinate `h2fWindow.preWindow` which converts 32-bit h2f accesses to 64-bit accesses offset by the window, then passes them to h2fPostWindowShim.slave.
-  let h2fWindow <- mkAddrOffsetDmaWindow(h2fPostWindowShim.slave, reset_by newRst.new_rst);
+  let h2fWindow <- mkAddrOffsetAxiWindow(h2fPostWindowShim.slave, reset_by newRst.new_rst);
   // Expose the windowCtrl on the AXI4 lite bus
   let ctrSubH2FAddrCtrl =
     tuple2 (h2fWindow.windowCtrl, Range { base: 'h0000_5000, size: 'h0000_1000 });
