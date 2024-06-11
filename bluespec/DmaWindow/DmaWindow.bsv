@@ -104,38 +104,37 @@ module mkH2FAddrCtrl #(Bit #(t_post_window_addr) dfltAddrBits)
 
 endmodule
 
-// TODO can't define an interface because if you pass these numeric types around too much bluespec loses track of them and their constraints.
-// interface DmaWindow #(
-// // Window subordinate port (AXI4Lite)
-//       numeric type t_window_ctrl_addr
-//     , numeric type t_window_ctrl_data
-//     , numeric type t_window_ctrl_awuser
-//     , numeric type t_window_ctrl_wuser
-//     , numeric type t_window_ctrl_buser
-//     , numeric type t_window_ctrl_aruser
-//     , numeric type t_window_ctrl_ruser
-// // Access subordinate port (AXI4)
-//     , numeric type t_post_window_id
-//     , numeric type t_pre_window_addr
-//     , numeric type t_pre_window_data
-//     , numeric type t_pre_window_awuser
-//     , numeric type t_pre_window_wuser
-//     , numeric type t_pre_window_buser
-//     , numeric type t_pre_window_aruser
-//     , numeric type t_pre_window_ruser
-// );
-//     interface AXI4Lite_Slave #(
-//           t_window_ctrl_addr, t_window_ctrl_data
-//         , t_window_ctrl_awuser, t_window_ctrl_wuser, t_window_ctrl_buser
-//         , t_window_ctrl_aruser, t_window_ctrl_ruser
-//     ) windowCtrlSub;
+interface DmaWindow #(
+    // Window subordinate port (AXI4Lite)
+      numeric type t_window_ctrl_addr
+    , numeric type t_window_ctrl_data
+    , numeric type t_window_ctrl_awuser
+    , numeric type t_window_ctrl_wuser
+    , numeric type t_window_ctrl_buser
+    , numeric type t_window_ctrl_aruser
+    , numeric type t_window_ctrl_ruser
+    // Access subordinate port (AXI4)
+    , numeric type t_post_window_id
+    , numeric type t_pre_window_addr
+    , numeric type t_pre_window_data
+    , numeric type t_pre_window_awuser
+    , numeric type t_pre_window_wuser
+    , numeric type t_pre_window_buser
+    , numeric type t_pre_window_aruser
+    , numeric type t_pre_window_ruser
+);
+    interface AXI4Lite_Slave #(
+          t_window_ctrl_addr, t_window_ctrl_data
+        , t_window_ctrl_awuser, t_window_ctrl_wuser, t_window_ctrl_buser
+        , t_window_ctrl_aruser, t_window_ctrl_ruser
+    ) windowCtrl;
     
-//     interface AXI4_Slave #(
-//           t_post_window_id, t_pre_window_addr, t_pre_window_data
-//         , t_pre_window_awuser, t_pre_window_wuser, t_pre_window_buser
-//         , t_pre_window_aruser, t_pre_window_ruser
-//     ) windowedSub;
-// endinterface
+    interface AXI4_Slave #(
+          t_post_window_id, t_pre_window_addr, t_pre_window_data
+        , t_pre_window_awuser, t_pre_window_wuser, t_pre_window_buser
+        , t_pre_window_aruser, t_pre_window_ruser
+    ) preWindow;
+endinterface
 
 // TODO make address-width independent
 // TODO prevent the DMA window from being changed during an access
@@ -150,15 +149,25 @@ module mkAddrOffsetDmaWindow#(
         , 0
         , 0
     ) postWindow
-)(Tuple2#(AXI4Lite_Slave #(
-    t_window_ctrl_addr, t_window_ctrl_data
-  , t_window_ctrl_awuser, t_window_ctrl_wuser, t_window_ctrl_buser
-  , t_window_ctrl_aruser, t_window_ctrl_ruser
-), AXI4_Slave #(
-    t_post_window_id, t_pre_window_addr, t_pre_window_data
-  , t_pre_window_awuser, t_pre_window_wuser, t_pre_window_buser
-  , t_pre_window_aruser, t_pre_window_ruser
-))) provisos (
+)(DmaWindow#(
+    // Window subordinate port (AXI4Lite)
+      t_window_ctrl_addr
+    , t_window_ctrl_data
+    , t_window_ctrl_awuser
+    , t_window_ctrl_wuser
+    , t_window_ctrl_buser
+    , t_window_ctrl_aruser
+    , t_window_ctrl_ruser
+    // Access subordinate port (AXI4)
+    , t_post_window_id
+    , t_pre_window_addr
+    , t_pre_window_data
+    , t_pre_window_awuser
+    , t_pre_window_wuser
+    , t_pre_window_buser
+    , t_pre_window_aruser
+    , t_pre_window_ruser
+)) provisos (
     // type aliases
     ////////////////////////////////////////////////////////////////////////////
     // AXI4 Lite control port
@@ -186,7 +195,7 @@ module mkAddrOffsetDmaWindow#(
     , Add#(a__, TLog#(TDiv#(t_post_window_addr, t_window_ctrl_data)), t_window_ctrl_addr)
 );
     Tuple2 #(t_window_ctrl, ReadOnly #(Bit #(t_post_window_addr))) windowCtrlIfcs <- mkH2FAddrCtrl (0);
-    match {.windowCtrl, .windowAddr} = windowCtrlIfcs;
+    match {.windowCtrlIfc, .windowAddr} = windowCtrlIfcs;
 
     // H2F interface wrapping (extra address bits & data size shim)
     // h2fAddrCtrlRO is Bits#(t_post_window_addr) in size.
@@ -198,7 +207,7 @@ module mkAddrOffsetDmaWindow#(
     // before arriving at the postWindow.
 
     // TODO remove toWider_AXI4_Slave and zero_AXI4_Slave_user from here
-    t_pre_window windowed <- toWider_AXI4_Slave (
+    t_pre_window preWindowIfc <- toWider_AXI4_Slave (
         zero_AXI4_Slave_user (
             prepend_AXI4_Slave_addr (
                 32'b0,
@@ -210,5 +219,6 @@ module mkAddrOffsetDmaWindow#(
         )
     );
 
-    return tuple2(windowCtrl, windowed);
+    interface windowCtrl = windowCtrlIfc;
+    interface preWindow  = preWindowIfc;
 endmodule
