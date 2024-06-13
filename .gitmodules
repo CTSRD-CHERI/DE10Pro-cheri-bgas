@@ -29,3 +29,6 @@
 [submodule "bluespec/sim-utils/jtagvpi_to_fmemdmi"]
 	path = bluespec/sim-utils/jtagvpi_to_fmemdmi
 	url = https://github.com/CTSRD-CHERI/jtagvpi_to_fmemdmi.git
+[submodule "de10pro-seriallite3"]
+	path = de10pro-seriallite3
+	url = http://github.com/CTSRD-CHERI/de10pro-seriallite3.git

@@ -30,7 +30,7 @@ BSC = bsc
 BLUESPECDIR ?= $(shell which $(BSC) | xargs dirname | xargs dirname)/lib
 
 NB_SYSTEMS ?= 1
-CORE_NUM ?= 2
+CORE_NUM ?= 1
 
 # RiscyOOO flags
 ifeq ($(NB_SYSTEMS),1)
