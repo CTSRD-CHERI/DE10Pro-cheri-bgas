@@ -551,15 +551,8 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
-  // Route all incoming requests from the h2f and global AXI4 interfaces
-  // to the core's subordinate port
-  // h2fPostWindowShim.master is the set of requests from h2f after they've passed through the window.
-  mkAXI4Bus ( constFn (cons (True, nil))
-            , cons (h2fPostWindowShim.master, cons (globalShim.master, nil))
-            , cons (core.subordinate_0, nil)
-            , reset_by newRst.new_rst );
   // incoming H2F traffic is passed through three layers...
-  // - toWider_AXI4_Slave   = split double-data-width transactions into halfs
+  // - toWider_AXI4_Slave   = split double-data-width transactions into halves
   // - zero_AXI4_Slave_user = ignore any user data supplied
   // - h2fWindow.preWindow  = offset the access by the MMIO-writable "window" register
   // ...before arriving at the core
@@ -568,6 +561,16 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
       h2fWindow.preWindow
     )
   );
+
+  // Route all incoming requests from the h2f and global AXI4 interfaces
+  // to the core's subordinate port
+  // h2fPostWindowShim.master initiates the requests recieved from h2f
+  // after they've passed through the three layers shown above.
+  mkAXI4Bus ( constFn (cons (True, nil))
+            , cons (h2fPostWindowShim.master, cons (globalShim.master, nil))
+            , cons (core.subordinate_0, nil)
+            , reset_by newRst.new_rst );
+
 
   // prepare outside-world-facing IRQs
   //////////////////////////////////////////////////////////////////////////////
