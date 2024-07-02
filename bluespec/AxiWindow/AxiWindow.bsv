@@ -44,6 +44,7 @@ import BlueBasics :: *;
 // and the MSB is bit 7 of address 0x3 or 0x7, if t_data is 32 or 64 respectively.
 // WSTRB is *ignored*, TODO fix this.
 // This mapping is repeated over the remaining address space, so 0x8 maps to the same thing as 0x0.
+// TODO we ignore the user bits, so they should be zero.
 module mkAXI4Lite_SubReg #(Bit #(t_data) def)
   (Tuple2 #( AXI4Lite_Slave #( t_axil_addr, t_axil_data
                              , t_axil_awuser, t_axil_wuser, t_axil_buser
@@ -118,6 +119,11 @@ interface AxiWindow #(
     , numeric type t_pre_window_ruser
     // Post-window address widening
     , numeric type t_post_window_addr
+    , numeric type t_post_window_awuser
+    , numeric type t_post_window_wuser
+    , numeric type t_post_window_buser
+    , numeric type t_post_window_aruser
+    , numeric type t_post_window_ruser
 );
     interface AXI4Lite_Slave #(
           t_window_ctrl_addr, t_window_ctrl_data
@@ -133,8 +139,8 @@ interface AxiWindow #(
 
     interface AXI4_Master #(
           t_pre_window_id, t_post_window_addr, t_pre_window_data
-        , t_pre_window_awuser, t_pre_window_wuser, t_pre_window_buser
-        , t_pre_window_aruser, t_pre_window_ruser
+        , t_post_window_awuser, t_post_window_wuser, t_post_window_buser
+        , t_post_window_aruser, t_post_window_ruser
     ) postWindow;
 endinterface
 
@@ -159,6 +165,12 @@ module mkAddrOffsetAxiWindow(AxiWindow#(
     , t_pre_window_ruser
     // Post-window address widening
     , t_post_window_addr
+    // The user bits are the same post-window
+    , t_pre_window_awuser
+    , t_pre_window_wuser
+    , t_pre_window_buser
+    , t_pre_window_aruser
+    , t_pre_window_ruser
 )) provisos (
     // type aliases
     ////////////////////////////////////////////////////////////////////////////
