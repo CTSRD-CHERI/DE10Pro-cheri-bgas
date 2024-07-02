@@ -325,16 +325,6 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
     newRst.assertReset;
   endrule
 
-  // Incoming interconnect (1, continued below)
-  //////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////
-
-  // Shims for
-  //   - incoming H2F traffic
-  //   - incoming global traffic
-  t_core_sub_shim h2fPostWindowShim <- mkAXI4ShimFF (reset_by newRst.new_rst);
-  t_core_sub_shim globalShim <- mkAXI4ShimFF (reset_by newRst.new_rst);
-
   // instanciate the SoC_Map
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
@@ -376,8 +366,9 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   // control over a full 64-bit address)
   // Create an AxiWindow which exposes a
   // - H2F_LW AXI4Lite subordinate `h2fWindow.windowCtrl`, exposing a 64-bit "window" register
-  // - H2F AXI4 subordinate `h2fWindow.preWindow` which converts 32-bit h2f accesses to 64-bit accesses offset by the window, then passes them to h2fPostWindowShim.slave.
-  let h2fWindow <- mkAddrOffsetAxiWindow(h2fPostWindowShim.slave, reset_by newRst.new_rst);
+  // - H2F AXI4 subordinate `h2fWindow.preWindow` which converts 32-bit h2f accesses to 64-bit accesses offset by the window
+  // - H2F AXI4 manager `h2fWindow.postWindow` which oerforms the newly converted accesses
+  let h2fWindow <- mkAddrOffsetAxiWindow(reset_by newRst.new_rst);
   // Expose the windowCtrl on the AXI4 lite bus
   let ctrSubH2FAddrCtrl =
     tuple2 (h2fWindow.windowCtrl, Range { base: 'h0000_5000, size: 'h0000_1000 });
@@ -547,9 +538,13 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   mkAXI4Bus (bus0_route, bus0_ms, bus0_ss, reset_by newRst.new_rst);
   mkAXI4Bus (bus1_route, bus1_ms, bus1_ss, reset_by newRst.new_rst);
 
-  // Incoming interconnect (2)
+  // Incoming interconnect
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
+
+  // Shim for incoming global traffic, converts the slave at mkCHERI_BGAS_System's
+  // input boundary to a master
+  t_core_sub_shim globalShim <- mkAXI4ShimFF (reset_by newRst.new_rst);
 
   // incoming H2F traffic is passed through three layers...
   // - toWider_AXI4_Slave   = split double-data-width transactions into halves
@@ -564,10 +559,10 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
 
   // Route all incoming requests from the h2f and global AXI4 interfaces
   // to the core's subordinate port
-  // h2fPostWindowShim.master initiates the requests recieved from h2f
+  // h2fWindow.postWindow initiates the requests recieved from h2f
   // after they've passed through the three layers shown above.
   mkAXI4Bus ( constFn (cons (True, nil))
-            , cons (h2fPostWindowShim.master, cons (globalShim.master, nil))
+            , cons (h2fWindow.postWindow, cons (globalShim.master, nil))
             , cons (core.subordinate_0, nil)
             , reset_by newRst.new_rst );
 

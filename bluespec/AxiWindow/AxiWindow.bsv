@@ -116,6 +116,8 @@ interface AxiWindow #(
     , numeric type t_pre_window_buser
     , numeric type t_pre_window_aruser
     , numeric type t_pre_window_ruser
+    // Post-window address widening
+    , numeric type t_post_window_addr
 );
     interface AXI4Lite_Slave #(
           t_window_ctrl_addr, t_window_ctrl_data
@@ -128,24 +130,16 @@ interface AxiWindow #(
         , t_pre_window_awuser, t_pre_window_wuser, t_pre_window_buser
         , t_pre_window_aruser, t_pre_window_ruser
     ) preWindow;
+
+    interface AXI4_Master #(
+          t_pre_window_id, t_post_window_addr, t_pre_window_data
+        , t_pre_window_awuser, t_pre_window_wuser, t_pre_window_buser
+        , t_pre_window_aruser, t_pre_window_ruser
+    ) postWindow;
 endinterface
 
 // TODO prevent the window from being changed during an access
-module mkAddrOffsetAxiWindow#(
-    // Take the post-window slave as an argument,
-    // we pump requests through from the pre-window
-    // and the parameters are the same except the address size
-    AXI4_Slave#(
-          t_pre_window_id
-        , t_post_window_addr
-        , t_pre_window_data
-        , t_pre_window_awuser
-        , t_pre_window_wuser
-        , t_pre_window_buser
-        , t_pre_window_aruser
-        , t_pre_window_ruser
-    ) postWindow
-)(AxiWindow#(
+module mkAddrOffsetAxiWindow(AxiWindow#(
     // Window subordinate port (AXI4Lite)
       t_window_ctrl_addr
     , t_window_ctrl_data
@@ -163,6 +157,8 @@ module mkAddrOffsetAxiWindow#(
     , t_pre_window_buser
     , t_pre_window_aruser
     , t_pre_window_ruser
+    // Post-window address widening
+    , t_post_window_addr
 )) provisos (
     // type aliases
     ////////////////////////////////////////////////////////////////////////////
@@ -192,10 +188,17 @@ module mkAddrOffsetAxiWindow#(
     Tuple2 #(t_window_ctrl, ReadOnly #(Bit #(t_post_window_addr))) windowCtrlIfcs <- mkAXI4Lite_SubReg (0);
     match {.windowCtrlIfc, .windowAddr} = windowCtrlIfcs;
 
+    // Make a shim which takes AXI4 requests at the .slave, buffers them, then puts them out at the .master
+    let windowShim <- mkAXI4ShimFF();
+
     // Function to generate the post-window address from the pre-window address
     function mapAddr (preWindowAddr) = windowAddr | zeroExtend(preWindowAddr);
 
     interface windowCtrl = windowCtrlIfc;
-    // The preWindow interface takes requests, applies the mapAddr function, then passes them to postWindow
-    interface preWindow  = mapAXI4_Slave_addr (mapAddr, postWindow);
+
+    // The preWindow interface takes requests, applies the mapAddr function, then passes them to the windowShim
+    interface preWindow  = mapAXI4_Slave_addr (mapAddr, windowShim.slave);
+
+    // The windowShim takes the mapped requests and puts them out at the master
+    interface postWindow = windowShim.master;
 endmodule
