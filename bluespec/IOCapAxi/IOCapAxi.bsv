@@ -1,40 +1,41 @@
 import BlueAXI4 :: *;
+import Connectable :: *;
 
 typedef struct  {
     Bool start;
     UInt#(2) flitnum;
-} IOCapAXI4_AddrUserBits deriving (Bits#(3));
+} IOCapAXI4_AddrUserBits deriving (Bits); // TODO RIGHT NOW ASSUMING BITS=3
 
-interface IOCapAXI4_Master#(numeric type t_id, numeric type t_data) 
-    provisos (
+interface IOCapAXI4_Master#(numeric type t_id, numeric type t_data);
+    interface AXI4_Master#(
+          t_id
         // Currently hardcoded for 64-bit addressing, so we know it takes 3 cycles to pack a capability into the user bits
-        NumAlias #( t_addr, 64 ),
+        , 64 // t_addr
+        , t_data
         // Write address, read address have enough user bits to store IOCapAXI4_AddrUserBits
-        NumAlias #( t_aw_user, 3 ),
-        NumAlias #( t_ar_user, 3 ),
+        , 3 // t_aw_user
         // Write data, write response, read response don't have user bits 
-        NumAlias #( t_w_user, 0 ),
-        NumAlias #( t_b_user, 0 ),
-        NumAlias #( t_r_user, 0 )
-    );
-
-    interface AXI4_Master#(t_id, t_addr, t_data, t_aw_user, t_w_user, t_b_user, t_ar_user, t_r_user) axiSignals;
+        , 0 // t_w_user
+        , 0 // t_b_user
+        , 3 // t_ar_user
+        , 0 // t_r_user
+    ) axiSignals;
 endinterface
 
-interface IOCapAXI4_Slave#(numeric type t_id, numeric type t_data) 
-    provisos (
+interface IOCapAXI4_Slave#(numeric type t_id, numeric type t_data);
+    interface AXI4_Slave#(
+          t_id
         // Currently hardcoded for 64-bit addressing, so we know it takes 3 cycles to pack a capability into the user bits
-        NumAlias #( t_addr, 64 ),
+        , 64 // t_addr
+        , t_data
         // Write address, read address have enough user bits to store IOCapAXI4_AddrUserBits
-        NumAlias #( t_aw_user, 3 ),
-        NumAlias #( t_ar_user, 3 ),
+        , 3 // t_aw_user
         // Write data, write response, read response don't have user bits 
-        NumAlias #( t_w_user, 0 ),
-        NumAlias #( t_b_user, 0 ),
-        NumAlias #( t_r_user, 0 )
-    );
-
-    interface AXI4_Slave#(t_id, t_addr, t_data, t_aw_user, t_w_user, t_b_user, t_ar_user, t_r_user) axiSignals;
+        , 0 // t_w_user
+        , 0 // t_b_user
+        , 3 // t_ar_user
+        , 0 // t_r_user
+    ) axiSignals;
 endinterface
 
 instance Connectable#(

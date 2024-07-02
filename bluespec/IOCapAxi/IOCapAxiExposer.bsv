@@ -1,3 +1,8 @@
+import FIFOF :: *;
+import IOCapAxi :: *;
+import IOCapAxiWindow :: *;
+import SourceSink :: *;
+
 // interface IOCap_KeyManager#(numeric type n_keys);
 //     // Takes a 0x1000 range, 128bit (16 or 0x10 bytes) data path
 //     // Reading always returns 0.
@@ -22,19 +27,19 @@ interface IOCapSingleExposer#(numeric type t_id, numeric type t_data);
 
 endinterface
 
-interface AddressChannelCapUnwrapper#(type iocap_flit, type no_iocap_flit) provisos (IOCapPackableFlit#(iocap_flit, no_iocap_flit), Bits#(no_iocap_flit, n_flit_bits), Add(a__, n_flit_bits, 86));
+interface AddressChannelCapUnwrapper#(type iocap_flit, type no_iocap_flit);
     interface Sink#(iocap_flit) in;
     // TODO pass out AuthenticatedFlit so we can actually check it :)
     interface Source#(no_iocap_flit) out;
 endinterface
 
-module mkSimpleAddressChannelCapUnwrapper#(type iocap_flit, type no_iocap_flit)(AddressChannelCapUnwrapper#(iocap_flit, no_iocap_flit));
+module mkSimpleAddressChannelCapUnwrapper(AddressChannelCapUnwrapper#(iocap_flit, no_iocap_flit)) provisos (Bits#(AuthenticatedFlit#(no_iocap_flit), a__), Bits#(iocap_flit, b__));
     FIFOF#(iocap_flit) inFlits <- mkFIFOF();
     FIFOF#(AuthenticatedFlit#(no_iocap_flit)) outFlits <- mkSizedBypassFIFOF(4); // TODO check FIFOF type
 
     Reg#(AuthenticatedFlit#(no_iocap_flit)) flitInProgress <- mkReg(unpack(0));
 
-    rule (state == 0);
+    rule st0 if (state == 0);
         let startFlit <- inFlits.deq();
         let spec = unpackSpec(startFlit);
         if (spec matches tagged Start .flit) begin
@@ -48,7 +53,7 @@ module mkSimpleAddressChannelCapUnwrapper#(type iocap_flit, type no_iocap_flit)(
         state <= 1;
     endrule
 
-    rule (state == 1);
+    rule st1 if (state == 1);
         let bitsFlit <- inFlits.deq();
         let spec = unpackSpec(bitsFlit);
         if (spec matches tagged CapBits1 .bits) begin
@@ -62,7 +67,7 @@ module mkSimpleAddressChannelCapUnwrapper#(type iocap_flit, type no_iocap_flit)(
         state <= 2;
     endrule
 
-    rule (state == 2);
+    rule st2 if (state == 2);
         let bitsFlit <- inFlits.deq();
         let spec = unpackSpec(bitsFlit);
         if (spec matches tagged CapBits2 .bits) begin
@@ -76,14 +81,14 @@ module mkSimpleAddressChannelCapUnwrapper#(type iocap_flit, type no_iocap_flit)(
         state <= 3;
     endrule
 
-    rule (state == 3);
+    rule st3 if (state == 3);
         let bitsFlit <- inFlits.deq();
         let spec = unpackSpec(bitsFlit);
         if (spec matches tagged CapBits3 .bits) begin
             let auth_flit = AuthenticatedFlit {
                 flit: flitInProgress.flit,
                 cap: { bits, flitInProgress.cap[171:0] }
-            }
+            };
             $display("IOCap - Received auth flit ", fshow(auth_flit));
             outFlits.enq(flitInProgress.flit);
         end else begin
@@ -100,10 +105,10 @@ endmodule
 module mkSimpleIOCapExposer(IOCapSingleExposer#(t_id, t_data));
     // This doesn't have any key storage or checking logic yet! It just receives IOCapAXI and converts it back to plain AXI.
 
-    AddressChannelCapUnwrapper#(AXI4_AWFlit(t_id, 64, 3), AXI4_AWFlit(t_id, 64, 0)) aw <- mkSimpleAddressChannelCapUnwrapper;
+    AddressChannelCapUnwrapper#(AXI4_AWFlit#(t_id, 64, 3), AXI4_AWFlit#(t_id, 64, 0)) aw <- mkSimpleAddressChannelCapUnwrapper;
     FIFOF#(AXI4_WFlit#(t_data, 0)) wff <- mkFIFOF;
     FIFOF#(AXI4_BFlit#(t_id, 0)) bff <- mkFIFOF;
-    AddressChannelCapUnwrapper#(AXI4_ARFlit(t_id, 64, 3), AXI4_ARFlit(t_id, 64, 0)) ar <- mkSimpleAddressChannelCapUnwrapper;
+    AddressChannelCapUnwrapper#(AXI4_ARFlit#(t_id, 64, 3), AXI4_ARFlit#(t_id, 64, 0)) ar <- mkSimpleAddressChannelCapUnwrapper;
     FIFOF#(AXI4_RFlit#(t_id, t_data, 0)) rff <- mkFIFOF;
 
     interface iocapsIn = interface AXI4_Slave;
