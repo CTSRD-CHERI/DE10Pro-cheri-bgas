@@ -1,0 +1,22 @@
+= IOCapAxi
+
+Devices connected over an interconnect typically need to expose regions of "their" memory to other devices on the interconnect.
+The goal of my PhD is to attach capabilities to inter-device memory accesses.
+This allows a trust model where device A trusts device B to handle the memory A provides, but does *not* trust B to *not* attempt to access memory that A has *not* provided access to.
+With the capabilities, B has to provide a capability proving that at some point A, or someone trusted by A, provided B with the ability to access the memory it wants.
+
+On a practical level, this requires attaching extra metadata (256bits max) to each memory transaction.
+Toooba and the DE10 SoC use the AXI4 interconnect standard, which allows each 'channel' of a connection to include user-defined USER bits, but directly including metadata in those bits would widen each channel by 2-4x its original width.
+Thus we need to create a variant of AXI4 which supports adding extra metadata to each transaction by time-multiplexing existing signals, thus requiring some transaction flows to send more flits.
+This also requires bus arbiters to be updated to be capability-aware.
+This package provides the following Bluespec modules:
+
+* A "IOCapAXI4_Master" interface, mostly identical to AXI4_Master but different for the sake of type checking
+* A "IOCapAXI4_Slave" interface, mostly identical to AXI4_Slave but different for the sake of type checking
+TODO no idea if the following should be shims...
+* A "mkIOCapAXI4_AddCapShim" module, which maps requests to an exposed AXI4_Slave to an IOCapAXI4_Master with capability metadata
+* A "mkIOCapAXI4_UnauthShim" module, which maps requests to an exposed AXI4_Slave to an IOCapAXI4_Master *without* capability metadata
+    - This may be useful if certain pieces of hardware are trusted but need to pass their transactions through an IOCapAXI4_Checker or IOCapAXI4-compatible bus arbiter anyway
+* A "IOCapAXI4_CheckCapShim" module which takes requests to an exposed IOCapAXI4_Slave, checks the incoming capabilities, then passes their requests on through an AXI4_Master.
+* TODO A "IOCapAXI4_Checker" module, which takes a vector of "IOCapAXI4_Master", checks their capabilities, then passes their requests on to a set of plain AXI4_Slaves.
+* TODO - "IOCapAXI4_Shim" and "IOCapAXI4_Arbiter" which do FIFO shimming and bus arbitration for I/O-cap-axi interconnects, respectively(??)

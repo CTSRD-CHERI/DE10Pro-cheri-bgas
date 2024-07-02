@@ -1,0 +1,246 @@
+import BlueAXI4 :: *;
+import IOCapAXI :: *;
+import AxiWindow :: *;
+
+typedef struct {
+    Bit#(64)  windowAddr;
+    Bit#(256) capability;
+} WindowData deriving (Bits, FShow);
+
+typedef union tagged {
+    // TODO no_iocap_flit Unauthenticated;
+    no_iocap_flit Start;
+    Bit#(86) CapBits1;
+    Bit#(86) CapBits2;
+    Bit#(84) CapBits3;
+} IOCapFlitSpec#(type no_iocap_flit) deriving (Bits, FShow) provisos (Bits#(no_iocap_flit, n_flit_bits), Add(a__, n_flit_bits, 86));
+
+typeclass IOCapPackableFlit(type iocap_flit, type no_iocap_flit) provisos (Bits#(no_iocap_flit, n_flit_bits), Add(a__, n_flit_bits, 86));
+    iocap_flit packSpec(IOCapFlitSpec#(no_iocap_flit) x);
+    IOCapFlitSpec#(no_iocap_flit) unpackSpec(iocap_flit);
+endtypeclass
+
+instance IOCapPackableFlit(
+    // iocap_flit
+    AXI4_AWFlit#(t_id, 64 /* t_addr */, 3 /* t_user */),
+    // no_iocap_flit
+    AXI4_AWFlit#(t_id, 64 /* t_addr */, 0 /* t_user */)
+);
+    function AXI4_AWFlit#(t_id, 64, 3) packSpec(IOCapFlitSpec#(AXI4_AWFlit#(t_id, 64, 0)) spec)
+        case (spec) matches
+            { tagged Start .x } : return AXI4_AWFlit {
+                awid: x.awid
+                , awaddr: x.awaddr
+                , awlen: x.awlen
+                , awsize: x.awsize
+                , awburst: x.awburst
+                , awlock: x.awlock
+                , awcache: x.awcache
+                , awprot: x.awprot
+                , awqos: x.awqos
+                , awregion: x.awregion
+                , awuser: pack(IOCapAXI4_AddrUserBits{
+                    start: True
+                    , flitnum: 0
+                })
+            };
+            { tagged CapBits1 .bits } : return AXI4_AWFlit {
+                  awid: ?
+                , awaddr: bits[63:0]
+                , awlen: bits[71:64]
+                , awsize: bits[74:72]
+                , awburst: bits[76:75]
+                , awlock: bits[77]
+                , awcache: bits[81:78]
+                , awprot: bits[84:82]
+                , awqos: { 3'h0, bits[85] }
+                , awregion: ?
+                , awuser: pack(IOCapAXI4_AddrUserBits{
+                      start: False
+                    , flitnum: 1
+                })
+            };
+            { tagged CapBits2 .bits } : return AXI4_AWFlit {
+                  awid: ?
+                , awaddr: bits[63:0]
+                , awlen: bits[71:64]
+                , awsize: bits[74:72]
+                , awburst: bits[76:75]
+                , awlock: bits[77]
+                , awcache: bits[81:78]
+                , awprot: bits[84:82]
+                , awqos: { 3'h0, bits[85] }
+                , awregion: ?
+                , awuser: pack(IOCapAXI4_AddrUserBits{
+                      start: False
+                    , flitnum: 2
+                })
+            };
+            { tagged CapBits3 .bits } : return AXI4_AWFlit {
+                  awid: ?
+                , awaddr: bits[63:0]
+                , awlen: bits[71:64]
+                , awsize: bits[74:72]
+                , awburst: bits[76:75]
+                , awlock: bits[77]
+                , awcache: bits[81:78]
+                , awprot: {1'b0, bits[83:82] }
+                , awqos: ?
+                , awregion: ?
+                , awuser: pack(IOCapAXI4_AddrUserBits{
+                      start: False
+                    , flitnum: 3
+                })
+            };
+        endcase
+    endfunction
+
+    function IOCapFlitSpec#(AXI4_AWFlit#(t_id, 64, 0)) unpackSpec(AXI4_AWFlit#(t_id, 64, 3) x);
+        case (unpack(spec.awuser)) matches 
+            { .start: True, flitnum: 0 } => tagged Start AXI4_AWFlit#(t_id, 64, 0) {
+                  awid: x.awid
+                , awaddr: x.awaddr
+                , awlen: x.awlen
+                , awsize: x.awsize
+                , awburst: x.awburst
+                , awlock: x.awlock
+                , awcache: x.awcache
+                , awprot: x.awprot
+                , awqos: x.awqos
+                , awregion: x.awregion
+                , awuser: ?
+            };
+            // TODO get the ordering right...
+            { .start: False, flitnum: 1 } => tagged CapBits1 { x.awqos[1], x.awprot, x.awcache, x.awlock, x.awburst, x.awsize, x.awlen, x.awaddr };
+            { .start: False, flitnum: 2 } => tagged CapBits2 { x.awqos[1], x.awprot, x.awcache, x.awlock, x.awburst, x.awsize, x.awlen, x.awaddr };
+            { .start: False, flitnum: 3 } => tagged CapBits3 { x.awprot[1:0], x.awcache, x.awlock, x.awburst, x.awsize, x.awlen, x.awaddr };
+            default: return ?;
+        endcase
+    endfunction
+endinstance
+
+typedef struct {
+    no_iocap_flit flit;
+    Bit#(256) cap;
+} AuthenticatedFlit#(type no_iocap_flit) deriving (Bits, FShow);
+
+interface AddressChannelCapWrapper#(type iocap_flit, type no_iocap_flit) provisos (IOCapPackableFlit#(iocap_flit, no_iocap_flit), Bits#(no_iocap_flit, n_flit_bits), Add(a__, n_flit_bits, 86));
+    interface Sink#(AuthenticatedFlit#(no_iocap_flit)) in;
+    interface Source#(iocap_flit) out;
+endinterface 
+
+module mkSimpleAddressChannelCapWrapper#(type iocap_flit, type no_iocap_flit)(AddressChannelCapWrapper#(iocap_flit, no_iocap_flit));
+    FIFOF#(AuthenticatedFlit#(no_iocap_flit)) inFlits <- mkFIFOF();
+    FIFOF#(iocap_flit) outFlits <- mkSizedBypassFIFOF(4); // TODO check FIFOF type
+
+    Reg#(UInt#(2)) state <- mkReg(0);
+    Reg#(Bit#(256)) cap <- mkReg(0);
+
+    rule (state == 0);
+        let startFlitAndCap <- inFlits.deq();
+        outFlits.enq(packSpec(tagged Start startFlitAndCap.flit));
+        state <= 1;
+        cap <= startFlitAndCap.cap;
+    endrule
+
+    rule (state == 1);
+        outFlits.enq(packSpec(tagged CapBits1 cap[85:0]));
+        state <= 2;
+    endrule
+
+    rule (state == 2);
+        outFlits.enq(packSpec(tagged CapBits2 cap[171:86]));
+        state <= 3;
+    endrule
+
+    rule (state == 3);
+        outFlits.enq(packSpec(tagged CapBits3 cap[255:172]));
+        state <= 0;
+    endrule
+
+    interface in = toSink(inFlits);
+    interface out = toSource(outFlits);
+endmodule
+
+module mkSimpleIOCapWindow(AxiWindow#(
+    // Window subordinate port (AXI4Lite)
+      t_window_ctrl_addr
+    , t_window_ctrl_data
+    , t_window_ctrl_awuser
+    , t_window_ctrl_wuser
+    , t_window_ctrl_buser
+    , t_window_ctrl_aruser
+    , t_window_ctrl_ruser
+    // Access subordinate port (AXI4)
+    , t_pre_window_id
+    , t_pre_window_addr
+    , t_pre_window_data
+    , 0 //t_pre_window_awuser
+    , 0 //t_pre_window_wuser
+    , 0 //t_pre_window_buser
+    , 0 //t_pre_window_aruser
+    , 0 //t_pre_window_ruser
+    // Post-window address widening
+    , 64 // t_post_window_addr
+    , 3 //t_post_window_awuser
+    , 0 //t_post_window_wuser
+    , 0 //t_post_window_buser
+    , 3 //t_post_window_aruser
+    , 0 //t_post_window_ruser
+)) provisos (
+    Alias #( t_window_ctrl
+           , AXI4Lite_Slave #(
+               t_window_ctrl_addr, t_window_ctrl_data
+             , t_window_ctrl_awuser, t_window_ctrl_wuser, t_window_ctrl_buser
+             , t_window_ctrl_aruser, t_window_ctrl_ruser ))
+    // The capability we authenticate access with is 256 bits (128 text + 128 signature) plus some other data
+    , Bits#(WindowData, t_window_ctrl_len),
+    // the t_pre_window_addr may be smaller than 64-bits and get zero extended
+    , Add#(a__, t_pre_window_addr, t_post_window_addr)
+    // Make sure the windowCtrl can evenly represent the capability with the windowCtrl data words
+    , Mul#(TDiv#(t_window_ctrl_len, t_window_ctrl_data), t_window_ctrl_data, t_window_ctrl_len) // Evenly divisible
+    // Make sure the windowCtrl has enough address bits to address every word of the t_window_ctrl_len
+    // i.e. that t_window_ctrl_addr >= log2(number of windowCtrl data words in t_window_ctrl_len)
+    , Add#(b__, TLog#(TDiv#(t_window_ctrl_len, t_window_ctrl_data)), t_window_ctrl_addr)
+);
+
+    // Expose an AXI4Lite subordinate which read/writes a register we can read
+    // That register holds the window ctrl data
+    Tuple2 #(t_window_ctrl, ReadOnly #(Bit #(t_window_ctrl_len))) windowCtrlIfcs <- mkAXI4Lite_SubReg (pack(WindowData {
+        windowAddr: 0,
+        capability: 256'h01234567_89abcdef_01234567_89abcdef_fdecba98_76543210_fdecba98_76543210
+    }));
+    match {.windowCtrlIfc, .windowCtrlBits} = windowCtrlIfcs;
+
+    // Function to generate the post-window address from the pre-window address
+    function mapAddr (preWindowAddr);
+        WindowData windowCtrl = unpack(windowCtrlBits);
+        return windowCtrl.windowAddr | zeroExtend(preWindowAddr);
+    endfunction
+    
+    AddressChannelCapWrapper#(AXI4_AWFlit(t_pre_window_id, 64, 3), AXI4_AWFlit(t_pre_window_id, 64, 0)) aw <- mkSimpleAddressChannelCapWrapper;
+    FIFOF#(AXI4_WFlit#(t_pre_window_data, 0)) wff <- mkFIFOF;
+    FIFOF#(AXI4_BFlit#(t_pre_window_id, 0)) bff <- mkFIFOF;
+    AddressChannelCapWrapper#(AXI4_ARFlit(t_pre_window_id, 64, 3), AXI4_ARFlit(t_pre_window_id, 64, 0)) ar <- mkSimpleAddressChannelCapWrapper;
+    FIFOF#(AXI4_RFlit#(t_pre_window_id, t_pre_window_data, 0)) rff <- mkFIFOF;
+
+    interface windowCtrl = windowCtrlIfc;
+
+    interface preWindow = interface AXI4_Slave;
+        // TODO this does not generate the post-window address...
+        interface aw = toSink(aw.in);
+        interface  w = toSink(wff);
+        interface  b = toSource(bff);
+        interface ar = toSink(ar.in);
+        interface  r = toSource(rff);
+    endinterface;
+
+    interface postWindow = interface AXI4_Master;
+        interface aw = toSource(aw.out);
+        interface  w = toSource(wff);
+        interface  b = toSink(bff);
+        interface ar = toSource(ar.out);
+        interface  r = toSink(rff);
+    endinterface;
+
+endmodule
