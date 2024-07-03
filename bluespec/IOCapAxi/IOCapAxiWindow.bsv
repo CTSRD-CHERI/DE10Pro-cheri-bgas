@@ -123,6 +123,105 @@ instance IOCapPackableFlit#(
     endfunction
 endinstance
 
+instance IOCapPackableFlit#(
+    // iocap_flit
+    AXI4_ARFlit#(t_id, 64 /* t_addr */, 3 /* t_user */),
+    // no_iocap_flit
+    AXI4_ARFlit#(t_id, 64 /* t_addr */, 0 /* t_user */)
+);
+    function AXI4_ARFlit#(t_id, 64, 3) packSpec(IOCapFlitSpec#(AXI4_ARFlit#(t_id, 64, 0)) spec);
+        case (spec) matches
+            { tagged Start .x } : return AXI4_ARFlit {
+                arid: x.arid
+                , araddr: x.araddr
+                , arlen: x.arlen
+                , arsize: x.arsize
+                , arburst: x.arburst
+                , arlock: x.arlock
+                , arcache: x.arcache
+                , arprot: x.arprot
+                , arqos: x.arqos
+                , arregion: x.arregion
+                , aruser: pack(IOCapAXI4_AddrUserBits{
+                    start: True
+                    , flitnum: 0
+                })
+            };
+            { tagged CapBits1 .bits } : return AXI4_ARFlit {
+                  arid: ?
+                , araddr: bits[63:0]
+                , arlen: bits[71:64]
+                , arsize: unpack(bits[74:72])
+                , arburst: unpack(bits[76:75])
+                , arlock: unpack(bits[77])
+                , arcache: unpack(bits[81:78])
+                , arprot: unpack(bits[84:82])
+                , arqos: { 3'h0, bits[85] }
+                , arregion: ?
+                , aruser: pack(IOCapAXI4_AddrUserBits{
+                      start: False
+                    , flitnum: 1
+                })
+            };
+            { tagged CapBits2 .bits } : return AXI4_ARFlit {
+                  arid: ?
+                , araddr: bits[63:0]
+                , arlen: bits[71:64]
+                , arsize: unpack(bits[74:72])
+                , arburst: unpack(bits[76:75])
+                , arlock: unpack(bits[77])
+                , arcache: unpack(bits[81:78])
+                , arprot: unpack(bits[84:82])
+                , arqos: { 3'h0, bits[85] }
+                , arregion: ?
+                , aruser: pack(IOCapAXI4_AddrUserBits{
+                      start: False
+                    , flitnum: 2
+                })
+            };
+            { tagged CapBits3 .bits } : return AXI4_ARFlit {
+                  arid: ?
+                , araddr: bits[63:0]
+                , arlen: bits[71:64]
+                , arsize: unpack(bits[74:72])
+                , arburst: unpack(bits[76:75])
+                , arlock: unpack(bits[77])
+                , arcache: unpack(bits[81:78])
+                , arprot: unpack({ 1'b0, bits[83:82] })
+                , arqos: ?
+                , arregion: ?
+                , aruser: pack(IOCapAXI4_AddrUserBits{
+                      start: False
+                    , flitnum: 3
+                })
+            };
+        endcase
+    endfunction
+
+    function IOCapFlitSpec#(AXI4_ARFlit#(t_id, 64, 0)) unpackSpec(AXI4_ARFlit#(t_id, 64, 3) x);
+        case (unpack(x.aruser)) matches 
+            IOCapAXI4_AddrUserBits { start: True, flitnum: 0 } : return tagged Start AXI4_ARFlit {
+                  arid: x.arid
+                , araddr: x.araddr
+                , arlen: x.arlen
+                , arsize: x.arsize
+                , arburst: x.arburst
+                , arlock: x.arlock
+                , arcache: x.arcache
+                , arprot: x.arprot
+                , arqos: x.arqos
+                , arregion: x.arregion
+                , aruser: ?
+            };
+            // TODO get the ordering right...
+            IOCapAXI4_AddrUserBits { start: False, flitnum: 1 } : return tagged CapBits1 ({ pack(x.arqos)[1], pack(x.arprot), pack(x.arcache), pack(x.arlock), pack(x.arburst), pack(x.arsize), x.arlen, x.araddr });
+            IOCapAXI4_AddrUserBits { start: False, flitnum: 2 } : return tagged CapBits2 ({ pack(x.arqos)[1], pack(x.arprot), pack(x.arcache), pack(x.arlock), pack(x.arburst), pack(x.arsize), x.arlen, x.araddr });
+            IOCapAXI4_AddrUserBits { start: False, flitnum: 3 } : return tagged CapBits3 ({ pack(x.arprot)[1:0], pack(x.arcache), pack(x.arlock), pack(x.arburst), pack(x.arsize), x.arlen, x.araddr });
+            default: return ?;
+        endcase
+    endfunction
+endinstance
+
 typedef struct {
     no_iocap_flit flit;
     Bit#(256) cap;
@@ -133,7 +232,7 @@ interface AddressChannelCapWrapper#(type iocap_flit, type no_iocap_flit);
     interface Source#(iocap_flit) out;
 endinterface 
 
-module mkSimpleAddressChannelCapWrapper(AddressChannelCapWrapper#(iocap_flit, no_iocap_flit)) provisos (Bits#(AuthenticatedFlit#(no_iocap_flit), a__), Bits#(iocap_flit, b__));
+module mkSimpleAddressChannelCapWrapper(AddressChannelCapWrapper#(iocap_flit, no_iocap_flit)) provisos (Bits#(AuthenticatedFlit#(no_iocap_flit), a__), Bits#(iocap_flit, b__), IOCapPackableFlit#(iocap_flit, no_iocap_flit), FShow#(AuthenticatedFlit#(no_iocap_flit)));
     FIFOF#(AuthenticatedFlit#(no_iocap_flit)) inFlits <- mkFIFOF();
     FIFOF#(iocap_flit) outFlits <- mkSizedBypassFIFOF(4); // TODO check FIFOF type
 
@@ -141,24 +240,29 @@ module mkSimpleAddressChannelCapWrapper(AddressChannelCapWrapper#(iocap_flit, no
     Reg#(Bit#(256)) cap <- mkReg(0);
 
     rule st0 if (state == 0);
-        let startFlitAndCap <- inFlits.deq();
-        outFlits.enq(packSpec(tagged Start startFlitAndCap.flit));
+        let startFlitAndCap = inFlits.first;
+        inFlits.deq();
+        $display("IOCap - Sending auth flitpack ", fshow(startFlitAndCap));
+        outFlits.enq(packSpec(tagged Start (startFlitAndCap.flit)));
         state <= 1;
         cap <= startFlitAndCap.cap;
     endrule
 
     rule st1 if (state == 1);
-        outFlits.enq(packSpec(tagged CapBits1 cap[85:0]));
+        IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits1 cap[85:0];
+        outFlits.enq(packSpec(bits));
         state <= 2;
     endrule
 
     rule st2 if (state == 2);
-        outFlits.enq(packSpec(tagged CapBits2 cap[171:86]));
+        IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits2 cap[171:86];
+        outFlits.enq(packSpec(bits));
         state <= 3;
     endrule
 
     rule st3 if (state == 3);
-        outFlits.enq(packSpec(tagged CapBits3 cap[255:172]));
+        IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits3 cap[255:172];
+        outFlits.enq(packSpec(bits));
         state <= 0;
     endrule
 
@@ -222,20 +326,67 @@ module mkSimpleIOCapWindow(AxiWindow#(
         return windowCtrl.windowAddr | zeroExtend(preWindowAddr);
     endfunction
     
-    AddressChannelCapWrapper#(AXI4_AWFlit#(t_pre_window_id, 64, 3), AXI4_AWFlit#(t_pre_window_id, 64, 0)) aw <- mkSimpleAddressChannelCapWrapper;
+
+    FIFOF#(AXI4_AWFlit#(t_pre_window_id, t_pre_window_addr, 0)) awff_preWindow <- mkBypassFIFOF();
     FIFOF#(AXI4_WFlit#(t_pre_window_data, 0)) wff <- mkFIFOF;
     FIFOF#(AXI4_BFlit#(t_pre_window_id, 0)) bff <- mkFIFOF;
-    AddressChannelCapWrapper#(AXI4_ARFlit#(t_pre_window_id, 64, 3), AXI4_ARFlit#(t_pre_window_id, 64, 0)) ar <- mkSimpleAddressChannelCapWrapper;
+    FIFOF#(AXI4_ARFlit#(t_pre_window_id, t_pre_window_addr, 0)) arff_preWindow <- mkBypassFIFOF();
     FIFOF#(AXI4_RFlit#(t_pre_window_id, t_pre_window_data, 0)) rff <- mkFIFOF;
+    
+    AddressChannelCapWrapper#(AXI4_AWFlit#(t_pre_window_id, 64, 3), AXI4_AWFlit#(t_pre_window_id, 64, 0)) aw <- mkSimpleAddressChannelCapWrapper;
+    AddressChannelCapWrapper#(AXI4_ARFlit#(t_pre_window_id, 64, 3), AXI4_ARFlit#(t_pre_window_id, 64, 0)) ar <- mkSimpleAddressChannelCapWrapper;
+
+    rule mapAWAddrOnPreWindowFlit;
+        awff_preWindow.deq();
+        let x = awff_preWindow.first;
+        WindowData window = unpack(windowCtrlBits);
+        aw.in.put(AuthenticatedFlit {
+            flit: AXI4_AWFlit {
+                awid: x.awid
+                , awaddr: mapAddr(x.awaddr)
+                , awlen: x.awlen
+                , awsize: x.awsize
+                , awburst: x.awburst
+                , awlock: x.awlock
+                , awcache: x.awcache
+                , awprot: x.awprot
+                , awqos: x.awqos
+                , awregion: x.awregion
+                , awuser: ?
+            },
+            cap: window.capability
+        });
+    endrule
+
+    rule mapARAddrOnPreWindowFlit;
+        arff_preWindow.deq();
+        let x = arff_preWindow.first;
+        WindowData window = unpack(windowCtrlBits);
+        ar.in.put(AuthenticatedFlit {
+            flit: AXI4_ARFlit {
+                arid: x.arid
+                , araddr: mapAddr(x.araddr)
+                , arlen: x.arlen
+                , arsize: x.arsize
+                , arburst: x.arburst
+                , arlock: x.arlock
+                , arcache: x.arcache
+                , arprot: x.arprot
+                , arqos: x.arqos
+                , arregion: x.arregion
+                , aruser: ?
+            },
+            cap: window.capability
+        });
+    endrule
 
     interface windowCtrl = windowCtrlIfc;
 
     interface preWindow = interface AXI4_Slave;
-        // TODO this does not generate the post-window address OR attach the capability...
-        interface aw = toSink(aw.in);
+        interface aw = toSink(awff_preWindow);
         interface  w = toSink(wff);
         interface  b = toSource(bff);
-        interface ar = toSink(ar.in);
+        interface ar = toSink(arff_preWindow);
         interface  r = toSource(rff);
     endinterface;
 

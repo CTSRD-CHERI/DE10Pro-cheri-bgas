@@ -1,4 +1,6 @@
 import FIFOF :: *;
+import SpecialFIFOs :: *;
+import BlueAXI4 :: *;
 import IOCapAxi :: *;
 import IOCapAxiWindow :: *;
 import SourceSink :: *;
@@ -33,15 +35,18 @@ interface AddressChannelCapUnwrapper#(type iocap_flit, type no_iocap_flit);
     interface Source#(no_iocap_flit) out;
 endinterface
 
-module mkSimpleAddressChannelCapUnwrapper(AddressChannelCapUnwrapper#(iocap_flit, no_iocap_flit)) provisos (Bits#(AuthenticatedFlit#(no_iocap_flit), a__), Bits#(iocap_flit, b__));
+module mkSimpleAddressChannelCapUnwrapper(AddressChannelCapUnwrapper#(iocap_flit, no_iocap_flit)) provisos (Bits#(AuthenticatedFlit#(no_iocap_flit), a__), Bits#(iocap_flit, b__), IOCapPackableFlit#(iocap_flit, no_iocap_flit), FShow#(AuthenticatedFlit#(no_iocap_flit)));
     FIFOF#(iocap_flit) inFlits <- mkFIFOF();
-    FIFOF#(AuthenticatedFlit#(no_iocap_flit)) outFlits <- mkSizedBypassFIFOF(4); // TODO check FIFOF type
+    FIFOF#(no_iocap_flit) outFlits <- mkSizedBypassFIFOF(4); // TODO check FIFOF type
 
     Reg#(AuthenticatedFlit#(no_iocap_flit)) flitInProgress <- mkReg(unpack(0));
 
+    Reg#(UInt#(2)) state <- mkReg(0);
+
     rule st0 if (state == 0);
-        let startFlit <- inFlits.deq();
-        let spec = unpackSpec(startFlit);
+        inFlits.deq();
+        let startFlit = inFlits.first;
+        IOCapFlitSpec#(no_iocap_flit) spec = unpackSpec(startFlit);
         if (spec matches tagged Start .flit) begin
             flitInProgress <= AuthenticatedFlit {
                 flit: flit,
@@ -54,8 +59,9 @@ module mkSimpleAddressChannelCapUnwrapper(AddressChannelCapUnwrapper#(iocap_flit
     endrule
 
     rule st1 if (state == 1);
-        let bitsFlit <- inFlits.deq();
-        let spec = unpackSpec(bitsFlit);
+        inFlits.deq();
+        let bitsFlit = inFlits.first;
+        IOCapFlitSpec#(no_iocap_flit) spec = unpackSpec(bitsFlit);
         if (spec matches tagged CapBits1 .bits) begin
             flitInProgress <= AuthenticatedFlit {
                 flit: flitInProgress.flit,
@@ -68,8 +74,9 @@ module mkSimpleAddressChannelCapUnwrapper(AddressChannelCapUnwrapper#(iocap_flit
     endrule
 
     rule st2 if (state == 2);
-        let bitsFlit <- inFlits.deq();
-        let spec = unpackSpec(bitsFlit);
+        inFlits.deq();
+        let bitsFlit = inFlits.first;
+        IOCapFlitSpec#(no_iocap_flit) spec = unpackSpec(bitsFlit);
         if (spec matches tagged CapBits2 .bits) begin
             flitInProgress <= AuthenticatedFlit {
                 flit: flitInProgress.flit,
@@ -82,14 +89,15 @@ module mkSimpleAddressChannelCapUnwrapper(AddressChannelCapUnwrapper#(iocap_flit
     endrule
 
     rule st3 if (state == 3);
-        let bitsFlit <- inFlits.deq();
-        let spec = unpackSpec(bitsFlit);
+        inFlits.deq();
+        let bitsFlit = inFlits.first;
+        IOCapFlitSpec#(no_iocap_flit) spec = unpackSpec(bitsFlit);
         if (spec matches tagged CapBits3 .bits) begin
             let auth_flit = AuthenticatedFlit {
                 flit: flitInProgress.flit,
                 cap: { bits, flitInProgress.cap[171:0] }
             };
-            $display("IOCap - Received auth flit ", fshow(auth_flit));
+            $display("IOCap - Received auth flitpack ", fshow(auth_flit));
             outFlits.enq(flitInProgress.flit);
         end else begin
             $error("IOCap protocol error");
@@ -111,12 +119,14 @@ module mkSimpleIOCapExposer(IOCapSingleExposer#(t_id, t_data));
     AddressChannelCapUnwrapper#(AXI4_ARFlit#(t_id, 64, 3), AXI4_ARFlit#(t_id, 64, 0)) ar <- mkSimpleAddressChannelCapUnwrapper;
     FIFOF#(AXI4_RFlit#(t_id, t_data, 0)) rff <- mkFIFOF;
 
-    interface iocapsIn = interface AXI4_Slave;
-        interface aw = toSink(aw.in);
-        interface  w = toSink(wff);
-        interface  b = toSource(bff);
-        interface ar = toSink(ar.in);
-        interface  r = toSource(rff);
+    interface iocapsIn = interface IOCapAXI4_Slave;
+        interface axiSignals = interface AXI4_Slave;
+            interface aw = toSink(aw.in);
+            interface  w = toSink(wff);
+            interface  b = toSource(bff);
+            interface ar = toSink(ar.in);
+            interface  r = toSource(rff);
+        endinterface;
     endinterface;
 
     interface sanitizedOut = interface AXI4_Master;
