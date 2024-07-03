@@ -5,28 +5,54 @@ import IOCapAxi :: *;
 import IOCapAxi_Flits :: *;
 import SourceSink :: *;
 
-// interface IOCap_KeyManager#(numeric type n_keys);
-//     // Takes a 0x1000 range, 128bit (16 or 0x10 bytes) data path
-//     // Reading always returns 0.
-//     // Writes to [0x0, 0x10, 0x20, 0x30, 0x40, up to 0x900) sets key [#0, #1, #2, #3, #4... #143).
-//     // Non-aligned writes don't do anything.
-//     //
-//     // TODO overwriting 
-//     // TODO how to signal to the CPU that we've reset/forgotten a key? Send an interrupt?
 
-//     interface AXI4Lite_Slave#(...) keyRequests
-// endinterface
+// 4096 keys => 12 bit ID
+typedef Bit#(12) KeyId;
+typedef Bit#(3) KeyRefCount; // TODO figure out what this is based on how many transactions can be in progress concurrently
 
-interface IOCapSingleExposer#(numeric type t_id, numeric type t_data);
+typedef union tagged {
+    void Cleared;
+    KeyRefCount InUse;
+    KeyRefCount ClearPending;
+} KeyState deriving (Bits, FShow);
+
+interface IOCap_KeyManager#(numeric type t_keystore_id);
+    // Takes a 0x2000 range, 128bit (16 or 0x10 bytes) data path
+    // Writes to [0x0, 0x10, 0x20, 0x30, 0x40, up to 0x1000) sets key [#0, #1, #2, #3, #4... #4096).
+    // Non-aligned writes don't do anything.
+    // Reading [0, 0x1000) range doesn't do anything.
+    // Reading [0x1000, 0x1010, 0x1020, up to 0x2000) starts a "key reset" for key #0, #1, etc..
+    // All new transactions that arrive using a "resetting" key will be immediately rejected.
+    // If there were any transactions still in progress using the given key, the read will return 0x1.
+    // Once those transactions finish, the key will be marked as clear and reads to the address will return 0x0.
+    // To synchronously clear a key, the CPU must poll the given address until it returns 0x0.
+    // To asynchronously clear a key, the CPU can read the address once, then later come back and check it returns 0x0.
+    // Writes to a key that hasn't been cleared will TODO fail? it may be insecure for the CPU to write a new key and immediately assume the memory previously associated with that key is free. Could delay the write response until the read would return 0x0?
+    //
+
+
+    // Called by an Exposer whenever a transaction begins processing that uses a given key.
+    method Action incrementKeyUsage(KeyId k);
+    // Called by an Exposer whenever a transaction completes using a given key.
+    // If that key is in the ClearPending state, and the reference count is decremented to zero, it will transition to the Cleared state.
+    method Action decrementKeyUsage(KeyId k);
     
+    interface AXI4_Slave#(t_keystore_id, TLog#('h2000), 128, 0, 0, 0, 0, 0) hostFacingSlave;
+endinterface
 
-    interface IOCapAXI4_Slave#(t_id, t_data) iocapsIn;
+// module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_keystore_id));
+//     // Need a BRAM with key data
+//     // Need a Vector of 4096 KeyStates
+// endmodule
 
-    interface AXI4_Master#(t_id, 64, t_data, 0, 0, 0, 0, 0) sanitizedOut;
+interface IOCapSingleExposer#(numeric type t_iocap_id, numeric type t_iocap_data /*, numeric type t_keystore_id */ );
 
-    // TODO this is for later!
-    // interface IOCap_KeyManager keys;   
+    interface IOCapAXI4_Slave#(t_iocap_id, t_iocap_data) iocapsIn;
 
+    interface AXI4_Master#(t_iocap_id, 64, t_iocap_data, 0, 0, 0, 0, 0) sanitizedOut;
+
+    // TODO
+    // interface IOCap_KeyManager#(t_keystore_id) keyStore;
 endinterface
 
 interface AddressChannelCapUnwrapper#(type iocap_flit, type no_iocap_flit);
