@@ -9,8 +9,10 @@ import SpecialFIFOs :: *;
 import SourceSink :: *;
 
 typedef struct {
-    Bit#(64)  windowAddr;
+    // 0x8 .. 0x108
     Bit#(256) capability;
+    // 0x0 .. 0x8
+    Bit#(64)  windowAddr;
 } WindowData deriving (Bits, FShow);
 
 interface AddressChannelCapWrapper#(type iocap_flit, type no_iocap_flit);
