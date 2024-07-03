@@ -2,7 +2,7 @@ import FIFOF :: *;
 import SpecialFIFOs :: *;
 import BlueAXI4 :: *;
 import IOCapAxi :: *;
-import IOCapAxiWindow :: *;
+import IOCapAxi_Flits :: *;
 import SourceSink :: *;
 
 // interface IOCap_KeyManager#(numeric type n_keys);
