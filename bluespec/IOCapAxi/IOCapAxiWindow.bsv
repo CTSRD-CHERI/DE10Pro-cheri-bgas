@@ -115,20 +115,17 @@ module mkSimpleIOCapWindow(AxiWindow#(
     endfunction
     
 
-    FIFOF#(AXI4_AWFlit#(t_pre_window_id, t_pre_window_addr, 0)) awff_preWindow <- mkBypassFIFOF();
     FIFOF#(AXI4_WFlit#(t_pre_window_data, 0)) wff <- mkFIFOF;
     FIFOF#(AXI4_BFlit#(t_pre_window_id, 0)) bff <- mkFIFOF;
-    FIFOF#(AXI4_ARFlit#(t_pre_window_id, t_pre_window_addr, 0)) arff_preWindow <- mkBypassFIFOF();
     FIFOF#(AXI4_RFlit#(t_pre_window_id, t_pre_window_data, 0)) rff <- mkFIFOF;
     
     AddressChannelCapWrapper#(AXI4_AWFlit#(t_pre_window_id, 64, 3), AXI4_AWFlit#(t_pre_window_id, 64, 0)) aw <- mkSimpleAddressChannelCapWrapper;
     AddressChannelCapWrapper#(AXI4_ARFlit#(t_pre_window_id, 64, 3), AXI4_ARFlit#(t_pre_window_id, 64, 0)) ar <- mkSimpleAddressChannelCapWrapper;
 
-    rule mapAWAddrOnPreWindowFlit;
-        awff_preWindow.deq();
-        let x = awff_preWindow.first;
+    // TODO use mapSink for this
+    function AuthenticatedFlit#(AXI4_AWFlit#(t_pre_window_id, 64, 0)) mapAWAddrAndAttachCap(AXI4_AWFlit#(t_pre_window_id, t_pre_window_addr, 0) x);
         WindowData window = unpack(windowCtrlBits);
-        aw.in.put(AuthenticatedFlit {
+        return AuthenticatedFlit {
             flit: AXI4_AWFlit {
                 awid: x.awid
                 , awaddr: mapAddr(x.awaddr)
@@ -143,14 +140,12 @@ module mkSimpleIOCapWindow(AxiWindow#(
                 , awuser: ?
             },
             cap: window.capability
-        });
-    endrule
+        };
+    endfunction
 
-    rule mapARAddrOnPreWindowFlit;
-        arff_preWindow.deq();
-        let x = arff_preWindow.first;
+    function AuthenticatedFlit#(AXI4_ARFlit#(t_pre_window_id, 64, 0)) mapARAddrAndAttachCap(AXI4_ARFlit#(t_pre_window_id, t_pre_window_addr, 0) x);
         WindowData window = unpack(windowCtrlBits);
-        ar.in.put(AuthenticatedFlit {
+        return AuthenticatedFlit {
             flit: AXI4_ARFlit {
                 arid: x.arid
                 , araddr: mapAddr(x.araddr)
@@ -165,16 +160,16 @@ module mkSimpleIOCapWindow(AxiWindow#(
                 , aruser: ?
             },
             cap: window.capability
-        });
-    endrule
+        };
+    endfunction
 
     interface windowCtrl = windowCtrlIfc;
 
     interface preWindow = interface AXI4_Slave;
-        interface aw = toSink(awff_preWindow);
+        interface aw = mapSink(mapAWAddrAndAttachCap, aw.in);
         interface  w = toSink(wff);
         interface  b = toSource(bff);
-        interface ar = toSink(arff_preWindow);
+        interface ar = mapSink(mapARAddrAndAttachCap, ar.in);
         interface  r = toSource(rff);
     endinterface;
 
