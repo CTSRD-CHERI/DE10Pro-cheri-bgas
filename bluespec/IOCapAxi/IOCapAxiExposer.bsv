@@ -57,13 +57,12 @@ endinterface
 
 interface AddressChannelCapUnwrapper#(type iocap_flit, type no_iocap_flit);
     interface Sink#(iocap_flit) in;
-    // TODO pass out AuthenticatedFlit so we can actually check it :)
-    interface Source#(no_iocap_flit) out;
+    interface Source#(AuthenticatedFlit#(no_iocap_flit)) out;
 endinterface
 
 module mkSimpleAddressChannelCapUnwrapper(AddressChannelCapUnwrapper#(iocap_flit, no_iocap_flit)) provisos (Bits#(AuthenticatedFlit#(no_iocap_flit), a__), Bits#(iocap_flit, b__), IOCapPackableFlit#(iocap_flit, no_iocap_flit), FShow#(AuthenticatedFlit#(no_iocap_flit)));
     FIFOF#(iocap_flit) inFlits <- mkFIFOF();
-    FIFOF#(no_iocap_flit) outFlits <- mkSizedBypassFIFOF(4); // TODO check FIFOF type
+    FIFOF#(AuthenticatedFlit#(no_iocap_flit)) outFlits <- mkSizedBypassFIFOF(4); // TODO check FIFOF type
 
     Reg#(AuthenticatedFlit#(no_iocap_flit)) flitInProgress <- mkReg(unpack(0));
 
@@ -119,12 +118,12 @@ module mkSimpleAddressChannelCapUnwrapper(AddressChannelCapUnwrapper#(iocap_flit
         let bitsFlit = inFlits.first;
         IOCapFlitSpec#(no_iocap_flit) spec = unpackSpec(bitsFlit);
         if (spec matches tagged CapBits3 .bits) begin
-            let auth_flit = AuthenticatedFlit {
+            let authFlit = AuthenticatedFlit {
                 flit: flitInProgress.flit,
                 cap: { bits, flitInProgress.cap[171:0] }
             };
-            $display("IOCap - Received auth flitpack ", fshow(auth_flit));
-            outFlits.enq(flitInProgress.flit);
+            $display("IOCap - Received auth flitpack ", fshow(authFlit));
+            outFlits.enq(authFlit);
         end else begin
             $error("IOCap protocol error");
         end
@@ -145,6 +144,8 @@ module mkSimpleIOCapExposer(IOCapSingleExposer#(t_id, t_data));
     AddressChannelCapUnwrapper#(AXI4_ARFlit#(t_id, 64, 3), AXI4_ARFlit#(t_id, 64, 0)) ar <- mkSimpleAddressChannelCapUnwrapper;
     FIFOF#(AXI4_RFlit#(t_id, t_data, 0)) rff <- mkFIFOF;
 
+    function t_flit stripCapFromAuthFlit(AuthenticatedFlit#(t_flit) authFlit) = authFlit.flit;
+
     interface iocapsIn = interface IOCapAXI4_Slave;
         interface axiSignals = interface AXI4_Slave;
             interface aw = toSink(aw.in);
@@ -156,10 +157,10 @@ module mkSimpleIOCapExposer(IOCapSingleExposer#(t_id, t_data));
     endinterface;
 
     interface sanitizedOut = interface AXI4_Master;
-        interface aw = toSource(aw.out);
+        interface aw = mapSource(stripCapFromAuthFlit, aw.out);
         interface  w = toSource(wff);
         interface  b = toSink(bff);
-        interface ar = toSource(ar.out);
+        interface ar = mapSource(stripCapFromAuthFlit, ar.out);
         interface  r = toSink(rff);
     endinterface;
 

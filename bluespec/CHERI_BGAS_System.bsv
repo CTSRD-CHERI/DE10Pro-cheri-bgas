@@ -405,6 +405,7 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
                      , cons ( ctrSubH2FAddrCtrl
                      , cons ( ctrSubVirtDevCtrl
                             , nil ))))
+                      // the IOCap exposer keystore is NOT included here - the outside world should never be able to see that!
                 // the vector of IRQs going in the wind core
               , cons (        uart0irq1
                      , cons ( uart1irq1
@@ -504,21 +505,24 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   //bus0_ms[1] = debugAXI4_Master (bus0BridgeMngr, $format ("bus0BridgeMngr"));
   bus0_ms[1] = bus0BridgeMngr;
 
-  // gather all subordinates
-  Vector #(7, t_bus1_sub) bus1_ss;
+  // gather all subordinates which Toooba can access
+  Vector #(8, t_bus1_sub) bus1_ss;
   bus1_ss[0] = mngrShim[0].slave; // f2h accesses
   bus1_ss[1] = mngrShim[1].slave; // global accesses
   bus1_ss[2] = uart0_s;
   bus1_ss[3] = uart1_s;
   bus1_ss[4] = fakeBootRomDeBurst.slave;
   bus1_ss[5] = virtDev.virt;
+  bus1_ss[6] = iocapExposer.keyStore; // TODO
   //bus1_ss[6] = debugAXI4_Slave (bus0BridgeSub, $format ("bus0BridgeSub"));
-  bus1_ss[6] = bus0BridgeSub;
+  bus1_ss[7] = bus0BridgeSub;
 
   // build route
   function Vector #(7, Bool) bus1_route (Bit #(Wd_Addr) addr);
     Vector #(7, Bool) x = replicate (False);
     if (inRange (soc_map.m_ddr4_0_uncached_addr_range, addr))
+      x[7] = True;
+    else if (inRange (soc_map.m_iocap_exposer_addr_range, addr))
       x[6] = True;
     else if (inRange (soc_map.m_virt_dev_addr_range, addr))
       x[5] = True;

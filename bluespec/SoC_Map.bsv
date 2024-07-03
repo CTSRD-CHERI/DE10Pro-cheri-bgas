@@ -123,6 +123,7 @@ interface SoC_Map_IFC;
    (* always_ready *)   method  Range#(Wd_Addr)  m_gpio_0_addr_range;
    (* always_ready *)   method  Range#(Wd_Addr)  m_boot_rom_addr_range;
    (* always_ready *)   method  Range#(Wd_Addr)  m_virt_dev_addr_range;
+   (* always_ready *)   method  Range#(Wd_Addr)  m_iocap_exposer_addr_range;
    (* always_ready *)   method  Range#(Wd_Addr)  m_ddr4_0_uncached_addr_range;
    (* always_ready *)   method  Range#(Wd_Addr)  m_ddr4_0_cached_addr_range;
    (* always_ready *)   method  Range#(Wd_Addr)  m_global_bgas_addr_range;
@@ -170,6 +171,14 @@ module mkSoC_Map (SoC_Map_IFC);
 
    let virt_dev_addr_range = Range {
       base: 'h_4000_0000,
+      size: 'h_0010_0000    // 1M
+   };
+
+   // ----------------------------------------------------------------
+   // IOCap Exposer (key storage)
+
+   let iocap_exposer_addr_range = Range {
+      base: 'h_4010_0000,
       size: 'h_0010_0000    // 1M
    };
 
@@ -275,6 +284,7 @@ module mkSoC_Map (SoC_Map_IFC);
          inRange(ddr4_0_uncached_addr_range, addr)
       || inRange(boot_rom_addr_range, addr)
       || inRange(virt_dev_addr_range, addr)
+      || inRange(iocap_exposer_addr_range, addr)
       || (   (! imem_not_dmem)
           && (   inRange(plic_addr_range, addr)
               || inRange(near_mem_io_addr_range, addr)
@@ -306,6 +316,7 @@ module mkSoC_Map (SoC_Map_IFC);
    method  Range#(Wd_Addr)  m_gpio_0_addr_range = gpio_0_addr_range;
    method  Range#(Wd_Addr)  m_boot_rom_addr_range = boot_rom_addr_range;
    method  Range#(Wd_Addr)  m_virt_dev_addr_range = virt_dev_addr_range;
+   method  Range#(Wd_Addr)  m_iocap_exposer_addr_range = iocap_exposer_addr_range;
    method  Range#(Wd_Addr)  m_ddr4_0_uncached_addr_range = ddr4_0_uncached_addr_range;
    method  Range#(Wd_Addr)  m_ddr4_0_cached_addr_range = ddr4_0_cached_addr_range;
    method  Range#(Wd_Addr)  m_global_bgas_addr_range = global_bgas_addr_range;
