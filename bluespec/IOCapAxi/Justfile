@@ -1,0 +1,14 @@
+default:
+    @just --list
+
+sim-b name:
+    make ./build/{{name}}.out
+    ./build/{{name}}.out
+
+sim-v name:
+    make ./build/{{name}}.vout
+    ./build/{{name}}.vout
+
+test-keymgr: (sim-v "mkSimpleIOCapKeyManager_Tb")
+
+test-exposer: (sim-v "mkSimpleIOCapExposer_Tb")
