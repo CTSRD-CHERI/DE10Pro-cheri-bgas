@@ -148,7 +148,7 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
                 };
             end
         endcase
-        $display("IOCap - key manager - handle_read - ", fshow(ar), fshow(response));
+        $display("IOCap - key manager - handle_read - ", fshow(ar), " - ", fshow(response));
         axiShim.master.r.put(flit);
     endrule
 
@@ -253,7 +253,7 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
                 , buser: ?
             };
         end
-        $display("IOCap - key manager - handle_write - ", fshow(aw), fshow(w), fshow(validWrite));
+        $display("IOCap - key manager - handle_write - ", fshow(aw), " - ", fshow(w), " - ", fshow(validWrite));
         axiShim.master.b.put(flit);
     endrule
 
@@ -295,7 +295,7 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
             address: keyId,
             datain: ?
         });
-        $display("IOCap - key manager - start retrieve key ", fshow(keyId), fshow(keyValid[keyId]));
+        $display("IOCap - key manager - start retrieve key ", fshow(keyId), " - ", fshow(keyValid[keyId]));
     endrule
 
     // Push reads from the BRAM directly into the keyRespFF (start_retrieve_key is the only rule that starts BRAM reads)
@@ -316,7 +316,7 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
             keyRespFF.enq(tuple2(keyId, tagged Invalid));
         end
 
-        $display("IOCap - key manager - receive_key_from_bram ", fshow(keyId), fshow(key), fshow(valid));
+        $display("IOCap - key manager - receive_key_from_bram ", fshow(keyId), " - ", fshow(key), " - ", fshow(valid));
     endrule
 
     method Action bumpPerfCounterGoodWrite() = reqGoodWrite.send();
