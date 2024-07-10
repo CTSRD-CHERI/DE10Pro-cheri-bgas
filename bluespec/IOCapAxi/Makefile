@@ -9,16 +9,18 @@ BSVPATH = +:$(BLUESTUFF_DIRS):./aes:./cap2024_02:./testbenches:./util:../AxiWind
 
 BSCFLAGS = -bdir $(BUILDDIR) -info-dir $(BUILDDIR) -simdir $(BUILDDIR) -vdir $(BUILDDIR)/verilog -p $(BSVPATH) -u -aggressive-conditions
 
-$(BUILDDIR)/%.out: ./testbenches/%.bsv
+$(BUILDDIR)/%.out: ./testbenches/%.bsv alwaysRemake
 	mkdir -p $(BUILDDIR)
 	bsc $(BSCFLAGS) -sim -g $* $< 
 	bsc $(BSCFLAGS) -sim -e $* $@
 
-$(BUILDDIR)/%.vout: ./testbenches/%.bsv
+$(BUILDDIR)/%.vout: ./testbenches/%.bsv alwaysRemake
 	mkdir -p $(BUILDDIR) $(BUILDDIR)/verilog
 	bsc $(BSCFLAGS) -verilog -g $* -u $<
 	verilator --Mdir $(BUILDDIR) -sv --top-module $* --cc --build --exe -o $*.vout $(shell echo $(BUILDDIR)/verilog/*.v) ./testbenches/$*.cpp
 
-.PHONY: clean
+.PHONY: clean alwaysRemake
 clean:
 	rm -rf $(BUILDDIR)
+
+alwaysRemake:
