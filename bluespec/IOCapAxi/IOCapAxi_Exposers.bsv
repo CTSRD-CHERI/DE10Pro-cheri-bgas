@@ -349,31 +349,100 @@ module mkSimpleIOCapExposer#(IOCap_KeyManager#(t_keystore_data) keyStore)(IOCapS
         $display("IOCap - recv_ar ", fshow(arFlit));
     endrule
 
-    // TODO this never triggers in practice, even though the key is retrieved in the keystore correctly. Bug!
-    rule recv_key((awPreCheckBuffer.notEmpty && awChecker.checkRequest.canPut) || (arPreCheckBuffer.notEmpty && arChecker.checkRequest.canPut));
+    // After requesting a key, it will eventually arrive at the keyStore.keyResponses Source.
+    // There is exactly one keyStore.keyResponses item for each AW and AR request, 
+    // but if an AW and AR request use the same keyId there's no reason not to use a single response for both.
+    // TODO reason about how that works with epochs?
+    // If we use a single response for two transactions (a single response is *split* across AW and AR), the second response needs to be discarded.
+    // The situation can be modelled with three queues: the AW request queue, the AR request queue, and the key request-response queue.
+    // Each of these queues are ordered.
+    // AW requests are enqueued into the AW request queue in the same order as their key requests are enqueued into the key queue.
+    // Ditto for AR requests.
+    // Key responses arrive in the same order as key requests.
+    // Thus the key queue is an *interleaving* of the AW and AR request queues *with the relative order between AR and between AW requests maintained*.
+    // This means if we *don't* have split key responses, every key response received will either be for the head of the AR queue or the head of the AW queue.
+    // If we *do* have split key responses, every key response received will either be for the head of the AR or AW queue *or for a transaction that has been popped off either queue*.
+    // Thus we can tell if a key request should be discarded if its key ID does *not* match the key ID for the AR queue head or AW queue head - it must be for a transaction that has been popped off recently, it can't be for a request that's *farther behind in the queue*.
+    // However, if a key *does* match but *can't* be used - i.e. if it matches the head of the AW request, but the AW checker is busy - then we should still block.
+    // Thus, we always peek the key. If it is used to start checking an AW or AR queue head transaction, dequeue it.
+    // If it isn't, but it *does* match either the AW or AR queue head transaction, keep it in the queue - it will be relevant once those checkers become unblocked.
+    // If it doesn't match the AW or AR queue head transactions, dequeue it - it must be the remnant of a split response.
+    Wire#(Tuple2#(KeyId, Maybe#(Key))) peekedKey <- mkWire;
+    PulseWire keyMatchedAw <- mkPulseWire;
+    PulseWire usedPeekedKeyForAw <- mkPulseWire;
+
+    PulseWire keyMatchedAr <- mkPulseWire;
+    PulseWire usedPeekedKeyForAr <- mkPulseWire;
+
+    rule peek_key(keyStore.keyResponses.canPeek);
         // Retrieve the latest key request, check against the buffered AW and AR flits, and if they're good then send them into their respective checkers.
-        let resp <- get(keyStore.keyResponses);
-        $display("IOCap - recv_key ", fshow(resp));
-        let keyId = tpl_1(resp);
-        let key = tpl_2(resp); // May be tagged Invalid if the key is wrong
+        let resp = keyStore.keyResponses.peek;
+        $display("IOCap - peek_key ", fshow(resp));
+        peekedKey <= resp;
+    endrule
 
-        // TODO prob need to split the rule up. Don't want to delay AW if AR is empty or vice versa.
-        // TODO need to think this through further. What happens if a response arrives from the keyStore with the key for AW, but AWchecker isn't ready? shouldn't deq, but then for every cycle that happens you are holding stale key data.
+    rule start_aw_with_key(awPreCheckBuffer.notEmpty);
+        // Important - aggressive conditions required to split canPut from cantPut
+        if (awChecker.checkRequest.canPut) begin
+            // We can start a new check!
+            let keyId = tpl_1(peekedKey);
+            let key = tpl_2(peekedKey); // May be tagged Invalid if the key is Invalid
 
+            if (keyIdForFlit(awPreCheckBuffer.first) == keyId) begin
+                awPreCheckBuffer.deq();
+                awChecker.checkRequest.put(tuple2(awPreCheckBuffer.first, key));
+                keyMatchedAw.send();
+                usedPeekedKeyForAw.send();
+                $display("IOCap - start_aw_with_key awChecker.checkRequest.put ", fshow(awPreCheckBuffer.first));
+            end
+        end else begin
+            // We can't start a new check - still see if the key matches the head of the AW queue, because in that case we may need to stop it from dropping
+            let keyId = tpl_1(peekedKey);
+            let key = tpl_2(peekedKey); // May be tagged Invalid if the key is Invalid
 
-        if (!awPreCheckBuffer.notEmpty && keyIdForFlit(awPreCheckBuffer.first) == keyId) begin
-            awPreCheckBuffer.deq();
-            awChecker.checkRequest.put(tuple2(awPreCheckBuffer.first, key));
-            $display("IOCap - recv_key awChecker.checkRequest.put ", fshow(awPreCheckBuffer.first));
+            if (keyIdForFlit(awPreCheckBuffer.first) == keyId) begin
+                keyMatchedAw.send();
+                $display("IOCap - start_aw_with_key blocked ", fshow(awPreCheckBuffer.first));
+            end
         end
+    endrule
 
-        if (!arPreCheckBuffer.notEmpty && keyIdForFlit(arPreCheckBuffer.first) == keyId) begin
-            arPreCheckBuffer.deq();
-            arChecker.checkRequest.put(tuple2(arPreCheckBuffer.first, key));
-            $display("IOCap - recv_key arChecker.checkRequest.put ", fshow(arPreCheckBuffer.first));
+    rule start_ar_with_key;
+        // Important - aggressive conditions required to split canPut from cantPut
+        if (arChecker.checkRequest.canPut) begin
+            // We can start a new check!
+            let keyId = tpl_1(peekedKey);
+            let key = tpl_2(peekedKey); // May be tagged Invalid if the key is Invalid
+
+            if (keyIdForFlit(arPreCheckBuffer.first) == keyId) begin
+                arPreCheckBuffer.deq();
+                arChecker.checkRequest.put(tuple2(arPreCheckBuffer.first, key));
+                keyMatchedAr.send();
+                usedPeekedKeyForAr.send();
+                $display("IOCap - start_ar_with_key arChecker.checkRequest.put ", fshow(arPreCheckBuffer.first));
+            end
+        end else begin
+            // We can't start a new check - still see if the key matches the head of the AR queue, because in that case we may need to stop it from dropping
+            let keyId = tpl_1(peekedKey);
+            let key = tpl_2(peekedKey); // May be tagged Invalid if the key is Invalid
+
+            if (keyIdForFlit(arPreCheckBuffer.first) == keyId) begin
+                keyMatchedAr.send();
+                $display("IOCap - start_ar_with_key blocked ", fshow(arPreCheckBuffer.first));
+            end
         end
-        // If the key ID matches and is invalid, send the request through with a null key anyway.
-        // We could try to cancel the request right now instead of sending it through to the checker, but then cancelling could happen here *and* in check_aw, check_ar - it would get more complicated.
+    endrule
+
+    rule deq_peeked_key(keyStore.keyResponses.canPeek);
+        if ((usedPeekedKeyForAw || usedPeekedKeyForAr)) begin
+            keyStore.keyResponses.drop();
+            $display("IOCap - deq_peeked_key dequeued ", fshow(peekedKey));
+        end else if (!keyMatchedAr && !keyMatchedAw) begin
+            keyStore.keyResponses.drop();
+            $display("IOCap - deq_peeked_key dequeued ", fshow(peekedKey));
+        end else begin
+            $display("IOCap - deq_peeked_key wasn't dequeued ", fshow(peekedKey));
+        end
     endrule
 
     rule check_aw;
