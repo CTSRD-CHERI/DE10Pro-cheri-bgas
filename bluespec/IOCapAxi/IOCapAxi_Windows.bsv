@@ -215,7 +215,7 @@ module mkSimpleInternalStrippingIOCapWindow(AxiWindow#(
       , 0 //t_post_window_ruser
     ) window <- mkSimpleIOCapWindow;
 
-    IOCapSingleExposer#(t_pre_window_id, t_pre_window_data, 64) exposer <- mkStrippingIOCapExposer;
+    IOCapSingleExposer#(t_pre_window_id, t_pre_window_data) exposer <- mkStrippingIOCapExposer;
 
     mkConnection(window.postWindow, exposer.iocapsIn.axiSignals);
 

@@ -375,7 +375,8 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   let ctrSubH2FAddrCtrl =
     tuple2 (h2fWindow.windowCtrl, Range { base: 'h0000_5000, size: 'h0000_1000 });
   // Connect the h2fWindow to an IOCap Exposer, which checks the IOCap against the keys written in by the host.
-  let iocapExposer <- mkSimpleIOCapExposer(reset_by newRst.new_rst);
+  IOCap_KeyManager#(Wd_Data_Periph) iocapKeyStore <- mkSimpleIOCapKeyManager(reset_by newRst.new_rst);
+  let iocapExposer <- mkSimpleIOCapExposer(iocapKeyStore, reset_by newRst.new_rst);
   mkConnection(iocapExposer.iocapsIn.axiSignals, h2fWindow.postWindow, reset_by newRst.new_rst);
 
   // Virtual device for emulating control registers, e.g. for virtio.
@@ -515,9 +516,9 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   bus1_ss[4] = fakeBootRomDeBurst.slave;
   bus1_ss[5] = virtDev.virt;
   bus1_ss[6] = truncate_AXI4_Slave_addr (
-    fromAXI4LiteToAXI4_Slave(iocapExposer.keyStore.hostFacingSlave)
-    // TODO adding reset_by here breaks things massively?
-    //, reset_by newRst.new_rst  
+    fromAXI4LiteToAXI4_Slave (
+      iocapKeyStore.hostFacingSlave
+    )
   );
   //bus1_ss[6] = debugAXI4_Slave (bus0BridgeSub, $format ("bus0BridgeSub"));
   bus1_ss[7] = bus0BridgeSub;

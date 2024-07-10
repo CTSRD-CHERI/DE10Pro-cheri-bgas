@@ -15,12 +15,10 @@ import Cap2024_02_Decode_FastFSM :: *;
 import Cap2024_02_SigCheck_Aes_1RoundPerCycle :: *; // Get CapSigCheckIn
 import Cap2024_02_SigCheck_Aes_2RoundPerCycle :: *;
 
-interface IOCapSingleExposer#(numeric type t_iocap_id, numeric type t_iocap_data, numeric type t_keystore_data );
+interface IOCapSingleExposer#(numeric type t_iocap_id, numeric type t_iocap_data );
     interface IOCapAXI4_Slave#(t_iocap_id, t_iocap_data) iocapsIn;
 
     interface AXI4_Master#(t_iocap_id, 64, t_iocap_data, 0, 0, 0, 0, 0) sanitizedOut;
-
-    interface IOCap_KeyManager#(t_keystore_data) keyStore;
 endinterface
 
 typeclass AxiCtrlFlit64#(type flit);
@@ -212,7 +210,7 @@ endmodule
     // Technically this doesn't apply to reads - could take a shortcut there?
     // TODO this is worth thinking about in the write-up! In PCIe land where data+address arrive at once, do we also have this latency dependency? Likely worse because writes and reads are ordered together?
 
-module mkSimpleIOCapExposer(IOCapSingleExposer#(t_id, t_data, t_keystore_data)) provisos (
+module mkSimpleIOCapExposer#(IOCap_KeyManager#(t_keystore_data) keyStore)(IOCapSingleExposer#(t_id, t_data)) provisos (
     Mul#(TDiv#(t_keystore_data, 8), 8, t_keystore_data),
     Add#(t_keystore_data, a__, 128),
     Add#(TDiv#(t_keystore_data, 8), b__, 16)
@@ -232,8 +230,6 @@ module mkSimpleIOCapExposer(IOCapSingleExposer#(t_id, t_data, t_keystore_data)) 
 
     FIFOF#(AXI4_RFlit#(t_id, t_data, 0)) rIn <- mkFIFOF;
     FIFOF#(AXI4_RFlit#(t_id, t_data, 0)) rOut <- mkFIFOF;
-
-    IOCap_KeyManager#(t_keystore_data) keyStore <- mkSimpleIOCapKeyManager;
 
     // Epoch checking: every time a capability is revoked, the current epoch changes.
     // All transactions initiated in the previous epoch must finish before the revocation in the key exposer completes.
@@ -458,11 +454,7 @@ module mkSimpleIOCapExposer(IOCapSingleExposer#(t_id, t_data, t_keystore_data)) 
 endmodule
 
 // An IOCapSingleExposer that strips off capability metadata instead of using it
-module mkStrippingIOCapExposer(IOCapSingleExposer#(t_id, t_data, t_keystore_data)) provisos (
-    Mul#(TDiv#(t_keystore_data, 8), 8, t_keystore_data),
-    Add#(t_keystore_data, a__, 128),
-    Add#(TDiv#(t_keystore_data, 8), b__, 16)
-);
+module mkStrippingIOCapExposer(IOCapSingleExposer#(t_id, t_data));
     // This doesn't have any key storage or checking logic yet! It just receives IOCapAXI and converts it back to plain AXI.
 
     AddressChannelCapUnwrapper#(AXI4_AWFlit#(t_id, 64, 3), AXI4_AWFlit#(t_id, 64, 0)) aw <- mkSimpleAddressChannelCapUnwrapper;
@@ -470,8 +462,6 @@ module mkStrippingIOCapExposer(IOCapSingleExposer#(t_id, t_data, t_keystore_data
     FIFOF#(AXI4_BFlit#(t_id, 0)) bff <- mkFIFOF;
     AddressChannelCapUnwrapper#(AXI4_ARFlit#(t_id, 64, 3), AXI4_ARFlit#(t_id, 64, 0)) ar <- mkSimpleAddressChannelCapUnwrapper;
     FIFOF#(AXI4_RFlit#(t_id, t_data, 0)) rff <- mkFIFOF;
-
-    IOCap_KeyManager#(t_keystore_data) keyStore <- mkSimpleIOCapKeyManager;
 
     function t_flit stripCapFromAuthFlit(AuthenticatedFlit#(t_flit) authFlit) = authFlit.flit;
 
