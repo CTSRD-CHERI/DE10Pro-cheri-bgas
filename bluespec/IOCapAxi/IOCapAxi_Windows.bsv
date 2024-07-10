@@ -1,12 +1,13 @@
 import BlueAXI4 :: *;
 import Connectable :: *;
-import IOCapAxi :: *;
-import IOCapAxi_Flits :: *;
-import IOCapAxiExposer :: *;
 import AxiWindow :: *;
 import FIFOF :: *;
 import SpecialFIFOs :: *;
 import SourceSink :: *;
+
+import IOCapAxi_Types :: *;
+import IOCapAxi_Flits :: *;
+import IOCapAxi_Exposers :: *;
 
 typedef struct {
     // 0x88 .. 0x108
@@ -16,49 +17,6 @@ typedef struct {
     // 0x0 .. 0x8
     Bit#(64)  windowAddr;
 } WindowData deriving (Bits, FShow);
-
-interface AddressChannelCapWrapper#(type iocap_flit, type no_iocap_flit);
-    interface Sink#(AuthenticatedFlit#(no_iocap_flit)) in;
-    interface Source#(iocap_flit) out;
-endinterface 
-
-module mkSimpleAddressChannelCapWrapper(AddressChannelCapWrapper#(iocap_flit, no_iocap_flit)) provisos (Bits#(AuthenticatedFlit#(no_iocap_flit), a__), Bits#(iocap_flit, b__), IOCapPackableFlit#(iocap_flit, no_iocap_flit), FShow#(AuthenticatedFlit#(no_iocap_flit)));
-    FIFOF#(AuthenticatedFlit#(no_iocap_flit)) inFlits <- mkFIFOF();
-    FIFOF#(iocap_flit) outFlits <- mkSizedBypassFIFOF(4); // TODO check FIFOF type
-
-    Reg#(UInt#(2)) state <- mkReg(0);
-    Reg#(Bit#(256)) cap <- mkReg(0);
-
-    rule st0 if (state == 0);
-        let startFlitAndCap = inFlits.first;
-        inFlits.deq();
-        $display("IOCap - Sending auth flitpack ", fshow(startFlitAndCap));
-        outFlits.enq(packSpec(tagged Start (startFlitAndCap.flit)));
-        state <= 1;
-        cap <= { startFlitAndCap.sig, pack(startFlitAndCap.cap) };
-    endrule
-
-    rule st1 if (state == 1);
-        IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits1 cap[85:0];
-        outFlits.enq(packSpec(bits));
-        state <= 2;
-    endrule
-
-    rule st2 if (state == 2);
-        IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits2 cap[171:86];
-        outFlits.enq(packSpec(bits));
-        state <= 3;
-    endrule
-
-    rule st3 if (state == 3);
-        IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits3 cap[255:172];
-        outFlits.enq(packSpec(bits));
-        state <= 0;
-    endrule
-
-    interface in = toSink(inFlits);
-    interface out = toSource(outFlits);
-endmodule
 
 module mkSimpleIOCapWindow(AxiWindow#(
     // Window subordinate port (AXI4Lite)

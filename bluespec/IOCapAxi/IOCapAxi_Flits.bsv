@@ -1,5 +1,9 @@
 import BlueAXI4 :: *;
-import IOCapAxi :: *;
+import FIFOF :: *;
+import SpecialFIFOs :: *;
+import SourceSink :: *;
+
+import IOCapAxi_Types :: *;
 import Cap2024_02 :: *;
 
 typedef union tagged {
@@ -218,3 +222,139 @@ typedef struct {
     Cap2024_02 cap;
     Bit#(128) sig;
 } AuthenticatedFlit#(type no_iocap_flit) deriving (Bits, FShow);
+
+interface AddressChannelCapWrapper#(type iocap_flit, type no_iocap_flit);
+    interface Sink#(AuthenticatedFlit#(no_iocap_flit)) in;
+    interface Source#(iocap_flit) out;
+endinterface 
+
+interface AddressChannelCapUnwrapper#(type iocap_flit, type no_iocap_flit);
+    interface Sink#(iocap_flit) in;
+    // todo rename to authflits?
+    interface Source#(AuthenticatedFlit#(no_iocap_flit)) out;
+endinterface
+
+module mkSimpleAddressChannelCapWrapper(AddressChannelCapWrapper#(iocap_flit, no_iocap_flit)) provisos (Bits#(AuthenticatedFlit#(no_iocap_flit), a__), Bits#(iocap_flit, b__), IOCapPackableFlit#(iocap_flit, no_iocap_flit), FShow#(AuthenticatedFlit#(no_iocap_flit)));
+    FIFOF#(AuthenticatedFlit#(no_iocap_flit)) inFlits <- mkFIFOF();
+    FIFOF#(iocap_flit) outFlits <- mkSizedBypassFIFOF(4); // TODO check FIFOF type
+
+    Reg#(UInt#(2)) state <- mkReg(0);
+    Reg#(Bit#(256)) cap <- mkReg(0);
+
+    rule st0 if (state == 0);
+        let startFlitAndCap = inFlits.first;
+        inFlits.deq();
+        $display("IOCap - Sending auth flitpack ", fshow(startFlitAndCap));
+        outFlits.enq(packSpec(tagged Start (startFlitAndCap.flit)));
+        state <= 1;
+        cap <= { startFlitAndCap.sig, pack(startFlitAndCap.cap) };
+    endrule
+
+    rule st1 if (state == 1);
+        IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits1 cap[85:0];
+        outFlits.enq(packSpec(bits));
+        state <= 2;
+    endrule
+
+    rule st2 if (state == 2);
+        IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits2 cap[171:86];
+        outFlits.enq(packSpec(bits));
+        state <= 3;
+    endrule
+
+    rule st3 if (state == 3);
+        IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits3 cap[255:172];
+        outFlits.enq(packSpec(bits));
+        state <= 0;
+    endrule
+
+    interface in = toSink(inFlits);
+    interface out = toSource(outFlits);
+endmodule
+
+module mkSimpleAddressChannelCapUnwrapper(AddressChannelCapUnwrapper#(iocap_flit, no_iocap_flit)) provisos (
+    // Must be able to pack AuthenticatedFlit into a register
+    Bits#(AuthenticatedFlit#(no_iocap_flit), a__),
+    // Must be able to pack the flit-with-iocap-bits into a register
+    Bits#(iocap_flit, b__),
+    // Must be able to pack a flit-with-no-iocap-bits into an iocap-flit, with the user bits for signalling extra capability data
+    IOCapPackableFlit#(iocap_flit, no_iocap_flit),
+    // Must be able to print the authenticated flit
+    FShow#(AuthenticatedFlit#(no_iocap_flit))
+);
+    FIFOF#(iocap_flit) inFlits <- mkFIFOF();
+    FIFOF#(AuthenticatedFlit#(no_iocap_flit)) outFlits <- mkSizedBypassFIFOF(4); // TODO check FIFOF type
+
+    Reg#(Tuple2#(no_iocap_flit, Bit#(256))) flitInProgress <- mkReg(unpack(0));
+
+    Reg#(UInt#(2)) state <- mkReg(0);
+
+    rule st0 if (state == 0);
+        inFlits.deq();
+        let startFlit = inFlits.first;
+        IOCapFlitSpec#(no_iocap_flit) spec = unpackSpec(startFlit);
+        if (spec matches tagged Start .flit) begin
+            flitInProgress <= tuple2(flit, 0);
+        end else begin
+            $error("IOCap protocol error");
+        end
+        state <= 1;
+    endrule
+
+    rule st1 if (state == 1);
+        inFlits.deq();
+        let bitsFlit = inFlits.first;
+        IOCapFlitSpec#(no_iocap_flit) spec = unpackSpec(bitsFlit);
+        if (spec matches tagged CapBits1 .bits) begin
+            let flit = tpl_1(flitInProgress);
+            flitInProgress <= tuple2(
+                flit,
+                { 0, bits }
+            );
+        end else begin
+            $error("IOCap protocol error");
+        end
+        state <= 2;
+    endrule
+
+    rule st2 if (state == 2);
+        inFlits.deq();
+        let bitsFlit = inFlits.first;
+        IOCapFlitSpec#(no_iocap_flit) spec = unpackSpec(bitsFlit);
+        if (spec matches tagged CapBits2 .bits) begin
+            let flit = tpl_1(flitInProgress);
+            let bitsInProgress = tpl_2(flitInProgress);
+            flitInProgress <= tuple2(
+                flit,
+                { 0, bits, bitsInProgress[85:0] }
+            );
+        end else begin
+            $error("IOCap protocol error");
+        end
+        state <= 3;
+    endrule
+
+    rule st3 if (state == 3);
+        inFlits.deq();
+        let bitsFlit = inFlits.first;
+        IOCapFlitSpec#(no_iocap_flit) spec = unpackSpec(bitsFlit);
+        if (spec matches tagged CapBits3 .bits) begin
+            let flit = tpl_1(flitInProgress);
+            let bitsInProgress = tpl_2(flitInProgress);
+            let combinedBits = { bits, bitsInProgress[171:0] };
+            let authFlit = AuthenticatedFlit {
+                flit: flit,
+                cap: unpack(combinedBits[127:0]),
+                sig: combinedBits[255:128]
+            };
+            $display("IOCap - Received auth flitpack ", fshow(authFlit));
+            outFlits.enq(authFlit);
+        end else begin
+            $error("IOCap protocol error");
+        end
+        state <= 0;
+    endrule
+
+    interface in = toSink(inFlits);
+    interface out = toSource(outFlits);
+endmodule
