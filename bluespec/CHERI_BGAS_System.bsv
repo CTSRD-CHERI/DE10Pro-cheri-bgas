@@ -370,12 +370,15 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   // Create an AxiWindow which exposes a
   // - H2F_LW AXI4Lite subordinate `h2fWindow.windowCtrl`, exposing a 64-bit "window" register
   // - H2F AXI4 subordinate `h2fWindow.preWindow` which converts 32-bit h2f accesses to 64-bit accesses offset by the window
-  // - H2F AXI4 manager `h2fWindow.postWindow` which oerforms the newly converted accesses
+  // - H2F AXI4 manager `h2fWindow.postWindow` which puts out the converted accesses + an IOCap authenticating each one
   // let h2fWindow <- mkAddrOffsetAxiWindow(reset_by newRst.new_rst);
-  let h2fWindow <- mkSimpleInternalIOCapWindow(reset_by newRst.new_rst);
+  let h2fWindow <- mkSimpleIOCapWindow(reset_by newRst.new_rst);
   // Expose the windowCtrl on the AXI4 lite bus
   let ctrSubH2FAddrCtrl =
     tuple2 (h2fWindow.windowCtrl, Range { base: 'h0000_5000, size: 'h0000_1000 });
+  // Connect the h2fWindow to an IOCap Exposer, which checks the IOCap against the keys written in by the host.
+  let iocapExposer <- mkSimpleIOCapExposer(reset_by newRst.new_rst);
+  mkConnection(iocapExposer.iocapsIn.axiSignals, h2fWindow.postWindow, reset_by newRst.new_rst);
 
   // Virtual device for emulating control registers, e.g. for virtio.
   // (Has both a control interface and a virtualised interface;
@@ -513,13 +516,17 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   bus1_ss[3] = uart1_s;
   bus1_ss[4] = fakeBootRomDeBurst.slave;
   bus1_ss[5] = virtDev.virt;
-  bus1_ss[6] = iocapExposer.keyStore; // TODO
+  bus1_ss[6] = truncate_AXI4_Slave_addr (
+    fromAXI4LiteToAXI4_Slave(iocapExposer.keyStore.hostFacingSlave)
+    // TODO adding reset_by here breaks things massively?
+    //, reset_by newRst.new_rst  
+  );
   //bus1_ss[6] = debugAXI4_Slave (bus0BridgeSub, $format ("bus0BridgeSub"));
   bus1_ss[7] = bus0BridgeSub;
 
   // build route
-  function Vector #(7, Bool) bus1_route (Bit #(Wd_Addr) addr);
-    Vector #(7, Bool) x = replicate (False);
+  function Vector #(8, Bool) bus1_route (Bit #(Wd_Addr) addr);
+    Vector #(8, Bool) x = replicate (False);
     if (inRange (soc_map.m_ddr4_0_uncached_addr_range, addr))
       x[7] = True;
     else if (inRange (soc_map.m_iocap_exposer_addr_range, addr))
@@ -554,23 +561,25 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   // input boundary to a master
   t_core_sub_shim globalShim <- mkAXI4ShimFF (reset_by newRst.new_rst);
 
-  // incoming H2F traffic is passed through three layers...
+  // incoming H2F traffic is passed through four layers...
   // - toWider_AXI4_Slave   = split double-data-width transactions into halves
   // - zero_AXI4_Slave_user = ignore any user data supplied
-  // - h2fWindow.preWindow  = offset the access by the MMIO-writable "window" register
+  // - h2fWindow.preWindow  = offset the access by the MMIO-writable "window" register, attach an IOCap
+  // - iocapExposer         = decode and check the IOCap
   // ...before arriving at the core
   let h2fExternalSub <- toWider_AXI4_Slave (
     zero_AXI4_Slave_user (
       h2fWindow.preWindow
-    )
+    ),
+    reset_by newRst.new_rst
   );
 
   // Route all incoming requests from the h2f and global AXI4 interfaces
   // to the core's subordinate port
-  // h2fWindow.postWindow initiates the requests recieved from h2f
+  // iocapExposer.sanitizedOut initiates the requests recieved from h2f
   // after they've passed through the three layers shown above.
   mkAXI4Bus ( constFn (cons (True, nil))
-            , cons (h2fWindow.postWindow, cons (globalShim.master, nil))
+            , cons (iocapExposer.sanitizedOut, cons (globalShim.master, nil))
             , cons (core.subordinate_0, nil)
             , reset_by newRst.new_rst );
 

@@ -9,8 +9,10 @@ import SpecialFIFOs :: *;
 import SourceSink :: *;
 
 typedef struct {
-    // 0x8 .. 0x108
-    Bit#(256) capability;
+    // 0x88 .. 0x108
+    Bit#(128) sig;
+    // 0x8 .. 0x88
+    Bit#(128) cap;
     // 0x0 .. 0x8
     Bit#(64)  windowAddr;
 } WindowData deriving (Bits, FShow);
@@ -33,7 +35,7 @@ module mkSimpleAddressChannelCapWrapper(AddressChannelCapWrapper#(iocap_flit, no
         $display("IOCap - Sending auth flitpack ", fshow(startFlitAndCap));
         outFlits.enq(packSpec(tagged Start (startFlitAndCap.flit)));
         state <= 1;
-        cap <= startFlitAndCap.cap;
+        cap <= { startFlitAndCap.sig, pack(startFlitAndCap.cap) };
     endrule
 
     rule st1 if (state == 1);
@@ -104,7 +106,8 @@ module mkSimpleIOCapWindow(AxiWindow#(
     // That register holds the window ctrl data
     Tuple2 #(t_window_ctrl, ReadOnly #(Bit #(t_window_ctrl_len))) windowCtrlIfcs <- mkAXI4Lite_SubReg (pack(WindowData {
         windowAddr: 0,
-        capability: 256'h01234567_89abcdef_01234567_89abcdef_fdecba98_76543210_fdecba98_76543210
+        cap: 128'h01234567_89abcdef_01234567_89abcdef,
+        sig: 128'hfdecba98_76543210_fdecba98_76543210
     }));
     match {.windowCtrlIfc, .windowCtrlBits} = windowCtrlIfcs;
 
@@ -139,7 +142,8 @@ module mkSimpleIOCapWindow(AxiWindow#(
                 , awregion: x.awregion
                 , awuser: ?
             },
-            cap: window.capability
+            cap: unpack(window.cap),
+            sig: window.sig
         };
     endfunction
 
@@ -159,7 +163,8 @@ module mkSimpleIOCapWindow(AxiWindow#(
                 , arregion: x.arregion
                 , aruser: ?
             },
-            cap: window.capability
+            cap: unpack(window.cap),
+            sig: window.sig
         };
     endfunction
 
@@ -183,7 +188,7 @@ module mkSimpleIOCapWindow(AxiWindow#(
 
 endmodule
 
-module mkSimpleInternalIOCapWindow(AxiWindow#(
+module mkSimpleInternalStrippingIOCapWindow(AxiWindow#(
     // Window subordinate port (AXI4Lite)
       t_window_ctrl_addr
     , t_window_ctrl_data
@@ -252,7 +257,7 @@ module mkSimpleInternalIOCapWindow(AxiWindow#(
       , 0 //t_post_window_ruser
     ) window <- mkSimpleIOCapWindow;
 
-    IOCapSingleExposer#(t_pre_window_id, t_pre_window_data) exposer <- mkSimpleIOCapExposer;
+    IOCapSingleExposer#(t_pre_window_id, t_pre_window_data, 64) exposer <- mkStrippingIOCapExposer;
 
     mkConnection(window.postWindow, exposer.iocapsIn.axiSignals);
 

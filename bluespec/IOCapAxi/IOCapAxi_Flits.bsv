@@ -1,5 +1,6 @@
 import BlueAXI4 :: *;
 import IOCapAxi :: *;
+import Cap2024_02 :: *;
 
 typedef union tagged {
     // TODO no_iocap_flit Unauthenticated;
@@ -9,7 +10,6 @@ typedef union tagged {
     Bit#(84) CapBits3;
 } IOCapFlitSpec#(type no_iocap_flit) deriving (Bits, FShow);
 
-// TODO need to refactor this because packSpec is ambiguous with CapBitsX
 typeclass IOCapPackableFlit#(type iocap_flit, type no_iocap_flit);
     function iocap_flit packSpec(IOCapFlitSpec#(no_iocap_flit) x);
     function IOCapFlitSpec#(no_iocap_flit) unpackSpec(iocap_flit x);
@@ -215,5 +215,6 @@ endinstance
 
 typedef struct {
     no_iocap_flit flit;
-    Bit#(256) cap;
+    Cap2024_02 cap;
+    Bit#(128) sig;
 } AuthenticatedFlit#(type no_iocap_flit) deriving (Bits, FShow);
