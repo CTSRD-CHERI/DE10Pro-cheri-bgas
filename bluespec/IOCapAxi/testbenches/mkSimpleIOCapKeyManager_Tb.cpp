@@ -334,7 +334,7 @@ int main(int argc, char** argv) {
                 .time = 120,
                 .writeReq = std::optional(AxiWriteReq {
                     .address = 0x1048,
-                    .data = 0xdeadbeef,
+                    .data = 0xf2edbeef,
                     .write_enable = 0b1111,
                 }),
             },
@@ -342,7 +342,7 @@ int main(int argc, char** argv) {
                 .time = 130,
                 .writeReq = std::optional(AxiWriteReq {
                     .address = 0x104C,
-                    .data = 0xdeadbeef,
+                    .data = 0xf1edbeef,
                     .write_enable = 0b1111,
                 }),
             },
