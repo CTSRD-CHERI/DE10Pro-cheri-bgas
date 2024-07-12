@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
                 dut.RST_N = 0;    // assert reset
             }
             else if (main_time == 7) {
-                dut.RST_N = 1;    // Deassert reset
+                dut.RST_N = 1;    // deassert reset
             }
 
             // Toggle clock

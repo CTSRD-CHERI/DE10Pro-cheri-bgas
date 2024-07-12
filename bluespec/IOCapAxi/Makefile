@@ -7,19 +7,28 @@ BLUESTUFFDIR = ../Toooba/libs/BlueStuff
 include $(BLUESTUFFDIR)/bluestuff.inc.mk
 BSVPATH = +:$(BLUESTUFF_DIRS):./aes:./cap2024_02:./testbenches:./util:../AxiWindow
 
-BSCFLAGS = -bdir $(BUILDDIR) -info-dir $(BUILDDIR) -simdir $(BUILDDIR) -vdir $(BUILDDIR)/verilog -p $(BSVPATH) -u -aggressive-conditions
+BSCFLAGS = -bdir $(BUILDDIR) -info-dir $(BUILDDIR) -simdir $(BUILDDIR) -vdir $(BUILDDIR)/verilog -p $(BSVPATH) -u -aggressive-conditions +RTS -K512M -RTS
 
-$(BUILDDIR)/%.out: ./testbenches/%.bsv alwaysRemake
+BSCDIR = $(dir $(shell which bsc))../
+
+$(BUILDDIR)/%.bsim: ./testbenches/%.bsv alwaysRemake
 	mkdir -p $(BUILDDIR)
 	bsc $(BSCFLAGS) -sim -g $* $< 
 	bsc $(BSCFLAGS) -sim -e $* $@
 
-$(BUILDDIR)/%.vout: ./testbenches/%.bsv alwaysRemake
+$(BUILDDIR)/verilog/%.v: ./testbenches/%.bsv alwaysRemake
 	mkdir -p $(BUILDDIR) $(BUILDDIR)/verilog
 	bsc $(BSCFLAGS) -verilog -g $* -u $<
-	verilator --Mdir $(BUILDDIR) -sv --top-module $* --cc --build --exe -o $*.vout $(shell echo $(BUILDDIR)/verilog/*.v) ./testbenches/$*.cpp
 
-.PHONY: clean alwaysRemake
+$(BUILDDIR)/%.vsim: $(BUILDDIR)/verilog/%.v ./testbenches/%.cpp alwaysRemake
+	verilator --Mdir $(BUILDDIR) --top-module $* --cc --build --exe -o $*.vsim -I$(BSCDIR)lib/Verilog/ $(BSCDIR)lib/Verilator/verilator_config.vlt $(shell echo $(BUILDDIR)/verilog/*.v) ./testbenches/$*.cpp
+
+.PHONY: list alwaysRemake
+
+list:
+	@printf "Available targets:\n\tclean\n\t$(BUILDDIR)/%%.bsim\n\t$(BUILDDIR)/verilog/%%.v\n\t$(BUILDDIR)/%%.vsim\n"
+	
+
 clean:
 	rm -rf $(BUILDDIR)
 

@@ -2,12 +2,15 @@ default:
     @just --list
 
 sim-b name:
-    make ./build/{{name}}.out
-    ./build/{{name}}.out
+    make ./build/{{name}}.bsim
+    ./build/{{name}}.bsim
+
+build-v name:
+    make ./build/{{name}}.vsim
 
 sim-v name:
-    make ./build/{{name}}.vout
-    ./build/{{name}}.vout
+    make ./build/{{name}}.vsim
+    ./build/{{name}}.vsim
 
 test-keymgr: (sim-v "mkSimpleIOCapKeyManager_Tb")
 
