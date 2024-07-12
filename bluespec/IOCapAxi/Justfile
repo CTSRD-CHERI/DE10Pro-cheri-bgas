@@ -6,6 +6,9 @@ sim-b name:
     ./build/{{name}}.bsim
 
 build-v name:
+    make ./build/verilog/{{name}}.v
+
+build-sim-v name:
     make ./build/{{name}}.vsim
 
 sim-v name:

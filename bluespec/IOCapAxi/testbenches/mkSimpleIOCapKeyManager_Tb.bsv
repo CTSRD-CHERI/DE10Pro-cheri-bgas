@@ -1,11 +1,11 @@
 import IOCapAxi_KeyManagers :: *;
 
 interface SimpleIOCapKeyManagerTb;
-    interface IOCap_KeyManager#(64) keyMgr64;
+    interface IOCap_KeyManager#(32) keyMgr32;
 endinterface
 
 (* synthesize *)
 module mkSimpleIOCapKeyManager_Tb(SimpleIOCapKeyManagerTb);
-    let keyMgr64Impl <- mkSimpleIOCapKeyManager;
-    interface keyMgr64 = keyMgr64Impl;
+    let keyMgr32Impl <- mkSimpleIOCapKeyManager;
+    interface keyMgr32 = keyMgr32Impl;
 endmodule

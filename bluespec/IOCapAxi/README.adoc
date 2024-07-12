@@ -20,3 +20,10 @@ TODO no idea if the following should be shims...
 * A "IOCapAXI4_CheckCapShim" module which takes requests to an exposed IOCapAXI4_Slave, checks the incoming capabilities, then passes their requests on through an AXI4_Master.
 * TODO A "IOCapAXI4_Checker" module, which takes a vector of "IOCapAXI4_Master", checks their capabilities, then passes their requests on to a set of plain AXI4_Slaves.
 * TODO - "IOCapAXI4_Shim" and "IOCapAXI4_Arbiter" which do FIFO shimming and bus arbitration for I/O-cap-axi interconnects, respectively(??)
+
+
+TODO update that list now lol
+
+== Testing
+
+Testing has been performed with Verilator 5.026, with testbench C\+\+ files needing C\+\+17.
