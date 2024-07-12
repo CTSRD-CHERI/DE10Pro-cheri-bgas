@@ -385,9 +385,9 @@ int main(int argc, char** argv) {
         if (output.keyResponse) {
             auto resp = output.keyResponse.value();
             if (resp.key) {
-                printf("finished key read: key %u is valid 0x%08lx%08lx\n", resp.keyId, resp.key.value().top, resp.key.value().bottom);
+                printf("finished key access: key %u is valid 0x%08lx%08lx\n", resp.keyId, resp.key.value().top, resp.key.value().bottom);
             } else {
-                printf("finished key read: key %u is invalid\n", resp.keyId);
+                printf("finished key access: key %u is invalid\n", resp.keyId);
             }
         }
         if (output.axiReadResp) {
