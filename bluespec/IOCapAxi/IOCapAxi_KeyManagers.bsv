@@ -5,11 +5,12 @@ import SourceSink :: *;
 import BRAM :: *;
 import Vector :: *;
 import BlueBasics :: *;
+import LeftShift :: *;
 
 typedef UInt#(1) Epoch;
 typedef Bit#(128) Key;
-// 4096 keys => 12 bit ID
-typedef Bit#(12) KeyId;
+// 0x1000 bytes => 4096 bytes => 256 keys => 9 bit ID
+typedef Bit#(8) KeyId;
 
 interface IOCap_KeyManager#(numeric type t_data);
     method Action bumpPerfCounterGoodWrite();
@@ -54,7 +55,7 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
     // 16 byte-enable wires
     BRAM1PortBE#(KeyId, Key, 16) keys <- mkBRAM1ServerBE(keysConfig);
     // Make a register with all the key-valid states - if keyValid[k] = 0, the key k is not considered valid.
-    Reg#(Bit#(4096)) keyValid <- mkReg(0);
+    Reg#(Bit#(512)) keyValid <- mkReg(0);
 
     PulseWire reqGoodWrite <- mkPulseWire;
     Reg#(UInt#(64)) goodWrite <- mkReg(0);
@@ -110,7 +111,7 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
 
         // Can only read the status area - [0x0, 0x1000)
         if ((ar.araddr & 'h1000) == 0) begin
-            KeyId k = truncate(ar.araddr >> 4); // Memory map is byte-addressed, each secret key is 16 bytes = 4 address bits
+            KeyId k = ar.araddr[11:4]; // Memory map is byte-addressed, each secret key is 16 bytes = 4 address bits
 
             // The status of a key is 
             // 0 = invalid, revoked
@@ -164,7 +165,7 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
 
         // Writes to [0x0, 0x1000) set status
         if ((aw.awaddr & 'h1000) == 0) begin
-            KeyId k = truncate(aw.awaddr >> 4); // Memory map is byte-addressed, each secret key is 16 bytes = 4 address bits
+            KeyId k = aw.awaddr[11:4]; // Memory map is byte-addressed, each secret key is 16 bytes = 4 address bits
             Bit#(4) startByteWithinKey = aw.awaddr[3:0];
 
             if (
@@ -207,7 +208,7 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
 
         // Writes to [0x1000, 0x2000) write to key (requires the key is revoked)
         end else begin
-            KeyId k = truncate(aw.awaddr >> 4); // Memory map is byte-addressed, each secret key is 16 bytes = 4 address bits
+            KeyId k = aw.awaddr[11:4]; // Memory map is byte-addressed, each secret key is 16 bytes = 4 address bits
             Bit#(4) startByteWithinKey = aw.awaddr[3:0];
             Bit#(5) endByteWithinKey = zeroExtend(startByteWithinKey) + fromInteger(valueOf(t_data) / 8);
     
@@ -223,13 +224,13 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
                 // wstrb = TDiv#(t_data, 8) bits long
                 // We've just checked that startByteWithinKey + TDiv#(t_data, 8) <= 16
                 // => the top bit of wstrb will only ever go up to the top bit of Bit#(16), and won't be shifted out.
-                Bit#(16) bramByteEnable = zeroExtend(w.wstrb) << startByteWithinKey;
+                Bit#(16) bramByteEnable = left_shift_comb(zeroExtend(w.wstrb), unpack(startByteWithinKey));
                 // wdata = t_data bits long
                 // We've just checked that startByteWithinKey + TDiv#(t_data, 8) <= 16
                 // => (startByteWithinKey + t_data/8) * 8 <= 128
                 // => (startByteWithinKey * 8) + t_data <= 128
                 // => no bits will be shifted out
-                Bit#(128) bramWriteData = zeroExtend(w.wdata) << (startByteWithinKey * 8);
+                Bit#(128) bramWriteData = left_shift_comb(zeroExtend(w.wdata), unpack({startByteWithinKey, 3'b0}));
 
                 keys.portA.request.put(BRAMRequestBE {
                     writeen: bramByteEnable,
@@ -238,6 +239,9 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
                     address: k,
                     datain: bramWriteData
                 });
+                $display("IOCap - BRAM write - writeen ", fshow(bramByteEnable), " - address ", fshow(k), " - datain ", fshow(bramWriteData));
+                
+                validWrite = True;
             end else begin
                 // TODO signal failure
                 $error("IOCap - mkSimpleIOCapKeyManager - Invalid data write");
