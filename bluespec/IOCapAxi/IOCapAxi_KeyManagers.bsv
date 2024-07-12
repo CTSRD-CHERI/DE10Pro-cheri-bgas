@@ -53,8 +53,8 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
     // Holds items of type Key
     // 16 byte-enable wires
     BRAM1PortBE#(KeyId, Key, 16) keys <- mkBRAM1ServerBE(keysConfig);
-    // Need a Vector of 4096 KeyStates
-    Vector#(4096, Reg#(Bool)) keyValid <- replicateM(mkReg(False));
+    // Make a register with all the key-valid states - if keyValid[k] = 0, the key k is not considered valid.
+    Reg#(Bit#(4096)) keyValid <- mkReg(0);
 
     PulseWire reqGoodWrite <- mkPulseWire;
     Reg#(UInt#(64)) goodWrite <- mkReg(0);
@@ -92,7 +92,7 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
 
     rule sanity_check;
         if (waitingForEpochToInvalidate matches tagged Valid .keyToInvalidate) begin
-            if (keyValid[keyToInvalidate]) begin
+            if (keyValid[keyToInvalidate] == 1) begin
                 // TODO use errorunit
                 $error("Key marked as valid while we're trying to invalidate it");
             end
@@ -118,7 +118,7 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
             // 2 = invalid, waiting for revocation to finish
 
             let keyStatus = 0;
-            if (keyValid[k]) begin
+            if (keyValid[k] == 1) begin
                 keyStatus = 1;
             end
             if (waitingForEpochToInvalidate matches tagged Valid .keyToInvalidate &&& keyToInvalidate == k) begin
@@ -177,24 +177,27 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
                 // and all the other enabled bytes must be zero.
                 && (((w.wdata & beToMask(w.wstrb)) >> 8) == 0)
             ) begin
+                let newKeyValid = keyValid;
 
                 // We're either trying to write 0 (invalid) or 1 (valid)
                 case (tuple2(keyValid[k], w.wdata[0])) matches
-                    { True, 1 } : noAction;
-                    { False, 0 } : noAction;
+                    { 1, 1 } : noAction;
+                    { 0, 0 } : noAction;
 
                     // Re-enable a key - go from False to True
-                    { False, 1 } : begin
-                        keyValid[k] <= True;
+                    { 0, 1 } : begin
+                        newKeyValid[k] = 1;
                     end
 
                     // Disable a key - go from True to False
-                    { True, 0 } : begin
-                        keyValid[k] <= False;
+                    { 1, 0 } : begin
+                        newKeyValid[k] = 0;
                         newEpochRequest.enq(currentEpoch + 1);
                         waitingForEpochToInvalidate <= tagged Valid k;
                     end
                 endcase
+
+                keyValid <= newKeyValid;
 
                 validWrite = True;
             end else begin
@@ -212,7 +215,7 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
                 // Writes to key data can't overlap two keys
                 endByteWithinKey <= 16
                 // The given key must be invalid
-                && keyValid[k] == False
+                && keyValid[k] == 0
                 // and we can't be in the middle of a revocation (already checked above)
             ) begin
                 // Move wstrb and wdata into the 128-bit space based on their offset within the key.
@@ -288,7 +291,7 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
     rule start_retrieve_key;
         keyReqFF.deq();
         let keyId = keyReqFF.first(); 
-        pendingKeyIdFF.enq(tuple2(keyId, keyValid[keyId]));
+        pendingKeyIdFF.enq(tuple2(keyId, keyValid[keyId] == 1));
         keys.portA.request.put(BRAMRequestBE {
             writeen: 0,
             responseOnWrite: False,
