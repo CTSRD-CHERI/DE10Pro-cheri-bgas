@@ -529,7 +529,7 @@ int main(int argc, char** argv) {
         std::mt19937 rng{seed};
         // Make an int in [0, 1] for each counter
         std::uniform_int_distribution<> distrib(0, 1);
-        // Make an int in [0, 3] to figure out which counter to read
+        // Make an int in [0, 3] to figure out which counter to read every cycle
         std::uniform_int_distribution<> readDistrib(0, 3);
 
         uint32_t stats[4] = {
