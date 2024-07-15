@@ -215,11 +215,10 @@ namespace key_manager {
     struct KeyManagerInput {
         uint64_t time;
 
-        // TODO
-        // bool bumpPerfCounterGoodWrite;
-        // bool bumpPerfCounterBadWrite;
-        // bool bumpPerfCounterGoodRead;
-        // bool bumpPerfCounterBadRead;
+        bool bumpPerfCounterGoodWrite;
+        bool bumpPerfCounterBadWrite;
+        bool bumpPerfCounterGoodRead;
+        bool bumpPerfCounterBadRead;
 
         std::optional<KeyId> keyRequest;
         std::optional<Epoch> finishedEpoch;
@@ -231,7 +230,11 @@ namespace key_manager {
                 (this->keyRequest == other.keyRequest) && 
                 (this->finishedEpoch == other.finishedEpoch) && 
                 (this->writeReq == other.writeReq) && 
-                (this->readReq == other.readReq);
+                (this->readReq == other.readReq) &&
+                (this->bumpPerfCounterGoodWrite == other.bumpPerfCounterGoodWrite) &&
+                (this->bumpPerfCounterBadWrite == other.bumpPerfCounterBadWrite) &&
+                (this->bumpPerfCounterGoodRead == other.bumpPerfCounterGoodRead) &&
+                (this->bumpPerfCounterBadRead == other.bumpPerfCounterBadRead);
         }
     };
 
@@ -271,6 +274,36 @@ namespace key_manager {
      */
     template<class DUT>
     void push_input(DUT& dut, const KeyManagerInput& input) {
+        #define ACT(name) \
+            assert(dut.RDY_keyMgr32_## name);   \
+            dut.EN_keyMgr32_## name = 1;
+        #define NOACT(name) dut.EN_keyMgr32_## name = 0;
+
+        if (input.bumpPerfCounterGoodWrite) {
+            ACT(bumpPerfCounterGoodWrite);
+        } else {
+            NOACT(bumpPerfCounterGoodWrite);
+        }
+
+        if (input.bumpPerfCounterBadWrite) {
+            ACT(bumpPerfCounterBadWrite);
+        } else {
+            NOACT(bumpPerfCounterBadWrite);
+        }
+
+        if (input.bumpPerfCounterGoodRead) {
+            ACT(bumpPerfCounterGoodRead);
+        } else {
+            NOACT(bumpPerfCounterGoodRead);
+        }
+
+        if (input.bumpPerfCounterBadRead) {
+            ACT(bumpPerfCounterBadRead);
+        } else {
+            NOACT(bumpPerfCounterBadRead);
+        }
+        
+
         #define PUT(name, value) do {                  \
             dut.EN_keyMgr32_## name ##_put = 1;        \
             dut.keyMgr32_## name ##_put_val = (value); \
@@ -458,7 +491,7 @@ template <> class fmt::formatter<key_manager::KeyManagerInput> {
     constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
     template <typename Context>
     constexpr auto format (key_manager::KeyManagerInput const& x, Context& ctx) const {
-        return format_to(ctx.out(), "KeyManagerInput {{\n\t.time = {},\n\t.keyRequest = {},\n\t.finishedEpoch = {},\n\t.readReq = {},\n\t.writeReq = {},\n}}", x.time, x.keyRequest, x.finishedEpoch, x.readReq, x.writeReq);
+        return format_to(ctx.out(), "KeyManagerInput {{\n\t.time = {},\n\t.bumpPerfCounterGoodWrite = {},\n\t.bumpPerfCounterBadWrite = {},\n\t.bumpPerfCounterGoodRead = {},\n\t.bumpPerfCounterBadRead = {},\n\t.keyRequest = {},\n\t.finishedEpoch = {},\n\t.readReq = {},\n\t.writeReq = {},\n}}", x.time, x.bumpPerfCounterGoodWrite, x.bumpPerfCounterBadWrite, x.bumpPerfCounterGoodRead, x.bumpPerfCounterBadRead, x.keyRequest, x.finishedEpoch, x.readReq, x.writeReq);
     }
 };
 
