@@ -5,15 +5,22 @@
 
 using namespace key_manager;
 
-std::vector<KeyManagerOutput> checkDut(int argc, char** argv, std::vector<KeyManagerInput> inputs, uint64_t end_time) {
+struct TestParams {
+    const char* testName;
+    int argc;
+    char** argv;
+    uint64_t endTime;
+};
+
+KeyManagerOutputs runDut(TestParams& params, KeyManagerInputs inputs) {
     // Step through the input vector in order
     size_t input_idx = 0;
 
-    auto outputs = std::vector<KeyManagerOutput>();
+    auto outputs = KeyManagerOutputs();
 
     {
         VerilatedContext ctx{};
-        ctx.commandArgs(argc, argv);    // remember args
+        ctx.commandArgs(params.argc, params.argv);    // remember args
         // Make a design-under-test
         VmkSimpleIOCapKeyManager_Tb dut{&ctx};
 
@@ -23,7 +30,7 @@ std::vector<KeyManagerOutput> checkDut(int argc, char** argv, std::vector<KeyMan
         dut.RST_N = 1;
         dut.CLK = 0;
 
-        while ((!ctx.gotFinish()) && (main_time <= end_time) ) { // $finish executed
+        while ((!ctx.gotFinish()) && (main_time <= params.endTime) ) { // $finish executed
             if (main_time == 2) {
                 dut.RST_N = 0;    // assert reset
             }
@@ -80,9 +87,62 @@ std::vector<KeyManagerOutput> checkDut(int argc, char** argv, std::vector<KeyMan
     return outputs;
 }
 
+/**
+ * Check a 
+ */
+int checkDut(TestParams params, KeyManagerInputs inputs, KeyManagerOutputs expectedOut) {
+    printf("Test: %s\n", params.testName);
+
+    auto outputs = runDut(params, inputs);
+
+    if (outputs == expectedOut) {
+        printf("Success\n");
+        return 0;
+    }
+
+    printf("Failure - diff Outputs\n");
+    for (auto& output : outputs) {
+        printf("\ntime: %lu\n", output.time);
+        if (output.newEpochRequest) {
+            printf("requested new epoch: %u\n", output.newEpochRequest.value());
+        }
+        if (output.keyResponse) {
+            auto resp = output.keyResponse.value();
+            if (resp.key) {
+                printf("finished key access: key %u is valid 0x%08lx%08lx\n", resp.keyId, resp.key.value().top, resp.key.value().bottom);
+            } else {
+                printf("finished key access: key %u is invalid\n", resp.keyId);
+            }
+        }
+        if (output.readResp) {
+            auto resp = output.readResp.value();
+            if (resp.good) {
+                printf("read succeeded, returning 0x%08x\n", resp.data);
+            } else {
+                printf("read failed\n");
+            }
+        }
+        if (output.writeResp) {
+            if (output.writeResp.value().good) {
+                printf("write succeeded\n");
+            } else {
+                printf("write failed\n");
+            }
+        }
+    }
+
+    return 1;
+}
+
 int main(int argc, char** argv) {
-    auto outputs = checkDut(
-        argc, argv,
+    return checkDut(
+        TestParams {
+            .testName="Write and enable key over AXI",
+            .argc = argc,
+            .argv = argv,
+             // Run for 1k cycles
+            .endTime = 1000 * 10
+        },
         {
             // Initialize a key's contents
             KeyManagerInput {
@@ -143,112 +203,75 @@ int main(int argc, char** argv) {
                 })
             }
         },
-        // Run for 1k cycles
-        1000 * 10
-    );
-
-    std::vector<KeyManagerOutput> expected{
-        // Key writes must succeed, there are four of them
-        KeyManagerOutput {
-            .time = 120,
-            .writeResp = std::optional(AxiWriteResp {
-                .good = true,
-            }),
-        },
-        KeyManagerOutput {
-            .time = 130,
-            .writeResp = std::optional(AxiWriteResp {
-                .good = true,
-            }),
-        },
-        KeyManagerOutput {
-            .time = 140,
-            .writeResp = std::optional(AxiWriteResp {
-                .good = true,
-            }),
-        },
-        KeyManagerOutput {
-            .time = 150,
-            .writeResp = std::optional(AxiWriteResp {
-                .good = true,
-            }),
-        },
-        // The key status read request should complete immediately (2 cycle latency from 140 when enqueued)
-        // The data should be zero, because the key hasn't been activated yet
-        KeyManagerOutput {
-            .time = 160,
-            .readResp = std::optional(AxiReadResp {
-                .good = true,
-                .data = 0,
-            }),
-        },
-        // The key status write request should complete immediately (2 cycle latency from 150 when enqueued)
-        KeyManagerOutput {
-            .time = 170,
-            .writeResp = std::optional(AxiWriteResp {
-                .good = true,
-            }),
-        },
-        // Get the key response back from BRAM after 4 cycles, and get the readReq of that status back too.
-        // the key was invalid at the time of request, so it's invalid i.e. std::nullopt here.
-        // the writeResp from the last cycle was for enabling it, so the readResp says it *is* valid.
-        KeyManagerOutput {
-            .time = 180,
-            .keyResponse = std::optional(KeyResponse {
-                .keyId = 0x4,
-                .key = std::nullopt,
-            }),
-            .readResp = std::optional(AxiReadResp {
-                .good = true,
-                .data = 0x1,
-            })
-        },
-        // Get the second key response back from BRAM after 4 cycles
-        // The key was valid at 160 at the time of request, so it's valid here
-        KeyManagerOutput {
-            .time = 200,
-            .keyResponse = std::optional(KeyResponse {
-                .keyId = 0x4,
-                .key = std::optional(Key {
-                    .top = 0xf1edbeeff2edbeef,
-                    .bottom = 0xdeadbeefdeadbeef,
+        // expected output
+        {
+            // Key writes must succeed, there are four of them
+            KeyManagerOutput {
+                .time = 120,
+                .writeResp = std::optional(AxiWriteResp {
+                    .good = true,
                 }),
-            }),
-        },
-    };
-
-    if (outputs == expected) {
-        exit(EXIT_SUCCESS);
-    }
-
-    printf("Failure - diff Outputs\n");
-    for (auto& output : outputs) {
-        printf("\ntime: %lu\n", output.time);
-        if (output.newEpochRequest) {
-            printf("requested new epoch: %u\n", output.newEpochRequest.value());
+            },
+            KeyManagerOutput {
+                .time = 130,
+                .writeResp = std::optional(AxiWriteResp {
+                    .good = true,
+                }),
+            },
+            KeyManagerOutput {
+                .time = 140,
+                .writeResp = std::optional(AxiWriteResp {
+                    .good = true,
+                }),
+            },
+            KeyManagerOutput {
+                .time = 150,
+                .writeResp = std::optional(AxiWriteResp {
+                    .good = true,
+                }),
+            },
+            // The key status read request should complete immediately (2 cycle latency from 140 when enqueued)
+            // The data should be zero, because the key hasn't been activated yet
+            KeyManagerOutput {
+                .time = 160,
+                .readResp = std::optional(AxiReadResp {
+                    .good = true,
+                    .data = 0,
+                }),
+            },
+            // The key status write request should complete immediately (2 cycle latency from 150 when enqueued)
+            KeyManagerOutput {
+                .time = 170,
+                .writeResp = std::optional(AxiWriteResp {
+                    .good = true,
+                }),
+            },
+            // Get the key response back from BRAM after 4 cycles, and get the readReq of that status back too.
+            // the key was invalid at the time of request, so it's invalid i.e. std::nullopt here.
+            // the writeResp from the last cycle was for enabling it, so the readResp says it *is* valid.
+            KeyManagerOutput {
+                .time = 180,
+                .keyResponse = std::optional(KeyResponse {
+                    .keyId = 0x4,
+                    .key = std::nullopt,
+                }),
+                .readResp = std::optional(AxiReadResp {
+                    .good = true,
+                    .data = 0x1,
+                })
+            },
+            // Get the second key response back from BRAM after 4 cycles
+            // The key was valid at 160 at the time of request, so it's valid here
+            KeyManagerOutput {
+                .time = 200,
+                .keyResponse = std::optional(KeyResponse {
+                    .keyId = 0x4,
+                    .key = std::optional(Key {
+                        .top = 0xf1edbeeff2edbeef,
+                        .bottom = 0xdeadbeefdeadbeef,
+                    }),
+                }),
+            },
         }
-        if (output.keyResponse) {
-            auto resp = output.keyResponse.value();
-            if (resp.key) {
-                printf("finished key access: key %u is valid 0x%08lx%08lx\n", resp.keyId, resp.key.value().top, resp.key.value().bottom);
-            } else {
-                printf("finished key access: key %u is invalid\n", resp.keyId);
-            }
-        }
-        if (output.readResp) {
-            auto resp = output.readResp.value();
-            if (resp.good) {
-                printf("read succeeded, returning 0x%08x\n", resp.data);
-            } else {
-                printf("read failed\n");
-            }
-        }
-        if (output.writeResp) {
-            if (output.writeResp.value().good) {
-                printf("write succeeded\n");
-            } else {
-                printf("write failed\n");
-            }
-        }
-    }
+    );
 }

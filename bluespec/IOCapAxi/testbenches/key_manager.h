@@ -197,6 +197,8 @@ namespace key_manager {
         }
     };
 
+    using KeyManagerInputs = std::vector<KeyManagerInput>;
+
     struct KeyManagerOutput {
         uint64_t time;
         std::optional<Epoch> newEpochRequest;
@@ -213,6 +215,9 @@ namespace key_manager {
                 (this->writeResp == other.writeResp);
         }
     };
+
+    using KeyManagerOutputs = std::vector<KeyManagerOutput>;
+
 
     /**
      * Apply a KeyManagerInput to a Verilator device-under-test.
