@@ -497,8 +497,7 @@ int main(int argc, char** argv) {
         KeyManagerOutputsMaker outputs{};
 
         // Request a key on every cycle - the BRAM should be able to sustain this throughput.
-        // for (uint16_t i = 0; i < 256; i++) { // Do 10 for now to avoid log spamming
-        for (uint16_t i = 0; i < 10; i++) {
+        for (uint16_t i = 0; i < 256; i++) {
             // Request the given key (should always be invalid)
             inputs[100 + (i * 10)].keyRequest = some(i);
             // Get the given key back 4 cycles later
