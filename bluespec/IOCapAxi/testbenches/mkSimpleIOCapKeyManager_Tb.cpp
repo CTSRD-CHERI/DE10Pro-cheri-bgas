@@ -105,16 +105,16 @@ KeyManagerOutputs runDut(TestParams& params, KeyManagerInputs inputs) {
  * Prints a diff of the outputs if it didn't match.
  */
 bool checkDut(TestParams params, KeyManagerInputs inputs, KeyManagerOutputs expectedOut) {
-    printf("\033[1;33mTest: %s\033[0m\n", params.testName);
+    fprintf(stderr, "\033[1;33mTest: %s\033[0m\n", params.testName);
 
     auto outputs = runDut(params, inputs);
 
     if (expectedOut == outputs) {
-        printf("\033[1;32mTest-Success\033[0m\n");
+        fprintf(stderr, "\033[1;32mTest-Success\033[0m\n");
         return true;
     }
 
-    printf("\033[1;31mTest-Failure: Output Diff\033[0m\n");
+    fprintf(stderr, "\033[1;31mTest-Failure: Output Diff\033[0m\n");
 
     dtl::Diff<KeyManagerOutput, KeyManagerOutputs> diff(expectedOut, outputs);
     diff.compose();
@@ -122,13 +122,13 @@ bool checkDut(TestParams params, KeyManagerInputs inputs, KeyManagerOutputs expe
     for (std::pair<KeyManagerOutput, dtl::elemInfo> sesElem : diff.getSes().getSequence()) {
         switch (sesElem.second.type) {
             case dtl::SES_ADD:
-                fmt::print("\033[32m++++++++++\n{}\n++++++++++\033[0m\n", sesElem.first);
+                fmt::print(stderr, "\033[32m++++++++++\n{}\n++++++++++\033[0m\n", sesElem.first);
                 break;
             case dtl::SES_DELETE:
-                fmt::print("\033[91m----------\n{}\n----------\033[0m\n", sesElem.first);
+                fmt::print(stderr, "\033[91m----------\n{}\n----------\033[0m\n", sesElem.first);
                 break;
             case dtl::SES_COMMON:
-                fmt::print("{}\n", sesElem.first);
+                fmt::print(stderr, "{}\n", sesElem.first);
                 break;
         }
     }
