@@ -9,7 +9,7 @@ import LeftShift :: *;
 
 typedef UInt#(1) Epoch;
 typedef Bit#(128) Key;
-// 0x1000 bytes => 4096 bytes => 256 keys => 9 bit ID
+// 0x1000 bytes => 4096 bytes => 256 keys => 8 bit ID
 typedef Bit#(8) KeyId;
 
 interface IOCap_KeyManager#(numeric type t_data);
@@ -41,7 +41,6 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
     // Memory map:
     // [0x0, 0x10, 0x20, 0x30, 0x40... 0x1000) = read/write key status
     // [0x1000, 0x1010, 0x1020... 0x2000)      = write key values
-    // TODO
     // [0x1000, 0x1008, 0x1010, 0x1018]        = read performance counters
     //                                           - good write
     //                                           - bad write
@@ -64,7 +63,7 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
     BRAM1PortBE#(KeyId, Key, 16) keys <- mkBRAM1ServerBE(keysConfig);
     // Make a register with all the key-valid states
     // if keyValid[k] = 0, the key k is not considered valid in the Epoch we're transitioning to.
-    Reg#(Bit#(512)) keyValid <- mkReg(0);
+    Reg#(Bit#(256)) keyValid <- mkReg(0);
 
     PulseWire reqGoodWrite <- mkPulseWire;
     Reg#(UInt#(64)) goodWrite <- mkReg(0);
