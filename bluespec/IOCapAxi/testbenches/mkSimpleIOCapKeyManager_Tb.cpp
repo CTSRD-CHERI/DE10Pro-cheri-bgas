@@ -360,22 +360,111 @@ int main(int argc, char** argv) {
             success = EXIT_FAILURE;
         }
     }
+    
+    // TODO test write_enable
 
-    // {
-    //     TestParams params = TestParams {
-    //         .testName = "Invalidation Epochs",
-    //         .argc = argc,
-    //         .argv = argv,
-    //          // Run for 1k cycles
-    //         .endTime = 1000 * 10
-    //     };
-    //     KeyManagerInputsMaker inputs{};
-    //     KeyManagerOutputsMaker outputs{};
+    {
+        TestParams params = TestParams {
+            .testName = "Invalidation Epochs",
+            .argc = argc,
+            .argv = argv,
+             // Run for 1k cycles
+            .endTime = 1000 * 10
+        };
+        KeyManagerInputsMaker inputs{};
+        KeyManagerOutputsMaker outputs{};
 
-    //     if (!checkDut(params, inputs.asVec(), outputs.asVec())) {
-    //         success = EXIT_FAILURE;
-    //     }
-    // }
+        // Initialize some keys
+        for (uint16_t i = 0; i < 10; i++) {
+            uint64_t time = 100 + (i * 50);
+
+            // Use 4 cycles to write each key data
+            for (uint16_t word = 0; word < 4; word++) {
+                inputs[time + (word * 10)].writeReq = some(AxiWriteReq {
+                    .address = uint16_t(0x1000 + (i * 0x10) + (word * 4)),
+                    .data = i,
+                    .write_enable = 0b1111,
+                });
+                // Write responses have 2-cycle latency
+                outputs[time + (word * 10) + 20].writeResp = some(AxiWriteResp { .good = true });
+            }
+            // Set the key to valid
+            inputs[time + 40].writeReq = some(AxiWriteReq {
+                .address = uint16_t(i * 0x10),
+                .data = 1,
+                .write_enable = 0b1111,
+            });
+            // writes have a 2-cycle latency
+            outputs[time + 40 + 20].writeResp = some(AxiWriteResp { .good = true });
+        }
+
+        // At time = 600 we should have all the keys initialized 
+        uint64_t init_time = 600;
+
+        // Request a key's data before revoking it
+        inputs[init_time + 0].keyRequest = some(0x4);
+        // 4-cycle response latency, will be valid because it was requested before the revoke
+        outputs[init_time + 40].keyResponse = some(KeyResponse {
+            .keyId = 0x4,
+            .key = some(Key {
+                .top = 0x00000004'00000004,
+                .bottom = 0x00000004'00000004,
+            })
+        });
+
+        // Request a key revoke via write 1 cycle later
+        inputs[init_time + 10].writeReq = some(AxiWriteReq {
+            .address = 0x40,
+            .data = 0,
+            .write_enable = 0b1111,
+        });
+        // Get the write response 2 cycles later
+        outputs[init_time + 10 + 20].writeResp = some(AxiWriteResp {
+            .good = true
+        });
+        // Should immediately (2 cycles) trigger a new epoch request
+        // 2 cycles because there's a 1 cycle delay from putting the data in (handle .put on cycle #1, then do the computation from .deq on cycle #2).
+        outputs[init_time + 10 + 20].newEpochRequest = some(1);
+
+        // Request a key's data immediately (1 cycle after revoking)
+        inputs[init_time + 20].keyRequest = some(0x4);
+        // 4-cycle response latency, key will be invalid because it was requested after the revoke
+        // Once a revoke happens, all subsequent key requests return data from the "new epoch".
+        outputs[init_time + 20 + 40].keyResponse = some(KeyResponse {
+            .keyId = 0x4,
+            .key = std::nullopt // invalid
+        });
+
+        // The key's AXI status is 0x2 because it's currently being revoked, but hasn't been revoked yet - we haven't posted the finishedEpoch().
+        // All other keys status should be 0x1.
+
+        for (uint16_t i = 0; i < 10; i++) {
+            inputs[init_time + 20 + i*10].readReq = some(AxiReadReq {
+                .address = uint16_t(i * 0x10),
+            });
+            outputs[init_time + 20 + i*10 + 20].readResp = some(AxiReadResp {
+                .good = true,
+                .data = (i == 0x4) ? 2u : 1u,
+            });
+        }
+
+        // Once we complete the epoch, the revoked key will return a status of 0 over AXI.
+        uint64_t complete_epoch_time = 800;
+        inputs[complete_epoch_time].finishedEpoch = some(0);
+
+        inputs[complete_epoch_time + 10].readReq = some(AxiReadReq {
+            .address = 0x40,
+        });
+        // 2-cycle latency
+        outputs[complete_epoch_time + 10 + 20].readResp = some(AxiReadResp {
+            .good = true,
+            .data = 0,
+        });
+
+        if (!checkDut(params, inputs.asVec(), outputs.asVec())) {
+            success = EXIT_FAILURE;
+        }
+    }
 
     {
         TestParams params = TestParams {
