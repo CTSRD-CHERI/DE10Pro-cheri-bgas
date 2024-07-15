@@ -6,6 +6,8 @@
 #define FMT_HEADER_ONLY
 #include "fmt/format.h"
 
+#include "dtl/dtl.hpp"
+
 using namespace key_manager;
 
 struct TestParams {
@@ -98,41 +100,28 @@ int checkDut(TestParams params, KeyManagerInputs inputs, KeyManagerOutputs expec
 
     auto outputs = runDut(params, inputs);
 
-    if (outputs == expectedOut) {
-        printf("Success\n");
+    if (expectedOut == outputs) {
+        printf("Test-Success\n");
         return 0;
     }
 
-    printf("Failure - diff Outputs\n");
-    for (auto& output : outputs) {
-        fmt::print("{}\n", output);
-        // printf("\ntime: %lu\n", output.time);
-        // if (output.newEpochRequest) {
-        //     printf("requested new epoch: %u\n", output.newEpochRequest.value());
-        // }
-        // if (output.keyResponse) {
-        //     auto resp = output.keyResponse.value();
-        //     if (resp.key) {
-        //         printf("finished key access: key %u is valid 0x%08lx%08lx\n", resp.keyId, resp.key.value().top, resp.key.value().bottom);
-        //     } else {
-        //         printf("finished key access: key %u is invalid\n", resp.keyId);
-        //     }
-        // }
-        // if (output.readResp) {
-        //     auto resp = output.readResp.value();
-        //     if (resp.good) {
-        //         printf("read succeeded, returning 0x%08x\n", resp.data);
-        //     } else {
-        //         printf("read failed\n");
-        //     }
-        // }
-        // if (output.writeResp) {
-        //     if (output.writeResp.value().good) {
-        //         printf("write succeeded\n");
-        //     } else {
-        //         printf("write failed\n");
-        //     }
-        // }
+    printf("Test-Failure: Output Diff\n");
+
+    dtl::Diff<KeyManagerOutput, KeyManagerOutputs> diff(expectedOut, outputs);
+    diff.compose();
+    
+    for (std::pair<KeyManagerOutput, dtl::elemInfo> sesElem : diff.getSes().getSequence()) {
+        switch (sesElem.second.type) {
+            case dtl::SES_ADD:
+                fmt::print("\033[32m++++++++++\n{}\n++++++++++\033[0m\n", sesElem.first);
+                break;
+            case dtl::SES_DELETE:
+                fmt::print("\033[91m----------\n{}\n----------\033[0m\n", sesElem.first);
+                break;
+            case dtl::SES_COMMON:
+                fmt::print("{}\n", sesElem.first);
+                break;
+        }
     }
 
     return 1;
@@ -259,10 +248,10 @@ int main(int argc, char** argv) {
                     .keyId = 0x4,
                     .key = std::nullopt,
                 }),
-                // .readResp = std::optional(AxiReadResp {
-                //     .good = true,
-                //     .data = 0x1,
-                // })
+                .readResp = std::optional(AxiReadResp {
+                    .good = true,
+                    .data = 0x1,
+                })
             },
             // Get the second key response back from BRAM after 4 cycles
             // The key was valid at 160 at the time of request, so it's valid here
