@@ -93,19 +93,21 @@ KeyManagerOutputs runDut(TestParams& params, KeyManagerInputs inputs) {
 }
 
 /**
- * Check a 
+ * Check a DUT produces the given outputs when stimulated with the given inputs.
+ * Returns true if it did, false if it didn't.
+ * Prints a diff of the outputs if it didn't match.
  */
-int checkDut(TestParams params, KeyManagerInputs inputs, KeyManagerOutputs expectedOut) {
-    printf("Test: %s\n", params.testName);
+bool checkDut(TestParams params, KeyManagerInputs inputs, KeyManagerOutputs expectedOut) {
+    printf("\033[1;33mTest: %s\033[0m\n", params.testName);
 
     auto outputs = runDut(params, inputs);
 
     if (expectedOut == outputs) {
-        printf("Test-Success\n");
-        return 0;
+        printf("\033[1;32mTest-Success\033[0m\n");
+        return true;
     }
 
-    printf("Test-Failure: Output Diff\n");
+    printf("\033[1;31mTest-Failure: Output Diff\033[0m\n");
 
     dtl::Diff<KeyManagerOutput, KeyManagerOutputs> diff(expectedOut, outputs);
     diff.compose();
@@ -124,19 +126,22 @@ int checkDut(TestParams params, KeyManagerInputs inputs, KeyManagerOutputs expec
         }
     }
 
-    return 1;
+    return false;
 }
 
 int main(int argc, char** argv) {
-    return checkDut(
-        TestParams {
+    int success = EXIT_SUCCESS;
+
+    {
+        TestParams params = TestParams {
             .testName="Write and enable key over AXI",
             .argc = argc,
             .argv = argv,
              // Run for 1k cycles
             .endTime = 1000 * 10
-        },
-        {
+        };
+        
+        KeyManagerInputs inputs = {
             // Initialize a key's contents
             KeyManagerInput {
                 .time = 100,
@@ -195,9 +200,8 @@ int main(int argc, char** argv) {
                     .address = 0x40,
                 })
             }
-        },
-        // expected output
-        {
+        };
+        KeyManagerOutputs expectedOut = {
             // Key writes must succeed, there are four of them
             KeyManagerOutput {
                 .time = 120,
@@ -265,6 +269,110 @@ int main(int argc, char** argv) {
                     }),
                 }),
             },
+        };
+
+        if (!checkDut(params, inputs, expectedOut)) {
+            success = EXIT_FAILURE;
         }
-    );
+    }
+
+    {
+        TestParams params = TestParams {
+            .testName="Write and enable key over AXI - event-based construction",
+            .argc = argc,
+            .argv = argv,
+             // Run for 1k cycles
+            .endTime = 1000 * 10
+        };
+
+        KeyManagerInputsMaker inputs{};
+        KeyManagerOutputsMaker outputs{};
+
+        // Initialize a key's contents - all write responses are delayed by 2 cycles and must return true
+        inputs[100].writeReq = std::optional(AxiWriteReq {
+            .address = 0x1040,
+            .data = 0xdeadbeef,
+            .write_enable = 0b1111,
+        });
+        outputs[120].writeResp = std::optional(AxiWriteResp { .good = true });
+
+        inputs[110].writeReq = std::optional(AxiWriteReq {
+            .address = 0x1044,
+            .data = 0xdeadbeef,
+            .write_enable = 0b1111,
+        });
+        outputs[130].writeResp = std::optional(AxiWriteResp { .good = true });
+
+        inputs[120].writeReq = std::optional(AxiWriteReq {
+            .address = 0x1048,
+            .data = 0xf2edbeef,
+            .write_enable = 0b1111,
+        });
+        outputs[140].writeResp = std::optional(AxiWriteResp { .good = true });
+
+        inputs[130].writeReq = std::optional(AxiWriteReq {
+            .address = 0x104C,
+            .data = 0xf1edbeef,
+            .write_enable = 0b1111,
+        });
+        outputs[150].writeResp = std::optional(AxiWriteResp { .good = true });
+
+        // Request the key's status through the keyRequests (includes key value) and AXI read (status only) ports.
+        inputs[140].keyRequest = std::optional(0x4);
+        inputs[140].readReq = std::optional(AxiReadReq { .address = 0x40 });
+        // The keyResponse will arrive in 4 cycles (the latency of the BRAM) and will have the validity-at-point-of-request
+        // i.e. the key data will be invalid, because at tick 140 we hadn't set it valid yet.
+        outputs[180].keyResponse = std::optional(KeyResponse { .keyId = 0x4, .key = std::nullopt });
+        // The AXI read response will return with 2 cycle latency and will be 0 (key invalid)
+        outputs[160].readResp = std::optional(AxiReadResp { .good = true, .data = 0 });
+
+        // Try setting the key's status to Valid, now the data has gone through.
+        inputs[150].writeReq = std::optional(AxiWriteReq {
+            .address = 0x40,
+            .data = 0x1,
+            .write_enable = 0b1111,
+        });
+        // The AXI write response will return with 2 cycle latency
+        outputs[170].writeResp = std::optional(AxiWriteResp { .good = true });
+
+        // Try reading the key status in both ways again
+        inputs[160].keyRequest = std::optional(0x4);
+        inputs[160].readReq = std::optional(AxiReadReq { .address = 0x40 });
+        // The keyResponse will arrive in 4 cycles (the latency of the BRAM) and will have the validity-at-point-of-request
+        // i.e. the key data will be invalid, because at tick 140 we hadn't set it valid yet.
+        outputs[200].keyResponse = std::optional(KeyResponse {
+            .keyId = 0x4,
+            .key = std::optional(Key {
+                .top = 0xf1edbeeff2edbeef,
+                .bottom = 0xdeadbeefdeadbeef,
+            }),
+        });
+        // The AXI read response will return with 2 cycle latency and will be 1 (key valid)
+        outputs[180].readResp = std::optional(AxiReadResp { .good = true, .data = 1 });
+
+        if (!checkDut(params, inputs.asVec(), outputs.asVec())) {
+            success = EXIT_FAILURE;
+        }
+    }
+
+    // Template for further test creation
+    /*
+    {
+        TestParams params = TestParams {
+            .testName = ,
+            .argc = argc,
+            .argv = argv,
+             // Run for 1k cycles
+            .endTime = 1000 * 10
+        };
+        KeyManagerInputsMaker inputs{};
+        KeyManagerOutputsMaker outputs{};
+
+        if (!checkDut(params, inputs.asVec(), outputs.asVec())) {
+            success = EXIT_FAILURE;
+        }
+    }
+    */
+    
+    return success;
 }

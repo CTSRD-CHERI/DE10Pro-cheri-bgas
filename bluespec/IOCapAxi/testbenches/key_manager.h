@@ -7,6 +7,38 @@
 #define FMT_HEADER_ONLY
 #include "fmt/format.h"
 
+/**
+ * Container for items of type T where (T::time) is a uint64_t, allowing Python defaultdict-style creation.
+ * e.g. from an empty Maker, `maker[100].blah = "blah";` will construct a T, map it to time 100 and set `t.time = 100`, then return a reference for the user to modify.
+ * The asVec() function converts it to a vector.
+ * 
+ */
+template<class T>
+class TimeSeriesMaker {
+    std::map<uint64_t, T> elems;
+
+public:
+
+    std::vector<T> asVec() {
+        std::vector<T> v;
+        for (const auto& [time, elem] : elems) {
+            v.push_back(elem);
+        }
+        return v;
+    }
+
+    T& operator[](const uint64_t& key) {
+        auto iter = elems.find(key);
+        if (iter == elems.end()) {
+            T elem{};
+            elem.time = key;
+            elems[key] = elem;
+            return elems[key];
+        }
+        return (*iter).second;
+    }
+};
+
 namespace key_manager {
 
     using Epoch = uint8_t;
@@ -204,6 +236,7 @@ namespace key_manager {
     };
 
     using KeyManagerInputs = std::vector<KeyManagerInput>;
+    using KeyManagerInputsMaker = TimeSeriesMaker<KeyManagerInput>;
 
     struct KeyManagerOutput {
         uint64_t time;
@@ -223,6 +256,7 @@ namespace key_manager {
     };
 
     using KeyManagerOutputs = std::vector<KeyManagerOutput>;
+    using KeyManagerOutputsMaker = TimeSeriesMaker<KeyManagerOutput>;
 
 
     /**
