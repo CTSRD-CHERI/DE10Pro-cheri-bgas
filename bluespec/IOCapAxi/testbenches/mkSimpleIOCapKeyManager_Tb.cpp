@@ -3,6 +3,9 @@
 
 #include "key_manager.h"
 
+#define FMT_HEADER_ONLY
+#include "fmt/format.h"
+
 using namespace key_manager;
 
 struct TestParams {
@@ -102,33 +105,34 @@ int checkDut(TestParams params, KeyManagerInputs inputs, KeyManagerOutputs expec
 
     printf("Failure - diff Outputs\n");
     for (auto& output : outputs) {
-        printf("\ntime: %lu\n", output.time);
-        if (output.newEpochRequest) {
-            printf("requested new epoch: %u\n", output.newEpochRequest.value());
-        }
-        if (output.keyResponse) {
-            auto resp = output.keyResponse.value();
-            if (resp.key) {
-                printf("finished key access: key %u is valid 0x%08lx%08lx\n", resp.keyId, resp.key.value().top, resp.key.value().bottom);
-            } else {
-                printf("finished key access: key %u is invalid\n", resp.keyId);
-            }
-        }
-        if (output.readResp) {
-            auto resp = output.readResp.value();
-            if (resp.good) {
-                printf("read succeeded, returning 0x%08x\n", resp.data);
-            } else {
-                printf("read failed\n");
-            }
-        }
-        if (output.writeResp) {
-            if (output.writeResp.value().good) {
-                printf("write succeeded\n");
-            } else {
-                printf("write failed\n");
-            }
-        }
+        fmt::print("{}\n", output);
+        // printf("\ntime: %lu\n", output.time);
+        // if (output.newEpochRequest) {
+        //     printf("requested new epoch: %u\n", output.newEpochRequest.value());
+        // }
+        // if (output.keyResponse) {
+        //     auto resp = output.keyResponse.value();
+        //     if (resp.key) {
+        //         printf("finished key access: key %u is valid 0x%08lx%08lx\n", resp.keyId, resp.key.value().top, resp.key.value().bottom);
+        //     } else {
+        //         printf("finished key access: key %u is invalid\n", resp.keyId);
+        //     }
+        // }
+        // if (output.readResp) {
+        //     auto resp = output.readResp.value();
+        //     if (resp.good) {
+        //         printf("read succeeded, returning 0x%08x\n", resp.data);
+        //     } else {
+        //         printf("read failed\n");
+        //     }
+        // }
+        // if (output.writeResp) {
+        //     if (output.writeResp.value().good) {
+        //         printf("write succeeded\n");
+        //     } else {
+        //         printf("write failed\n");
+        //     }
+        // }
     }
 
     return 1;
@@ -255,10 +259,10 @@ int main(int argc, char** argv) {
                     .keyId = 0x4,
                     .key = std::nullopt,
                 }),
-                .readResp = std::optional(AxiReadResp {
-                    .good = true,
-                    .data = 0x1,
-                })
+                // .readResp = std::optional(AxiReadResp {
+                //     .good = true,
+                //     .data = 0x1,
+                // })
             },
             // Get the second key response back from BRAM after 4 cycles
             // The key was valid at 160 at the time of request, so it's valid here

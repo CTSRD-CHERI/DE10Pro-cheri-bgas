@@ -1,5 +1,11 @@
+#ifndef KEY_MANAGER_INCL
+#define KEY_MANAGER_INCL 1
+
 #include <cstdint>
 #include <optional>
+
+#define FMT_HEADER_ONLY
+#include "fmt/format.h"
 
 namespace key_manager {
 
@@ -345,3 +351,90 @@ namespace key_manager {
     }
 
 }
+
+template <class T> class fmt::formatter<std::optional<T>> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (std::optional<T> const& x, Context& ctx) const {
+        if (x.has_value()) {
+            return format_to(ctx.out(), "Some({})", x.value());
+        } else {
+            return format_to(ctx.out(), "None");
+        }
+    }
+};
+
+template <> class fmt::formatter<key_manager::Key> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (key_manager::Key const& key, Context& ctx) const {
+        return format_to(ctx.out(), "0x{:08x}{:08x}", key.top, key.bottom);
+    }
+};
+
+template <> class fmt::formatter<key_manager::KeyResponse> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (key_manager::KeyResponse const& key, Context& ctx) const {
+        return format_to(ctx.out(), "KeyResponse {{ .keyId = {}, .key = {} }}", key.keyId, key.key);
+    }
+};
+
+template <> class fmt::formatter<key_manager::AxiWriteReq> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (key_manager::AxiWriteReq const& x, Context& ctx) const {
+        return format_to(ctx.out(), "AxiWriteReq {{ .address = 0x{:08x}, .data = 0x{:08x}, .write_enable = 0b{:04b} }}", x.address, x.data, x.write_enable);
+    }
+};
+
+template <> class fmt::formatter<key_manager::AxiReadReq> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (key_manager::AxiReadReq const& x, Context& ctx) const {
+        return format_to(ctx.out(), "AxiReadReq {{ .address = 0x{:08x} }}", x.address);
+    }
+};
+
+template <> class fmt::formatter<key_manager::AxiWriteResp> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (key_manager::AxiWriteResp const& x, Context& ctx) const {
+        return format_to(ctx.out(), "AxiWriteResp {{ .good = {} }}", x.good);
+    }
+};
+
+template <> class fmt::formatter<key_manager::AxiReadResp> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (key_manager::AxiReadResp const& x, Context& ctx) const {
+        return format_to(ctx.out(), "AxiReadResp {{ .good = {}, .data = 0x{:08x} }}", x.good, x.data);
+    }
+};
+
+template <> class fmt::formatter<key_manager::KeyManagerInput> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (key_manager::KeyManagerInput const& x, Context& ctx) const {
+        return format_to(ctx.out(), "KeyManagerInput {{\n\t.time = {},\n\t.keyRequest = {},\n\t.finishedEpoch = {},\n\t.readReq = {},\n\t.writeReq = {},\n}}", x.time, x.keyRequest, x.finishedEpoch, x.readReq, x.writeReq);
+    }
+};
+
+template <> class fmt::formatter<key_manager::KeyManagerOutput> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (key_manager::KeyManagerOutput const& x, Context& ctx) const {
+        return format_to(ctx.out(), "KeyManagerOutput {{\n\t.time = {},\n\t.keyResponse = {},\n\t.newEpochRequest = {},\n\t.readResp = {},\n\t.writeResp = {},\n}}", x.time, x.keyResponse, x.newEpochRequest, x.readResp, x.writeResp);
+    }
+};
+
+#endif // KEY_MANAGER_INCL
