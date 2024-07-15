@@ -15,8 +15,6 @@ template<class T>
 std::optional<T> some(T t) {
     return std::optional(t);
 }
-template<class T>
-std::optional<T> none = std::nullopt;
 
 struct TestParams {
     const char* testName;
@@ -357,6 +355,50 @@ int main(int argc, char** argv) {
         });
         // The AXI read response will return with 2 cycle latency and will be 1 (key valid)
         outputs[180].readResp = some(AxiReadResp { .good = true, .data = 1 });
+
+        if (!checkDut(params, inputs.asVec(), outputs.asVec())) {
+            success = EXIT_FAILURE;
+        }
+    }
+
+    // {
+    //     TestParams params = TestParams {
+    //         .testName = "Invalidation Epochs",
+    //         .argc = argc,
+    //         .argv = argv,
+    //          // Run for 1k cycles
+    //         .endTime = 1000 * 10
+    //     };
+    //     KeyManagerInputsMaker inputs{};
+    //     KeyManagerOutputsMaker outputs{};
+
+    //     if (!checkDut(params, inputs.asVec(), outputs.asVec())) {
+    //         success = EXIT_FAILURE;
+    //     }
+    // }
+
+    {
+        TestParams params = TestParams {
+            .testName = "Key Request - 1/cycle Throughput",
+            .argc = argc,
+            .argv = argv,
+             // Run until t = 3000
+            .endTime = 3000
+        };
+        KeyManagerInputsMaker inputs{};
+        KeyManagerOutputsMaker outputs{};
+
+        // Request a key on every cycle - the BRAM should be able to sustain this throughput.
+        // for (uint16_t i = 0; i < 256; i++) { // Do 10 for now to avoid log spamming
+        for (uint16_t i = 0; i < 10; i++) {
+            // Request the given key (should always be invalid)
+            inputs[100 + (i * 10)].keyRequest = some(i);
+            // Get the given key back 4 cycles later
+            outputs[140 + (i * 10)].keyResponse = some(KeyResponse {
+                .keyId = i,
+                .key = std::nullopt,
+            });
+        }
 
         if (!checkDut(params, inputs.asVec(), outputs.asVec())) {
             success = EXIT_FAILURE;

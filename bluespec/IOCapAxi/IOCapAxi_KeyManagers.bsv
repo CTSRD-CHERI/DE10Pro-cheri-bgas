@@ -24,7 +24,7 @@ interface IOCap_KeyManager#(numeric type t_data);
     interface Source#(Epoch) newEpochRequests;
     interface Sink#(Epoch) finishedEpochs;
 
-    interface AXI4Lite_Slave#(13 /* TLog#('h2000) */, t_data, 0, 0, 0, 0, 0) hostFacingSlave;
+    interface AXI4Lite_Slave#(TLog#('h2000), t_data, 0, 0, 0, 0, 0) hostFacingSlave;
 endinterface
 
 module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
@@ -39,13 +39,19 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
     // Memory map:
     // [0x0, 0x10, 0x20, 0x30, 0x40... 0x1000) = read/write key status
     // [0x1000, 0x1010, 0x1020... 0x2000)      = write key values
+    // TODO
+    // [0x1000, 0x1008, 0x1010, 0x1018]        = read performance counters
+    //                                           - good write
+    //                                           - bad write
+    //                                           - good read
+    //                                           - bad read
 
     // Need a BRAM with key data
     // Set up the secret BRAM
     BRAM_Configure keysConfig = BRAM_Configure {
         memorySize: 0, // Inferred from the KeyId parameter to BRAM1Port below
         latency: 2, // (address is registered, data is too because this isn't latency sensitive)
-        loadFormat: None, // tagged Hex "exhibition_validallcavs_secrets.memh",
+        loadFormat: None,
         outFIFODepth: 3, // latency+2
         allowWriteResponseBypass: False // TODO check if this is fine
     };
@@ -54,7 +60,8 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
     // Holds items of type Key
     // 16 byte-enable wires
     BRAM1PortBE#(KeyId, Key, 16) keys <- mkBRAM1ServerBE(keysConfig);
-    // Make a register with all the key-valid states - if keyValid[k] = 0, the key k is not considered valid.
+    // Make a register with all the key-valid states
+    // if keyValid[k] = 0, the key k is not considered valid in the Epoch we're transitioning to.
     Reg#(Bit#(512)) keyValid <- mkReg(0);
 
     PulseWire reqGoodWrite <- mkPulseWire;
@@ -234,7 +241,7 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
 
                 keys.portA.request.put(BRAMRequestBE {
                     writeen: bramByteEnable,
-                    // Don't send a write-response, we pipe those 1:1 out into keyResponses
+                    // Don't send a write-response, we pipe responses 1:1 out into keyResponses
                     responseOnWrite: False,
                     address: k,
                     datain: bramWriteData
@@ -286,7 +293,8 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
     // If we request a key from BRAM while it's invalid, then AXI requests write to the BRAM *and* set keyValid, we may receive old write-data but use the new keyValid and effectively reanimate stale key data.
     // If we request a key from BRAM while it's valid, then AXI requests *unset* keyValid, it's not technically a problem - the key is now invalid. TODO allow invalidations to time-travel forwards?
     // TODO eventually replace with a fixed-length pipeline - requires keyRespFF to never have backpressure, which requires the Exposer to never give it backpressure....?
-    let pendingKeyIdFF <- mkFIFOF;
+    // The latency of the BRAM is 4, so the pending-key FIFO should also be 4 - as long as we're constantly pulling out of the key responses we'll have 1/cycle throughput
+    let pendingKeyIdFF <- mkSizedFIFOF(4);
     // Queue of outgoing responses to the Exposer with (KeyID, Key) pairs.
     let keyRespFF <- mkFIFOF;
 
