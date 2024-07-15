@@ -413,6 +413,7 @@ int main(int argc, char** argv) {
         });
 
         // Request a key revoke via write 1 cycle later
+        // Can't request it on the same cycle as the previous request - the write would take priority over the read, there's only one BRAM port
         inputs[init_time + 10].writeReq = some(AxiWriteReq {
             .address = 0x40,
             .data = 0,
@@ -425,6 +426,14 @@ int main(int argc, char** argv) {
         // Should immediately (2 cycles) trigger a new epoch request
         // 2 cycles because there's a 1 cycle delay from putting the data in (handle .put on cycle #1, then do the computation from .deq on cycle #2).
         outputs[init_time + 10 + 20].newEpochRequest = some(1);
+        // Reading the status on the same cycle as writing it will return the old status
+        inputs[init_time + 10].readReq = some(AxiReadReq {
+            .address = 0x40,
+        });
+        outputs[init_time + 10 + 20].readResp = some(AxiReadResp {
+            .good = true,
+            .data = 1, // valid key
+        });
 
         // Request a key's data immediately (1 cycle after revoking)
         inputs[init_time + 20].keyRequest = some(0x4);
@@ -437,14 +446,23 @@ int main(int argc, char** argv) {
 
         // The key's AXI status is 0x2 because it's currently being revoked, but hasn't been revoked yet - we haven't posted the finishedEpoch().
         // All other keys status should be 0x1.
+        // Read 0x40 as soon as possible after revoking (1 cycle later)
+        inputs[init_time + 20].readReq = some(AxiReadReq {
+            .address = 0x40
+        });
+        outputs[init_time + 20 + 20].readResp = some(AxiReadResp {
+            .good = true,
+            .data = 2, // invalid in next epoch, current epoch still ongoing => key may still be authenticating accesses
+        });
 
         for (uint16_t i = 0; i < 10; i++) {
-            inputs[init_time + 20 + i*10].readReq = some(AxiReadReq {
+            if (i == 0x4) continue;
+            inputs[init_time + 30 + i*10].readReq = some(AxiReadReq {
                 .address = uint16_t(i * 0x10),
             });
-            outputs[init_time + 20 + i*10 + 20].readResp = some(AxiReadResp {
+            outputs[init_time + 30 + i*10 + 20].readResp = some(AxiReadResp {
                 .good = true,
-                .data = (i == 0x4) ? 2u : 1u,
+                .data = 1,
             });
         }
 

@@ -85,9 +85,20 @@ module mkSimpleIOCapAxiChecker(IOCapAxiChecker#(no_iocap_flit)) provisos (Bits#(
 
         case (reqs.first) matches
             { .authFlit, tagged Invalid } : begin
-                // Got a request to use an invalid key
-                // Just pass it through to the output, 1 cycle latency
-                resps.enq(tuple2(authFlit.flit, False));
+                // // Got a request to use an invalid key
+                // // Just pass it through to the output, 1 cycle latency
+                // resps.enq(tuple2(authFlit.flit, False));
+
+                // TEST - actually put everything through the checking system
+                flitInProgress <= tagged Valid (tagged WaitingForBoundsAndDecodeAndSig (authFlit.flit));
+                // Will take ~18 cycles
+                sigCheckIn.enq(CapSigCheckIn {
+                    cap: authFlit.cap,
+                    expectedSig: authFlit.sig,
+                    secret: 128'hdeadbeef
+                });
+                // Will take ~7 cycles at most - always shorter than sigCheckIn
+                decodeIn.enq(authFlit.cap);
             end
             { .authFlit, tagged Valid .key } : begin                
                 flitInProgress <= tagged Valid (tagged WaitingForBoundsAndDecodeAndSig (authFlit.flit));
