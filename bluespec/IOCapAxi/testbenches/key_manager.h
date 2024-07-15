@@ -9,11 +9,21 @@ namespace key_manager {
     struct Key {
         uint64_t top;
         uint64_t bottom;
+
+        bool operator==(const Key& other) const {
+            return (this->top == other.top) &&
+                (this->bottom == other.bottom);
+        }
     };
 
     struct KeyResponse {
         KeyId keyId;
         std::optional<Key> key;
+
+        bool operator==(const KeyResponse& other) const {
+            return (this->keyId == other.keyId) &&
+                (this->key == other.key);
+        }
     };
 
     // 13-bit address, 32-bit data AXI4-Lite
@@ -27,47 +37,68 @@ namespace key_manager {
         DecErr = 0b11,
     };
 
-    union AWFlit {
+    // Can't bitpack these flits because sometimes gcc forces fields to be byte-aligned!
+    struct AWFlit {
         // struct {
         //     uint16_t prot : 3;
         //     uint16_t addr : 13;
         // };
         uint16_t flit;
+        
+        bool operator==(const AWFlit& other) const {
+            return this->flit == other.flit;
+        }
     };
 
-    union WFlit {
-        // Can't bitpack here because gcc forces fields to be byte-aligned!
+    struct WFlit {
         // struct {
         //     uint8_t wstrb : 4;
         //     AxiData  data  : 32;
         //     uint32_t       : 28;
         // };
         uint64_t flit;
+
+        bool operator==(const WFlit& other) const {
+            return this->flit == other.flit;
+        }
     };
 
-    union BFlit {
+    struct BFlit {
         // struct {
         //     uint8_t        : 6;
         //     AXI4_Resp resp : 2;
         // };
         uint8_t flit;
+        
+        bool operator==(const BFlit& other) const {
+            return this->flit == other.flit;
+        }
     };
 
-    union ARFlit {
+    struct ARFlit {
         // struct {
         //     uint16_t prot : 3;
         //     uint16_t addr : 13;
         // };
         uint16_t flit;
+        
+        bool operator==(const ARFlit& other) const {
+            return this->flit == other.flit;
+        }
     };
 
-    union RFlit {
+    struct RFlit {
         // struct {
         //     AXI4_Resp resp : 2;
         //     AxiData   data : 32;
         //     uint32_t       : 30;
         // };
+
         uint64_t flit;
+        
+        bool operator==(const RFlit& other) const {
+            return this->flit == other.flit;
+        }
     };
 
     struct AxiWriteReq {
@@ -75,42 +106,72 @@ namespace key_manager {
         uint32_t data;
         uint8_t write_enable;
 
-        AWFlit aw_flit() {
+        AWFlit aw_flit() const {
             AWFlit flit{};
             constexpr uint16_t prot = 0b000;
             flit.flit = ((this->address & 0x1FFFu) << 3) | (prot << 0);
             return flit;
         }
-        WFlit w_flit() {
+        WFlit w_flit() const {
             WFlit flit{};
             // flit.flit = 0xacacacacacacacac;
             flit.flit = (0xacacacaul << 36) | (uint64_t(this->data) << 4) | (uint64_t(this->write_enable) & 0xF);
             return flit;
+        }
+
+        bool operator==(const AxiWriteReq& other) const {
+            return (this->address == other.address) &&
+                (this->data == other.data) &&
+                (this->write_enable == other.write_enable);
         }
     };
 
     struct AxiWriteResp {
         bool good;
 
-        AxiWriteResp(BFlit flit) : good((flit.flit & 0b11) == uint8_t(AXI4_Resp::Okay)) {}
+        // Don't use a constructor for this because then we can't brace-initialize
+        static AxiWriteResp from_flit(BFlit flit) {
+            return AxiWriteResp {
+                .good = ((flit.flit & 0b11) == uint8_t(AXI4_Resp::Okay)),
+            };
+        }
+
+        bool operator==(const AxiWriteResp& other) const {
+            return this->good == other.good;
+        }
     };
 
     struct AxiReadReq {
         AxiAddress address; // 13 bits
 
-        ARFlit ar_flit() {
+        ARFlit ar_flit() const {
             ARFlit flit{};
             constexpr uint16_t prot = 0b000;
             flit.flit = ((this->address & 0x1FFFu) << 3) | (prot << 0);
             return flit;
+        }
+
+        bool operator==(const AxiReadReq& other) const {
+            return this->address == other.address;
         }
     };
 
     struct AxiReadResp {
         bool good;
         AxiData data;
+        
+        // Don't use a constructor for this because then we can't brace-initialize
+        static AxiReadResp from_flit(RFlit flit) {
+            return AxiReadResp {
+                .good = ((flit.flit & 0b11) == uint8_t(AXI4_Resp::Okay)),
+                .data = uint32_t(flit.flit >> 2),
+            };
+        }
 
-        AxiReadResp(RFlit flit) : good((flit.flit & 0b11) == uint8_t(AXI4_Resp::Okay)), data(flit.flit >> 2) {}
+        bool operator==(const AxiReadResp& other) const {
+            return (this->good == other.good) &&
+                (this->data == other.data);
+        }
     };
 
     struct KeyManagerInput {
@@ -126,6 +187,14 @@ namespace key_manager {
         std::optional<Epoch> finishedEpoch;
         std::optional<AxiWriteReq> writeReq;
         std::optional<AxiReadReq> readReq;
+
+        bool operator==(const KeyManagerInput& other) const {
+            return (this->time == other.time) && 
+                (this->keyRequest == other.keyRequest) && 
+                (this->finishedEpoch == other.finishedEpoch) && 
+                (this->writeReq == other.writeReq) && 
+                (this->readReq == other.readReq);
+        }
     };
 
     struct KeyManagerOutput {
@@ -133,8 +202,16 @@ namespace key_manager {
         std::optional<Epoch> newEpochRequest;
         std::optional<KeyResponse> keyResponse;
 
-        std::optional<AxiReadResp> axiReadResp;
-        std::optional<AxiWriteResp> axiWriteResp;
+        std::optional<AxiReadResp> readResp;
+        std::optional<AxiWriteResp> writeResp;
+
+        bool operator==(const KeyManagerOutput& other) const {
+            return (this->time == other.time) && 
+                (this->newEpochRequest == other.newEpochRequest) && 
+                (this->keyResponse == other.keyResponse) && 
+                (this->readResp == other.readResp) && 
+                (this->writeResp == other.writeResp);
+        }
     };
 
     /**
@@ -244,7 +321,7 @@ namespace key_manager {
         if (CANPEEK(hostFacingSlave_r)) {
             RFlit rflit;
             POP(hostFacingSlave_r, rflit.flit);
-            output.axiReadResp = std::optional(AxiReadResp(rflit));
+            output.readResp = std::optional(AxiReadResp::from_flit(rflit));
         } else {
             NOPOP(hostFacingSlave_r);
         }
@@ -252,7 +329,7 @@ namespace key_manager {
         if (CANPEEK(hostFacingSlave_b)) {
             BFlit bflit;
             POP(hostFacingSlave_b, bflit.flit);
-            output.axiWriteResp = std::optional(AxiWriteResp(bflit));
+            output.writeResp = std::optional(AxiWriteResp::from_flit(bflit));
         } else {
             NOPOP(hostFacingSlave_b);
         }

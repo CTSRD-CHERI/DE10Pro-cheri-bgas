@@ -62,12 +62,10 @@ std::vector<KeyManagerOutput> checkDut(int argc, char** argv, std::vector<KeyMan
                 output.time = main_time;
                 pull_output(dut, output);
 
-                if (output.axiReadResp || output.axiWriteResp || output.keyResponse || output.newEpochRequest) {
+                // Only remember non-zero outputs
+                if (output.readResp || output.writeResp || output.keyResponse || output.newEpochRequest) {
                     outputs.push_back(std::move(output));
                 }
-
-                // then compare the outputs to the expected.
-                // TODO
             }
 
             dut.eval();
@@ -149,7 +147,81 @@ int main(int argc, char** argv) {
         1000 * 10
     );
 
-    printf("Outputs\n");
+    std::vector<KeyManagerOutput> expected{
+        // Key writes must succeed, there are four of them
+        KeyManagerOutput {
+            .time = 120,
+            .writeResp = std::optional(AxiWriteResp {
+                .good = true,
+            }),
+        },
+        KeyManagerOutput {
+            .time = 130,
+            .writeResp = std::optional(AxiWriteResp {
+                .good = true,
+            }),
+        },
+        KeyManagerOutput {
+            .time = 140,
+            .writeResp = std::optional(AxiWriteResp {
+                .good = true,
+            }),
+        },
+        KeyManagerOutput {
+            .time = 150,
+            .writeResp = std::optional(AxiWriteResp {
+                .good = true,
+            }),
+        },
+        // The key status read request should complete immediately (2 cycle latency from 140 when enqueued)
+        // The data should be zero, because the key hasn't been activated yet
+        KeyManagerOutput {
+            .time = 160,
+            .readResp = std::optional(AxiReadResp {
+                .good = true,
+                .data = 0,
+            }),
+        },
+        // The key status write request should complete immediately (2 cycle latency from 150 when enqueued)
+        KeyManagerOutput {
+            .time = 170,
+            .writeResp = std::optional(AxiWriteResp {
+                .good = true,
+            }),
+        },
+        // Get the key response back from BRAM after 4 cycles, and get the readReq of that status back too.
+        // the key was invalid at the time of request, so it's invalid i.e. std::nullopt here.
+        // the writeResp from the last cycle was for enabling it, so the readResp says it *is* valid.
+        KeyManagerOutput {
+            .time = 180,
+            .keyResponse = std::optional(KeyResponse {
+                .keyId = 0x4,
+                .key = std::nullopt,
+            }),
+            .readResp = std::optional(AxiReadResp {
+                .good = true,
+                .data = 0x1,
+            })
+        },
+        // Get the second key response back from BRAM after 4 cycles
+        // The key was valid at 160 at the time of request, so it's valid here
+        KeyManagerOutput {
+            .time = 200,
+            .keyResponse = std::optional(KeyResponse {
+                .keyId = 0x4,
+                .key = std::optional(Key {
+                    .top = 0xf1edbeeff2edbeef,
+                    .bottom = 0xdeadbeefdeadbeef,
+                }),
+            }),
+        },
+    };
+
+    if (outputs == expected) {
+        exit(EXIT_SUCCESS);
+    }
+
+    printf("Failure - diff Outputs\n");
     for (auto& output : outputs) {
         printf("\ntime: %lu\n", output.time);
         if (output.newEpochRequest) {
@@ -163,16 +235,16 @@ int main(int argc, char** argv) {
                 printf("finished key access: key %u is invalid\n", resp.keyId);
             }
         }
-        if (output.axiReadResp) {
-            auto resp = output.axiReadResp.value();
+        if (output.readResp) {
+            auto resp = output.readResp.value();
             if (resp.good) {
                 printf("read succeeded, returning 0x%08x\n", resp.data);
             } else {
                 printf("read failed\n");
             }
         }
-        if (output.axiWriteResp) {
-            if (output.axiWriteResp.value().good) {
+        if (output.writeResp) {
+            if (output.writeResp.value().good) {
                 printf("write succeeded\n");
             } else {
                 printf("write failed\n");
