@@ -10,6 +10,14 @@
 
 using namespace key_manager;
 
+// Helper function
+template<class T>
+std::optional<T> some(T t) {
+    return std::optional(t);
+}
+template<class T>
+std::optional<T> none = std::nullopt;
+
 struct TestParams {
     const char* testName;
     int argc;
@@ -145,7 +153,7 @@ int main(int argc, char** argv) {
             // Initialize a key's contents
             KeyManagerInput {
                 .time = 100,
-                .writeReq = std::optional(AxiWriteReq {
+                .writeReq = some(AxiWriteReq {
                     .address = 0x1040,
                     .data = 0xdeadbeef,
                     .write_enable = 0b1111,
@@ -153,7 +161,7 @@ int main(int argc, char** argv) {
             },
             KeyManagerInput {
                 .time = 110,
-                .writeReq = std::optional(AxiWriteReq {
+                .writeReq = some(AxiWriteReq {
                     .address = 0x1044,
                     .data = 0xdeadbeef,
                     .write_enable = 0b1111,
@@ -161,7 +169,7 @@ int main(int argc, char** argv) {
             },
             KeyManagerInput {
                 .time = 120,
-                .writeReq = std::optional(AxiWriteReq {
+                .writeReq = some(AxiWriteReq {
                     .address = 0x1048,
                     .data = 0xf2edbeef,
                     .write_enable = 0b1111,
@@ -169,7 +177,7 @@ int main(int argc, char** argv) {
             },
             KeyManagerInput {
                 .time = 130,
-                .writeReq = std::optional(AxiWriteReq {
+                .writeReq = some(AxiWriteReq {
                     .address = 0x104C,
                     .data = 0xf1edbeef,
                     .write_enable = 0b1111,
@@ -178,15 +186,15 @@ int main(int argc, char** argv) {
             // Request it (should still be null because that status hasn't been set)
             KeyManagerInput {
                 .time = 140,
-                .keyRequest = std::optional(0x4),
-                .readReq = std::optional(AxiReadReq {
+                .keyRequest = some(0x4),
+                .readReq = some(AxiReadReq {
                     .address = 0x40,
                 })
             },
             // Set the status to valid
             KeyManagerInput {
                 .time = 150,
-                .writeReq = std::optional(AxiWriteReq {
+                .writeReq = some(AxiWriteReq {
                     .address = 0x40,
                     .data = 0x1,
                     .write_enable = 0b1111,
@@ -195,8 +203,8 @@ int main(int argc, char** argv) {
             // Then request it again
             KeyManagerInput {
                 .time = 160,
-                .keyRequest = std::optional(0x4),
-                .readReq = std::optional(AxiReadReq {
+                .keyRequest = some(0x4),
+                .readReq = some(AxiReadReq {
                     .address = 0x40,
                 })
             }
@@ -205,25 +213,25 @@ int main(int argc, char** argv) {
             // Key writes must succeed, there are four of them
             KeyManagerOutput {
                 .time = 120,
-                .writeResp = std::optional(AxiWriteResp {
+                .writeResp = some(AxiWriteResp {
                     .good = true,
                 }),
             },
             KeyManagerOutput {
                 .time = 130,
-                .writeResp = std::optional(AxiWriteResp {
+                .writeResp = some(AxiWriteResp {
                     .good = true,
                 }),
             },
             KeyManagerOutput {
                 .time = 140,
-                .writeResp = std::optional(AxiWriteResp {
+                .writeResp = some(AxiWriteResp {
                     .good = true,
                 }),
             },
             KeyManagerOutput {
                 .time = 150,
-                .writeResp = std::optional(AxiWriteResp {
+                .writeResp = some(AxiWriteResp {
                     .good = true,
                 }),
             },
@@ -231,7 +239,7 @@ int main(int argc, char** argv) {
             // The data should be zero, because the key hasn't been activated yet
             KeyManagerOutput {
                 .time = 160,
-                .readResp = std::optional(AxiReadResp {
+                .readResp = some(AxiReadResp {
                     .good = true,
                     .data = 0,
                 }),
@@ -239,7 +247,7 @@ int main(int argc, char** argv) {
             // The key status write request should complete immediately (2 cycle latency from 150 when enqueued)
             KeyManagerOutput {
                 .time = 170,
-                .writeResp = std::optional(AxiWriteResp {
+                .writeResp = some(AxiWriteResp {
                     .good = true,
                 }),
             },
@@ -248,11 +256,11 @@ int main(int argc, char** argv) {
             // the writeResp from the last cycle was for enabling it, so the readResp says it *is* valid.
             KeyManagerOutput {
                 .time = 180,
-                .keyResponse = std::optional(KeyResponse {
+                .keyResponse = some(KeyResponse {
                     .keyId = 0x4,
                     .key = std::nullopt,
                 }),
-                .readResp = std::optional(AxiReadResp {
+                .readResp = some(AxiReadResp {
                     .good = true,
                     .data = 0x1,
                 })
@@ -261,9 +269,9 @@ int main(int argc, char** argv) {
             // The key was valid at 160 at the time of request, so it's valid here
             KeyManagerOutput {
                 .time = 200,
-                .keyResponse = std::optional(KeyResponse {
+                .keyResponse = some(KeyResponse {
                     .keyId = 0x4,
-                    .key = std::optional(Key {
+                    .key = some(Key {
                         .top = 0xf1edbeeff2edbeef,
                         .bottom = 0xdeadbeefdeadbeef,
                     }),
@@ -289,66 +297,66 @@ int main(int argc, char** argv) {
         KeyManagerOutputsMaker outputs{};
 
         // Initialize a key's contents - all write responses are delayed by 2 cycles and must return true
-        inputs[100].writeReq = std::optional(AxiWriteReq {
+        inputs[100].writeReq = some(AxiWriteReq {
             .address = 0x1040,
             .data = 0xdeadbeef,
             .write_enable = 0b1111,
         });
-        outputs[120].writeResp = std::optional(AxiWriteResp { .good = true });
+        outputs[120].writeResp = some(AxiWriteResp { .good = true });
 
-        inputs[110].writeReq = std::optional(AxiWriteReq {
+        inputs[110].writeReq = some(AxiWriteReq {
             .address = 0x1044,
             .data = 0xdeadbeef,
             .write_enable = 0b1111,
         });
-        outputs[130].writeResp = std::optional(AxiWriteResp { .good = true });
+        outputs[130].writeResp = some(AxiWriteResp { .good = true });
 
-        inputs[120].writeReq = std::optional(AxiWriteReq {
+        inputs[120].writeReq = some(AxiWriteReq {
             .address = 0x1048,
             .data = 0xf2edbeef,
             .write_enable = 0b1111,
         });
-        outputs[140].writeResp = std::optional(AxiWriteResp { .good = true });
+        outputs[140].writeResp = some(AxiWriteResp { .good = true });
 
-        inputs[130].writeReq = std::optional(AxiWriteReq {
+        inputs[130].writeReq = some(AxiWriteReq {
             .address = 0x104C,
             .data = 0xf1edbeef,
             .write_enable = 0b1111,
         });
-        outputs[150].writeResp = std::optional(AxiWriteResp { .good = true });
+        outputs[150].writeResp = some(AxiWriteResp { .good = true });
 
         // Request the key's status through the keyRequests (includes key value) and AXI read (status only) ports.
-        inputs[140].keyRequest = std::optional(0x4);
-        inputs[140].readReq = std::optional(AxiReadReq { .address = 0x40 });
+        inputs[140].keyRequest = some(0x4);
+        inputs[140].readReq = some(AxiReadReq { .address = 0x40 });
         // The keyResponse will arrive in 4 cycles (the latency of the BRAM) and will have the validity-at-point-of-request
         // i.e. the key data will be invalid, because at tick 140 we hadn't set it valid yet.
-        outputs[180].keyResponse = std::optional(KeyResponse { .keyId = 0x4, .key = std::nullopt });
+        outputs[180].keyResponse = some(KeyResponse { .keyId = 0x4, .key = std::nullopt });
         // The AXI read response will return with 2 cycle latency and will be 0 (key invalid)
-        outputs[160].readResp = std::optional(AxiReadResp { .good = true, .data = 0 });
+        outputs[160].readResp = some(AxiReadResp { .good = true, .data = 0 });
 
         // Try setting the key's status to Valid, now the data has gone through.
-        inputs[150].writeReq = std::optional(AxiWriteReq {
+        inputs[150].writeReq = some(AxiWriteReq {
             .address = 0x40,
             .data = 0x1,
             .write_enable = 0b1111,
         });
         // The AXI write response will return with 2 cycle latency
-        outputs[170].writeResp = std::optional(AxiWriteResp { .good = true });
+        outputs[170].writeResp = some(AxiWriteResp { .good = true });
 
         // Try reading the key status in both ways again
-        inputs[160].keyRequest = std::optional(0x4);
-        inputs[160].readReq = std::optional(AxiReadReq { .address = 0x40 });
+        inputs[160].keyRequest = some(0x4);
+        inputs[160].readReq = some(AxiReadReq { .address = 0x40 });
         // The keyResponse will arrive in 4 cycles (the latency of the BRAM) and will have the validity-at-point-of-request
         // i.e. the key data will be invalid, because at tick 140 we hadn't set it valid yet.
-        outputs[200].keyResponse = std::optional(KeyResponse {
+        outputs[200].keyResponse = some(KeyResponse {
             .keyId = 0x4,
-            .key = std::optional(Key {
+            .key = some(Key {
                 .top = 0xf1edbeeff2edbeef,
                 .bottom = 0xdeadbeefdeadbeef,
             }),
         });
         // The AXI read response will return with 2 cycle latency and will be 1 (key valid)
-        outputs[180].readResp = std::optional(AxiReadResp { .good = true, .data = 1 });
+        outputs[180].readResp = some(AxiReadResp { .good = true, .data = 1 });
 
         if (!checkDut(params, inputs.asVec(), outputs.asVec())) {
             success = EXIT_FAILURE;
