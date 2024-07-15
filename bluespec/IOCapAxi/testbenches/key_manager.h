@@ -404,7 +404,7 @@ template <> class fmt::formatter<key_manager::Key> {
     constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
     template <typename Context>
     constexpr auto format (key_manager::Key const& key, Context& ctx) const {
-        return format_to(ctx.out(), "0x{:08x}{:08x}", key.top, key.bottom);
+        return format_to(ctx.out(), "0x{:016x}{:016x}", key.top, key.bottom);
     }
 };
 
