@@ -33,8 +33,10 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
     Mul#(TDiv#(t_data, 8), 8, t_data),
     // t_data must be smaller than or equal to 128 - the size of a key
     Add#(t_data, a__, 128),
+    // t_data must be smaller than or equal to 64 - the size of a performance counter
+    Add#(t_data, b__, 64),
     // Same thing for t_data/8 - ugh, why can't this be proven implicitly
-    Add#(TDiv#(t_data, 8), b__, 16)
+    Add#(TDiv#(t_data, 8), c__, 16)
 );
     // Memory map:
     // [0x0, 0x10, 0x20, 0x30, 0x40... 0x1000) = read/write key status
@@ -134,6 +136,42 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
             end
 
             response = tagged Valid keyStatus;
+        end else if (ar.araddr < 'h1020) begin
+            // We're between [0x1000 and 0x1020)
+            // Read a performance counter
+            
+            // Each perf counter is 64-bits
+            Bit#(2) perfId = ar.araddr[4:3];
+            Bit#(3) startByteWithinCounter = ar.araddr[2:0];
+            Bit#(4) endByteWithinCounter = zeroExtend(startByteWithinCounter) + fromInteger(valueOf(t_data) / 8);
+
+            if (
+                // Reads can't overlap two counters
+                endByteWithinCounter <= 8
+            ) begin
+                Bit#(64) counter = ?;
+                case (perfId) matches
+                    2'b00 : counter = pack(goodWrite);
+                    2'b01 : counter = pack(badWrite);
+                    2'b10 : counter = pack(goodRead);
+                    2'b11 : counter = pack(badRead);
+                endcase
+                
+                // TODO need a comb_right_shift lol
+                Bit#(t_data) contents = ?;
+                case (startByteWithinCounter) matches
+                    0 : contents = truncate(counter >> 0);
+                    1 : contents = truncate(counter >> 8);
+                    2 : contents = truncate(counter >> 16);
+                    3 : contents = truncate(counter >> 24);
+                    4 : contents = truncate(counter >> 32);
+                    5 : contents = truncate(counter >> 40);
+                    6 : contents = truncate(counter >> 48);
+                    7 : contents = truncate(counter >> 56);
+                endcase
+
+                response = tagged Valid truncate(contents);
+            end
         end else begin
             // TODO signal failure
             $error("IOCap - mkSimpleIOCapKeyManager - Read to invalid address");

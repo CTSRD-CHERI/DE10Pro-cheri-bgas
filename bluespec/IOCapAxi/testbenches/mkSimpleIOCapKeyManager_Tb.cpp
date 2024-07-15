@@ -7,6 +7,7 @@
 #include "fmt/format.h"
 
 #include "dtl/dtl.hpp"
+#include <random>
 
 using namespace key_manager;
 
@@ -504,6 +505,67 @@ int main(int argc, char** argv) {
             outputs[140 + (i * 10)].keyResponse = some(KeyResponse {
                 .keyId = i,
                 .key = std::nullopt,
+            });
+        }
+
+        if (!checkDut(params, inputs.asVec(), outputs.asVec())) {
+            success = EXIT_FAILURE;
+        }
+    }
+
+    {
+        TestParams params = TestParams {
+            .testName = "Performance Counting",
+            .argc = argc,
+            .argv = argv,
+            .endTime = 2500
+        };
+
+        KeyManagerInputsMaker inputs{};
+        KeyManagerOutputsMaker outputs{};
+
+        // Use a random generator to decide which counters to bump
+        uint32_t seed = 10298293;
+        std::mt19937 rng{seed};
+        // Make an int in [0, 1] for each counter
+        std::uniform_int_distribution<> distrib(0, 1);
+        // Make an int in [0, 3] to figure out which counter to read
+        std::uniform_int_distribution<> readDistrib(0, 3);
+
+        uint32_t stats[4] = {
+            0, // goodWrite
+            0, // badWrite
+            0, // goodRead
+            0, // badRead
+        };
+
+        for (uint64_t time = 100; time < 2000; time += 10) {
+            if (distrib(rng) == 1) {
+                stats[0]++; // goodWrite++;
+                inputs[time].bumpPerfCounterGoodWrite = true;
+            }
+            if (distrib(rng) == 1) {
+                stats[1]++; // badWrite++;
+                inputs[time].bumpPerfCounterBadWrite = true;
+            }
+            if (distrib(rng) == 1) {
+                stats[2]++; // goodRead++;
+                inputs[time].bumpPerfCounterGoodRead = true;
+            }
+            if (distrib(rng) == 1) {
+                stats[3]++; // badRead++;
+                inputs[time].bumpPerfCounterBadRead = true;
+            }
+
+            // Read a random status.
+            // The read is processed one cycle after we put() it in the FIFO, at which point the perf counter will have been bumped.
+            int toRead = readDistrib(rng);
+            inputs[time].readReq = some(AxiReadReq {
+                .address = uint16_t(0x1000 + (8 * toRead)),
+            });
+            outputs[time + 20].readResp = some(AxiReadResp {
+                .good = true,
+                .data = stats[toRead],
             });
         }
 
