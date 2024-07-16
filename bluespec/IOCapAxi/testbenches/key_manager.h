@@ -44,7 +44,7 @@ public:
 namespace key_manager {
 
     using Epoch = uint8_t;
-    using KeyId = uint16_t; // 9 bits
+    using KeyId = uint8_t; // 8 bits
 
     struct Key {
         uint64_t top;
@@ -56,6 +56,8 @@ namespace key_manager {
         }
     };
 
+    #include "key_response.h"
+
     struct KeyResponse {
         KeyId keyId;
         std::optional<Key> key;
@@ -63,6 +65,24 @@ namespace key_manager {
         bool operator==(const KeyResponse& other) const {
             return (this->keyId == other.keyId) &&
                 (this->key == other.key);
+        }
+
+        Tuple2_KeyId_MaybeKey asBluespec() const {
+            if (key.has_value()) {
+                return Tuple2_KeyId_MaybeKey {
+                    .keyId = keyId,
+                    .keyValid = 1,
+                    .keyTop = key.value().top,
+                    .keyBot = key.value().bottom
+                };
+            } else {
+                return Tuple2_KeyId_MaybeKey {
+                    .keyId = keyId,
+                    .keyValid = 0,
+                    .keyTop = 0xacacacac'acacacacul,
+                    .keyBot = 0xacacacac'acacacacul
+                };
+            }
         }
     };
 

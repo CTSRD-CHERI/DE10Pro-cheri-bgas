@@ -86,13 +86,36 @@ namespace shimmed_exposer {
         #define NOPUT(name) dut.EN_## name ##_put = 0;
 
         if (input.iocap_flit_aw) {
-            VlWide<4> flit = verilate_array(input.iocap_flit_aw.value().pack());
+            auto flit = verilate_array(input.iocap_flit_aw.value().pack());
             PUT(exposer4x32_iocapsIn_axiSignals_aw, flit);
         } else {
             NOPUT(exposer4x32_iocapsIn_axiSignals_aw);
         }
 
-        // TODO key manager shim, other flits
+        if (input.iocap_flit_w) {
+            PUT(exposer4x32_iocapsIn_axiSignals_w, input.iocap_flit_w.value().pack());
+        } else {
+            NOPUT(exposer4x32_iocapsIn_axiSignals_w);
+        }
+        
+        if (input.iocap_flit_ar) {
+            auto flit = verilate_array(input.iocap_flit_ar.value().pack());
+            PUT(exposer4x32_iocapsIn_axiSignals_ar, flit);
+        } else {
+            NOPUT(exposer4x32_iocapsIn_axiSignals_ar);
+        }
+
+        if (input.keyManager.newEpochRequest) {
+            PUT(keyStoreShim_newEpochRequests, input.keyManager.newEpochRequest.value());
+        } else {
+            NOPUT(keyStoreShim_newEpochRequests);
+        }
+
+        if (input.keyManager.keyResponse) {
+            PUT(keyStoreShim_keyResponses, verilate_array(input.keyManager.keyResponse.value().pack()));
+        } else {
+            NOPUT(keyStoreShim_keyResponses);
+        }
 
         #undef NOPUT
         #undef PUT

@@ -32,34 +32,36 @@ struct AWFlit_id4_addr64_user3 {
 		);
 		value.awaddr = (
 			(uint64_t((backing[0] >> 4u) & 0xfffffffu) << 0) | 
-			(uint64_t(backing[1] >> 0u) << 32)
+			(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 28) | 
+			(uint64_t((backing[2] >> 0u) & 0xfu) << 60)
 		);
 		value.awlen = (
-			uint8_t(backing[2] >> 0u)
+			uint8_t((backing[2] >> 4u) & 0xffu)
 		);
 		value.awsize = (
-			uint8_t((backing[2] >> 8u) & 0x7u)
+			uint8_t((backing[2] >> 12u) & 0x7u)
 		);
 		value.awburst = (
-			uint8_t((backing[2] >> 11u) & 0x3u)
+			uint8_t((backing[2] >> 15u) & 0x3u)
 		);
 		value.awlock = (
-			uint8_t((backing[2] >> 13u) & 0x1u)
+			uint8_t((backing[2] >> 17u) & 0x1u)
 		);
 		value.awcache = (
-			uint8_t((backing[2] >> 14u) & 0xfu)
+			uint8_t((backing[2] >> 18u) & 0xfu)
 		);
 		value.awprot = (
-			uint8_t((backing[2] >> 18u) & 0x7u)
+			uint8_t((backing[2] >> 22u) & 0x7u)
 		);
 		value.awqos = (
-			uint8_t((backing[2] >> 21u) & 0xfu)
+			uint8_t((backing[2] >> 25u) & 0xfu)
 		);
 		value.awregion = (
-			uint8_t((backing[2] >> 25u) & 0x7fu)
+			(uint8_t((backing[2] >> 29u) & 0x7u) << 0) | 
+			(uint8_t((backing[3] >> 0u) & 0x1fu) << 3)
 		);
 		value.awuser = (
-			uint8_t((backing[3] >> 0u) & 0x7u)
+			uint8_t((backing[3] >> 5u) & 0x7u)
 		);
 		return value;
 	}
@@ -70,20 +72,22 @@ struct AWFlit_id4_addr64_user3 {
 			(uint32_t((awaddr >> 0u) & 0xffffffful) << 4)
 		);
 		backing[1] = (
-			uint32_t(awaddr >> 32u)
+			uint32_t((awaddr >> 28u) & 0xfffffffful)
 		);
 		backing[2] = (
-			(uint32_t(awlen >> 0u) << 0) | 
-			(uint32_t((awsize >> 0u) & uint8_t(0x7ul)) << 8) | 
-			(uint32_t((awburst >> 0u) & uint8_t(0x3ul)) << 11) | 
-			(uint32_t((awlock >> 0u) & uint8_t(0x1ul)) << 13) | 
-			(uint32_t((awcache >> 0u) & uint8_t(0xful)) << 14) | 
-			(uint32_t((awprot >> 0u) & uint8_t(0x7ul)) << 18) | 
-			(uint32_t((awqos >> 0u) & uint8_t(0xful)) << 21) | 
-			(uint32_t((awregion >> 0u) & uint8_t(0x7ful)) << 25)
+			(uint32_t((awaddr >> 60u) & 0xful) << 0) | 
+			(uint32_t((awlen >> 0u) & uint8_t(0xfful)) << 4) | 
+			(uint32_t((awsize >> 0u) & uint8_t(0x7ul)) << 12) | 
+			(uint32_t((awburst >> 0u) & uint8_t(0x3ul)) << 15) | 
+			(uint32_t((awlock >> 0u) & uint8_t(0x1ul)) << 17) | 
+			(uint32_t((awcache >> 0u) & uint8_t(0xful)) << 18) | 
+			(uint32_t((awprot >> 0u) & uint8_t(0x7ul)) << 22) | 
+			(uint32_t((awqos >> 0u) & uint8_t(0xful)) << 25) | 
+			(uint32_t((awregion >> 0u) & uint8_t(0x7ul)) << 29)
 		);
 		backing[3] = (
-			uint32_t((awuser >> 0u) & uint8_t(0x7ul))
+			(uint32_t((awregion >> 3u) & uint8_t(0x1ful)) << 0) | 
+			(uint32_t((awuser >> 0u) & uint8_t(0x7ul)) << 5)
 		);
 		return backing;
 	}
@@ -101,7 +105,7 @@ struct WFlit_data32 {
 	static WFlit_data32 unpack(const uint64_t& backing) {
 		WFlit_data32 value{};
 		value.wdata = (
-			uint32_t(backing >> 0u)
+			uint32_t((backing >> 0u) & 0xfffffffful)
 		);
 		value.wstrb = (
 			uint8_t((backing >> 32u) & 0xful)
@@ -114,7 +118,7 @@ struct WFlit_data32 {
 	uint64_t pack() const {
 		uint64_t backing{};
 		backing = (
-			(uint64_t(wdata >> 0u) << 0) | 
+			(uint64_t((wdata >> 0u) & 0xffffffffu) << 0) | 
 			(uint64_t((wstrb >> 0u) & uint8_t(0xful)) << 32) | 
 			(uint64_t((wlast >> 0u) & uint8_t(0x1ul)) << 36)
 		);
@@ -181,34 +185,36 @@ struct ARFlit_id4_addr64_user3 {
 		);
 		value.araddr = (
 			(uint64_t((backing[0] >> 4u) & 0xfffffffu) << 0) | 
-			(uint64_t(backing[1] >> 0u) << 32)
+			(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 28) | 
+			(uint64_t((backing[2] >> 0u) & 0xfu) << 60)
 		);
 		value.arlen = (
-			uint8_t(backing[2] >> 0u)
+			uint8_t((backing[2] >> 4u) & 0xffu)
 		);
 		value.arsize = (
-			uint8_t((backing[2] >> 8u) & 0x7u)
+			uint8_t((backing[2] >> 12u) & 0x7u)
 		);
 		value.arburst = (
-			uint8_t((backing[2] >> 11u) & 0x3u)
+			uint8_t((backing[2] >> 15u) & 0x3u)
 		);
 		value.arlock = (
-			uint8_t((backing[2] >> 13u) & 0x1u)
+			uint8_t((backing[2] >> 17u) & 0x1u)
 		);
 		value.arcache = (
-			uint8_t((backing[2] >> 14u) & 0xfu)
+			uint8_t((backing[2] >> 18u) & 0xfu)
 		);
 		value.arprot = (
-			uint8_t((backing[2] >> 18u) & 0x7u)
+			uint8_t((backing[2] >> 22u) & 0x7u)
 		);
 		value.arqos = (
-			uint8_t((backing[2] >> 21u) & 0xfu)
+			uint8_t((backing[2] >> 25u) & 0xfu)
 		);
 		value.arregion = (
-			uint8_t((backing[2] >> 25u) & 0x7fu)
+			(uint8_t((backing[2] >> 29u) & 0x7u) << 0) | 
+			(uint8_t((backing[3] >> 0u) & 0x1fu) << 3)
 		);
 		value.aruser = (
-			uint8_t((backing[3] >> 0u) & 0x7u)
+			uint8_t((backing[3] >> 5u) & 0x7u)
 		);
 		return value;
 	}
@@ -219,20 +225,22 @@ struct ARFlit_id4_addr64_user3 {
 			(uint32_t((araddr >> 0u) & 0xffffffful) << 4)
 		);
 		backing[1] = (
-			uint32_t(araddr >> 32u)
+			uint32_t((araddr >> 28u) & 0xfffffffful)
 		);
 		backing[2] = (
-			(uint32_t(arlen >> 0u) << 0) | 
-			(uint32_t((arsize >> 0u) & uint8_t(0x7ul)) << 8) | 
-			(uint32_t((arburst >> 0u) & uint8_t(0x3ul)) << 11) | 
-			(uint32_t((arlock >> 0u) & uint8_t(0x1ul)) << 13) | 
-			(uint32_t((arcache >> 0u) & uint8_t(0xful)) << 14) | 
-			(uint32_t((arprot >> 0u) & uint8_t(0x7ul)) << 18) | 
-			(uint32_t((arqos >> 0u) & uint8_t(0xful)) << 21) | 
-			(uint32_t((arregion >> 0u) & uint8_t(0x7ful)) << 25)
+			(uint32_t((araddr >> 60u) & 0xful) << 0) | 
+			(uint32_t((arlen >> 0u) & uint8_t(0xfful)) << 4) | 
+			(uint32_t((arsize >> 0u) & uint8_t(0x7ul)) << 12) | 
+			(uint32_t((arburst >> 0u) & uint8_t(0x3ul)) << 15) | 
+			(uint32_t((arlock >> 0u) & uint8_t(0x1ul)) << 17) | 
+			(uint32_t((arcache >> 0u) & uint8_t(0xful)) << 18) | 
+			(uint32_t((arprot >> 0u) & uint8_t(0x7ul)) << 22) | 
+			(uint32_t((arqos >> 0u) & uint8_t(0xful)) << 25) | 
+			(uint32_t((arregion >> 0u) & uint8_t(0x7ul)) << 29)
 		);
 		backing[3] = (
-			uint32_t((aruser >> 0u) & uint8_t(0x7ul))
+			(uint32_t((arregion >> 3u) & uint8_t(0x1ful)) << 0) | 
+			(uint32_t((aruser >> 0u) & uint8_t(0x7ul)) << 5)
 		);
 		return backing;
 	}
@@ -255,7 +263,7 @@ struct RFlit_id4_data32 {
 			uint8_t((backing >> 0u) & 0xful)
 		);
 		value.rdata = (
-			uint32_t(backing >> 4u)
+			uint32_t((backing >> 4u) & 0xfffffffful)
 		);
 		value.rresp = (
 			uint8_t((backing >> 36u) & 0x3ul)
@@ -269,7 +277,7 @@ struct RFlit_id4_data32 {
 		uint64_t backing{};
 		backing = (
 			(uint64_t((rid >> 0u) & uint8_t(0xful)) << 0) | 
-			(uint64_t(rdata >> 0u) << 4) | 
+			(uint64_t((rdata >> 0u) & 0xffffffffu) << 4) | 
 			(uint64_t((rresp >> 0u) & uint8_t(0x3ul)) << 36) | 
 			(uint64_t((rlast >> 0u) & uint8_t(0x1ul)) << 38)
 		);
