@@ -15,7 +15,7 @@ import Cap2024_02_Decode_FastFSM :: *;
 import Cap2024_02_SigCheck_Aes_1RoundPerCycle :: *; // Get CapSigCheckIn
 import Cap2024_02_SigCheck_Aes_2RoundPerCycle :: *;
 
-interface IOCapSingleExposer#(numeric type t_iocap_id, numeric type t_iocap_data );
+interface IOCapSingleExposer#(numeric type t_iocap_id, numeric type t_iocap_data);
     interface IOCapAXI4_Slave#(t_iocap_id, t_iocap_data) iocapsIn;
 
     interface AXI4_Master#(t_iocap_id, 64, t_iocap_data, 0, 0, 0, 0, 0) sanitizedOut;
