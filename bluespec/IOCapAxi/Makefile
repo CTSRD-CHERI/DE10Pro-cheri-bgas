@@ -16,6 +16,8 @@ $(BUILDDIR)/%.bsim: ./testbenches/%.bsv alwaysRemake
 	bsc $(BSCFLAGS) -sim -g $* $< 
 	bsc $(BSCFLAGS) -sim -e $* $@
 
+.PRECIOUS: $(BUILDDIR)/verilog/%.v
+
 $(BUILDDIR)/verilog/%.v: ./testbenches/%.bsv alwaysRemake
 	mkdir -p $(BUILDDIR) $(BUILDDIR)/verilog
 	bsc $(BSCFLAGS) -verilog -g $* -u $<
