@@ -1,5 +1,7 @@
-#ifndef KEY_MANAGER_INCL
-#define KEY_MANAGER_INCL 1
+#ifndef KEY_MANAGER_H
+#define KEY_MANAGER_H
+
+#include "axi.h"
 
 #include <cstdint>
 #include <optional>
@@ -68,12 +70,7 @@ namespace key_manager {
     using AxiAddress = uint16_t; // 13-bit address
     using AxiData = uint32_t;
 
-    enum class AXI4_Resp: uint8_t {
-        Okay = 0b00,
-        ExOkay = 0b01,
-        SlvErr = 0b10,
-        DecErr = 0b11,
-    };
+    using axi::AXI4_Resp;
 
     // Can't bitpack these flits because sometimes gcc forces fields to be byte-aligned!
     struct AWFlit {
@@ -504,4 +501,4 @@ template <> class fmt::formatter<key_manager::KeyManagerOutput> {
     }
 };
 
-#endif // KEY_MANAGER_INCL
+#endif // KEY_MANAGER_H
