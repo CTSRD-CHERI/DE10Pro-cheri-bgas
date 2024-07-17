@@ -16,6 +16,13 @@ auto verilate_array(const std::array<uint32_t, N>& from) {
     return vl;
 }
 
+template<size_t N>
+auto stdify_array(const VlWide<N> from) {
+    std::array<uint32_t, N> arr{};
+    std::copy(from.m_storage, from.m_storage + N, arr.begin());
+    return arr;
+}
+
 namespace exposer {
 
     struct ExposerInput {
@@ -25,14 +32,14 @@ namespace exposer {
         std::optional<axi::IOCapAxi::WFlit_data32> iocap_flit_w;
         std::optional<axi::IOCapAxi::ARFlit_id4_addr64_user3> iocap_flit_ar;
 
-        std::optional<axi::SanitizedAxi::WFlit_data32> clean_flit_w;
+        std::optional<axi::SanitizedAxi::BFlit_id4> clean_flit_b;
         std::optional<axi::SanitizedAxi::RFlit_id4_data32> clean_flit_r;
     };
 
     struct ExposerOutput {
         uint64_t time;
 
-        std::optional<axi::IOCapAxi::WFlit_data32> iocap_flit_w;
+        std::optional<axi::IOCapAxi::BFlit_id4> iocap_flit_b;
         std::optional<axi::IOCapAxi::RFlit_id4_data32> iocap_flit_r;
 
         std::optional<axi::SanitizedAxi::AWFlit_id4_addr64_user0> clean_flit_aw;
@@ -71,8 +78,8 @@ namespace shimmed_exposer {
      * Apply a ShimmedExposerInput to a Verilator device-under-test.
      * The DUT must have adhere to the Bluespec `SimpleIOCapExposerTb` interface, with keyStoreShim and exposer4x32 sub-interfaces.
      * 
-     * If the given input requests a certain line be held up, e.g. if it sets the readReq field, the 
-     * DUT must be able to receive the `put` i.e. the RDY_keyMgr32_readReq_put and keyMgr32_readReq_canPut booleans must be True.
+     * If the given input requests a certain line be held up, e.g. if it sets the iocap_flit_w field, the 
+     * DUT must be able to receive the `put` i.e. the RDY_exposer4x32_iocapsIn_axiSignals_w_put and exposer4x32_iocapsIn_axiSignals_w_canPut booleans must be True.
      * Otherwise an assertion failure is thrown. TODO better error handling.
      */
     template<class DUT>
@@ -105,6 +112,20 @@ namespace shimmed_exposer {
             NOPUT(exposer4x32_iocapsIn_axiSignals_ar);
         }
 
+        if (input.clean_flit_b) {
+            auto flit = input.clean_flit_b.value().pack();
+            PUT(exposer4x32_sanitizedOut_b, flit);
+        } else {
+            NOPUT(exposer4x32_sanitizedOut_b);
+        }
+
+        if (input.clean_flit_r) {
+            auto flit = input.clean_flit_r.value().pack();
+            PUT(exposer4x32_sanitizedOut_r, flit);
+        } else {
+            NOPUT(exposer4x32_sanitizedOut_r);
+        }
+
         if (input.keyManager.newEpochRequest) {
             PUT(keyStoreShim_newEpochRequests, input.keyManager.newEpochRequest.value());
         } else {
@@ -112,13 +133,93 @@ namespace shimmed_exposer {
         }
 
         if (input.keyManager.keyResponse) {
-            PUT(keyStoreShim_keyResponses, verilate_array(input.keyManager.keyResponse.value().pack()));
+            PUT(keyStoreShim_keyResponses, verilate_array(input.keyManager.keyResponse.value().asBluespec().pack()));
         } else {
             NOPUT(keyStoreShim_keyResponses);
         }
 
         #undef NOPUT
         #undef PUT
+    }
+
+    /**
+     * Pull from the outputs of a Verilator device-under-test to fill a ShimmedExposerOutput.
+     * The DUT must have adhere to the Bluespec `SimpleIOCapExposerTb` interface, with keyStoreShim and exposer4x32 sub-interfaces.
+     * 
+     * All outputs will be pulled from if they have any content.
+     * If the output is peekable, e.g. if dut.RDY_keyMgr32_hostFacingSlave_r == 1,
+     * dut.keyMgr32_hostFacingSlave_r_canPeek and RDY_keyMgr32_hostfacingSlave_r_drop must both be truthy.
+     */
+    template<class DUT>
+    void pull_output(DUT& dut, ShimmedExposerOutput& output) {
+        #define CANPEEK(from) (dut.RDY_## from ##_peek)
+        #define POP(from, into) \
+            assert(dut. from ##_canPeek); \
+            assert(dut.RDY_## from ##_drop); \
+            dut.EN_## from ##_drop = 1; \
+            into = dut. from ##_peek;
+        #define NOPOP(from) \
+            dut.EN_## from ##_drop = 0; \
+
+        if (CANPEEK(exposer4x32_iocapsIn_axiSignals_b)) {
+            uint8_t bflit;
+            POP(exposer4x32_iocapsIn_axiSignals_b, bflit);
+            output.iocap_flit_b = std::optional(axi::IOCapAxi::BFlit_id4::unpack(bflit));
+        } else {
+            NOPOP(exposer4x32_iocapsIn_axiSignals_b);
+        }
+        
+        if (CANPEEK(exposer4x32_iocapsIn_axiSignals_r)) {
+            uint64_t rflit;
+            POP(exposer4x32_iocapsIn_axiSignals_r, rflit);
+            output.iocap_flit_r = std::optional(axi::IOCapAxi::RFlit_id4_data32::unpack(rflit));
+        } else {
+            NOPOP(exposer4x32_iocapsIn_axiSignals_r);
+        }
+
+        if (CANPEEK(exposer4x32_sanitizedOut_aw)) {
+            VlWide<4> flit;
+            POP(exposer4x32_sanitizedOut_aw, flit);
+            output.clean_flit_aw = std::optional(axi::SanitizedAxi::AWFlit_id4_addr64_user0::unpack(stdify_array(flit)));
+        } else {
+            NOPOP(exposer4x32_sanitizedOut_aw);
+        }
+
+        if (CANPEEK(exposer4x32_sanitizedOut_w)) {
+            uint64_t flit;
+            POP(exposer4x32_sanitizedOut_w, flit);
+            output.clean_flit_w = std::optional(axi::SanitizedAxi::WFlit_data32::unpack(flit));
+        } else {
+            NOPOP(exposer4x32_sanitizedOut_w);
+        }
+
+        if (CANPEEK(exposer4x32_sanitizedOut_ar)) {
+            VlWide<4> flit;
+            POP(exposer4x32_sanitizedOut_ar, flit);
+            output.clean_flit_ar = std::optional(axi::SanitizedAxi::ARFlit_id4_addr64_user0::unpack(stdify_array(flit)));
+        } else {
+            NOPOP(exposer4x32_sanitizedOut_ar);
+        }
+
+        if (CANPEEK(keyStoreShim_keyRequests)){
+            key_manager::KeyId keyRequest;
+            POP(keyStoreShim_keyRequests, keyRequest);
+            output.keyManager.keyRequest = std::optional(keyRequest);
+        } else {
+            NOPOP(keyStoreShim_keyRequests);
+        }
+
+        if (CANPEEK(keyStoreShim_finishedEpochs)){
+            key_manager::Epoch finishedEpoch;
+            POP(keyStoreShim_finishedEpochs, finishedEpoch);
+            output.keyManager.finishedEpoch = std::optional(finishedEpoch);
+        } else {
+            NOPOP(keyStoreShim_finishedEpochs);
+        }
+
+        #undef NOPOP
+        #undef POP
+        #undef CANPEEK
     }
 }
 

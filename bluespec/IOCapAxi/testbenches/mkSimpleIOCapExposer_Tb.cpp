@@ -78,12 +78,12 @@ ShimmedExposerOutputs runDut(TestParams& params, ShimmedExposerInputs inputs) {
                 push_input(dut, input);
                 
                 // Now pull out the outputs.
-                // TODO
-                // ShimmedExposerOutput output{};
-                // output.time = main_time;
-                // pull_output(dut, output);
+                ShimmedExposerOutput output{};
+                output.time = main_time;
+                pull_output(dut, output);
 
-                // // Only remember non-zero outputs
+                // Only remember non-zero outputs
+                // TODO
                 // if (output.readResp || output.writeResp || output.keyResponse || output.newEpochRequest) {
                 //     outputs.push_back(std::move(output));
                 // }
@@ -141,5 +141,11 @@ bool checkDut(TestParams params, ShimmedExposerInputs inputs, ShimmedExposerOutp
 }
 
 int main(int argc, char** argv) {
-
+    checkDut(TestParams {
+        .testName = "blah",
+        .argc = argc,
+        .argv = argv,
+        .endTime = 1000*10,
+    }, {}, {});
+    return EXIT_SUCCESS;
 }

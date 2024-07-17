@@ -12,7 +12,7 @@
 /**
  * Container for items of type T where (T::time) is a uint64_t, allowing Python defaultdict-style creation.
  * e.g. from an empty Maker, `maker[100].blah = "blah";` will construct a T, map it to time 100 and set `t.time = 100`, then return a reference for the user to modify.
- * The asVec() function converts it to a vector.
+ * The asVec() function converts it to a vector of T ordered by time.
  * 
  */
 template<class T>
