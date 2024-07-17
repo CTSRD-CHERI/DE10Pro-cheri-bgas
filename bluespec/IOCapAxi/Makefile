@@ -23,7 +23,7 @@ $(BUILDDIR)/verilog/%.v: ./testbenches/%.bsv alwaysRemake
 	bsc $(BSCFLAGS) -verilog -g $* -u $<
 
 $(BUILDDIR)/%.vsim: $(BUILDDIR)/verilog/%.v ./testbenches/%.cpp alwaysRemake
-	verilator --Mdir $(BUILDDIR) --no-timing --top-module $* --cc --build --exe -CFLAGS -std=gnu++17 -o $*.vsim -I$(BSCDIR)lib/Verilog/ $(BSCDIR)lib/Verilator/verilator_config.vlt $(shell echo $(BUILDDIR)/verilog/*.v) ./testbenches/$*.cpp
+	verilator --Mdir $(BUILDDIR) --no-timing --top-module $* --cc --build --exe -CFLAGS -std=gnu++17 -CFLAGS -I../testbenches/include -o $*.vsim -I$(BSCDIR)lib/Verilog/ $(BSCDIR)lib/Verilator/verilator_config.vlt $(shell echo $(BUILDDIR)/verilog/*.v) ./testbenches/$*.cpp
 
 .PHONY: list alwaysRemake
 

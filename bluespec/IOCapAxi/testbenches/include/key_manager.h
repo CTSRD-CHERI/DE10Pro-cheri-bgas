@@ -1,7 +1,7 @@
 #ifndef KEY_MANAGER_H
 #define KEY_MANAGER_H
 
-#include "axi.h"
+#include "tb_bitfields/axi.h"
 
 #include <cstdint>
 #include <optional>
@@ -56,7 +56,7 @@ namespace key_manager {
         }
     };
 
-    #include "key_response.h"
+    #include "tb_bitfields/key_response.h"
 
     struct KeyResponse {
         KeyId keyId;

@@ -1,7 +1,7 @@
 #ifndef EXPOSER_H
 #define EXPOSER_H
 
-#include "axi.h"
+#include "tb_bitfields/axi.h"
 #include "key_manager.h"
 
 #include <array>
