@@ -1,7 +1,8 @@
 #ifndef KEY_MANAGER_H
 #define KEY_MANAGER_H
 
-#include "tb_bitfields/axi.h"
+#include "axi.h"
+#include "tb_bitfields.h"
 #include "tb.h"
 
 #include <cstdint>
@@ -51,22 +52,14 @@ namespace key_manager {
         uint64_t top;
         uint64_t bottom;
 
-        bool operator==(const Key& other) const {
-            return (this->top == other.top) &&
-                (this->bottom == other.bottom);
-        }
+        bool operator==(const Key& other) const = default;
     };
-
-    #include "tb_bitfields/key_response.h"
 
     struct KeyResponse {
         KeyId keyId;
         std::optional<Key> key;
 
-        bool operator==(const KeyResponse& other) const {
-            return (this->keyId == other.keyId) &&
-                (this->key == other.key);
-        }
+        bool operator==(const KeyResponse& other) const = default;
 
         Tuple2_KeyId_MaybeKey asBluespec() const {
             if (key.has_value()) {
@@ -101,9 +94,7 @@ namespace key_manager {
         // };
         uint16_t flit;
         
-        bool operator==(const AWFlit& other) const {
-            return this->flit == other.flit;
-        }
+        bool operator==(const AWFlit& other) const = default;
     };
 
     struct WFlit {
@@ -114,9 +105,7 @@ namespace key_manager {
         // };
         uint64_t flit;
 
-        bool operator==(const WFlit& other) const {
-            return this->flit == other.flit;
-        }
+        bool operator==(const WFlit& other) const = default;
     };
 
     struct BFlit {
@@ -126,9 +115,7 @@ namespace key_manager {
         // };
         uint8_t flit;
         
-        bool operator==(const BFlit& other) const {
-            return this->flit == other.flit;
-        }
+        bool operator==(const BFlit& other) const = default;
     };
 
     struct ARFlit {
@@ -138,9 +125,7 @@ namespace key_manager {
         // };
         uint16_t flit;
         
-        bool operator==(const ARFlit& other) const {
-            return this->flit == other.flit;
-        }
+        bool operator==(const ARFlit& other) const = default;
     };
 
     struct RFlit {
@@ -152,9 +137,7 @@ namespace key_manager {
 
         uint64_t flit;
         
-        bool operator==(const RFlit& other) const {
-            return this->flit == other.flit;
-        }
+        bool operator==(const RFlit& other) const = default;
     };
 
     struct AxiWriteReq {
@@ -175,11 +158,7 @@ namespace key_manager {
             return flit;
         }
 
-        bool operator==(const AxiWriteReq& other) const {
-            return (this->address == other.address) &&
-                (this->data == other.data) &&
-                (this->write_enable == other.write_enable);
-        }
+        bool operator==(const AxiWriteReq& other) const = default;
     };
 
     struct AxiWriteResp {
@@ -192,9 +171,7 @@ namespace key_manager {
             };
         }
 
-        bool operator==(const AxiWriteResp& other) const {
-            return this->good == other.good;
-        }
+        bool operator==(const AxiWriteResp& other) const = default;
     };
 
     struct AxiReadReq {
@@ -207,9 +184,7 @@ namespace key_manager {
             return flit;
         }
 
-        bool operator==(const AxiReadReq& other) const {
-            return this->address == other.address;
-        }
+        bool operator==(const AxiReadReq& other) const = default;
     };
 
     struct AxiReadResp {
@@ -224,10 +199,7 @@ namespace key_manager {
             };
         }
 
-        bool operator==(const AxiReadResp& other) const {
-            return (this->good == other.good) &&
-                (this->data == other.data);
-        }
+        bool operator==(const AxiReadResp& other) const = default;
     };
 
     struct KeyManagerInput {
@@ -243,17 +215,7 @@ namespace key_manager {
         std::optional<AxiWriteReq> writeReq;
         std::optional<AxiReadReq> readReq;
 
-        bool operator==(const KeyManagerInput& other) const {
-            return (this->time == other.time) && 
-                (this->keyRequest == other.keyRequest) && 
-                (this->finishedEpoch == other.finishedEpoch) && 
-                (this->writeReq == other.writeReq) && 
-                (this->readReq == other.readReq) &&
-                (this->bumpPerfCounterGoodWrite == other.bumpPerfCounterGoodWrite) &&
-                (this->bumpPerfCounterBadWrite == other.bumpPerfCounterBadWrite) &&
-                (this->bumpPerfCounterGoodRead == other.bumpPerfCounterGoodRead) &&
-                (this->bumpPerfCounterBadRead == other.bumpPerfCounterBadRead);
-        }
+        bool operator==(const KeyManagerInput& other) const = default;
     };
 
     using KeyManagerInputs = std::vector<KeyManagerInput>;
@@ -267,13 +229,7 @@ namespace key_manager {
         std::optional<AxiReadResp> readResp;
         std::optional<AxiWriteResp> writeResp;
 
-        bool operator==(const KeyManagerOutput& other) const {
-            return (this->time == other.time) && 
-                (this->newEpochRequest == other.newEpochRequest) && 
-                (this->keyResponse == other.keyResponse) && 
-                (this->readResp == other.readResp) && 
-                (this->writeResp == other.writeResp);
-        }
+        bool operator==(const KeyManagerOutput& other) const = default;
         bool is_notable() {
             return (newEpochRequest || keyResponse || readResp || writeResp);
         }
@@ -437,19 +393,6 @@ void pull_output(DUT& dut, key_manager::KeyManagerOutput& output) {
     #undef POP
     #undef CANPEEK
 }
-
-template <class T> class fmt::formatter<std::optional<T>> {
-    public:
-    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
-    template <typename Context>
-    constexpr auto format (std::optional<T> const& x, Context& ctx) const {
-        if (x.has_value()) {
-            return format_to(ctx.out(), "Some({})", x.value());
-        } else {
-            return format_to(ctx.out(), "None");
-        }
-    }
-};
 
 template <> class fmt::formatter<key_manager::Key> {
     public:

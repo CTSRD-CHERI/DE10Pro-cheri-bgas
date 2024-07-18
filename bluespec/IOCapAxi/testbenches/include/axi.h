@@ -1,10 +1,6 @@
 #ifndef AXI_H
 #define AXI_H
 
-#include <array>
-#include <cstdint>
-#include <optional>
-
 namespace axi {
     enum class AXI4_Resp: uint8_t {
         Okay = 0b00,
@@ -25,13 +21,9 @@ namespace axi {
         reserved = 0b11
     };
 
-    namespace IOCapAxi {
-        #include "iocapaxi_flits.h"
-    }
-
-    namespace SanitizedAxi {
-        #include "sanitized_axi_flits.h"
-    }
+    // IOCapAxi and SanitizedAxi namespaces defined in tb_bitfields.h
 }
+
+#include "tb_bitfields.h"
 
 #endif // AXI_H

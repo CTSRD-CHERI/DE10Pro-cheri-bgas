@@ -5,14 +5,9 @@
 #include "exposer.h"
 
 #include "tb.h"
+#include "util.h"
 
 #include <random>
-
-// Helper function
-template<class T>
-std::optional<T> some(T t) {
-    return std::optional(t);
-}
 
 using ExposerCycleTest = CycleTest<VmkSimpleIOCapExposer_Tb, ShimmedExposerInput, ShimmedExposerOutput>;
 

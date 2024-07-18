@@ -3,16 +3,11 @@
 
 #include "key_manager.h"
 #include "tb.h"
+#include "util.h"
 
 #include <random>
 
 using namespace key_manager;
-
-// Helper function
-template<class T>
-std::optional<T> some(T t) {
-    return std::optional(t);
-}
 
 using KeyManagerCycleTest = CycleTest<VmkSimpleIOCapKeyManager_Tb, KeyManagerInput, KeyManagerOutput>;
 
