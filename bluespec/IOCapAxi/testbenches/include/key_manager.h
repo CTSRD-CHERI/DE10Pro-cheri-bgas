@@ -5,6 +5,8 @@
 #include "tb_bitfields.h"
 #include "tb.h"
 
+#include "util.h"
+
 #include <cstdint>
 #include <optional>
 
@@ -15,13 +17,7 @@ namespace key_manager {
 
     using Epoch = uint8_t;
     using KeyId = uint8_t; // 8 bits
-
-    struct Key {
-        uint64_t top;
-        uint64_t bottom;
-
-        bool operator==(const Key& other) const = default;
-    };
+    using Key = U128;
 
     struct KeyResponse {
         KeyId keyId;
@@ -32,17 +28,17 @@ namespace key_manager {
         Tuple2_KeyId_MaybeKey asBluespec() const {
             if (key.has_value()) {
                 return Tuple2_KeyId_MaybeKey {
-                    .keyId = keyId,
-                    .keyValid = 1,
+                    .keyBot = key.value().bottom,
                     .keyTop = key.value().top,
-                    .keyBot = key.value().bottom
+                    .keyValid = 1,
+                    .keyId = keyId
                 };
             } else {
                 return Tuple2_KeyId_MaybeKey {
-                    .keyId = keyId,
-                    .keyValid = 0,
+                    .keyBot = 0xacacacac'acacacacul,
                     .keyTop = 0xacacacac'acacacacul,
-                    .keyBot = 0xacacacac'acacacacul
+                    .keyValid = 0,
+                    .keyId = keyId
                 };
             }
         }
@@ -361,15 +357,6 @@ void pull_output(DUT& dut, key_manager::KeyManagerOutput& output) {
     #undef POP
     #undef CANPEEK
 }
-
-template <> class fmt::formatter<key_manager::Key> {
-    public:
-    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
-    template <typename Context>
-    constexpr auto format (key_manager::Key const& key, Context& ctx) const {
-        return format_to(ctx.out(), "0x{:016x}{:016x}", key.top, key.bottom);
-    }
-};
 
 template <> class fmt::formatter<key_manager::KeyResponse> {
     public:

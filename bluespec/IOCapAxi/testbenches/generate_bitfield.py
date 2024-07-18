@@ -352,13 +352,14 @@ class CppGenerator:
         if include_guard:
             print(f"#endif // {include_guard}", file=out)
 
-
+def revlist(l):
+    return list(reversed(l))
 
 BLUESPEC_IOCAPAXI_STRUCTS = [
     Struct(
         "AWFlit_id4_addr64_user3",
         BackingArray.LSB(U32, 4),
-        [
+        revlist([
             Field("awid", 4),
             Field("awaddr", 64),
             Field("awlen", 8),
@@ -368,31 +369,31 @@ BLUESPEC_IOCAPAXI_STRUCTS = [
             Field("awcache", 4),
             Field("awprot", 3),
             Field("awqos", 4),
-            Field("awregion", 8),
+            Field("awregion", 4),
             Field("awuser", 3),
-        ],
+        ]),
     ),
     Struct(
         "WFlit_data32",
         U64,
-        [
+        revlist([
             Field("wdata", 32),
             Field("wstrb", 4),
             Field("wlast", 1),
-        ],
+        ]),
     ),
     Struct(
         "BFlit_id4",
         U8,
-        [
+        revlist([
             Field("bid", 4),
             Field("bresp", 2),
-        ],
+        ]),
     ),
     Struct(
         "ARFlit_id4_addr64_user3",
         BackingArray.LSB(U32, 4),
-        [
+        revlist([
             Field("arid", 4),
             Field("araddr", 64),
             Field("arlen", 8),
@@ -402,19 +403,19 @@ BLUESPEC_IOCAPAXI_STRUCTS = [
             Field("arcache", 4),
             Field("arprot", 3),
             Field("arqos", 4),
-            Field("arregion", 8),
+            Field("arregion", 4),
             Field("aruser", 3),
-        ],
+        ]),
     ),
     Struct(
         "RFlit_id4_data32",
         U64,
-        [
+        revlist([
             Field("rid", 4),
             Field("rdata", 32),
             Field("rresp", 2),
             Field("rlast", 1),
-        ],
+        ]),
     ),
 ]
 
@@ -422,7 +423,7 @@ BLUESPEC_SANITIZEDAXI_STRUCTS = [
     Struct(
         "AWFlit_id4_addr64_user0",
         BackingArray.LSB(U32, 4),
-        [
+        revlist([
             Field("awid", 4),
             Field("awaddr", 64),
             Field("awlen", 8),
@@ -432,31 +433,31 @@ BLUESPEC_SANITIZEDAXI_STRUCTS = [
             Field("awcache", 4),
             Field("awprot", 3),
             Field("awqos", 4),
-            Field("awregion", 8),
+            Field("awregion", 4),
             Field("awuser", 3),
-        ],
+        ]),
     ),
     Struct(
         "WFlit_data32",
         U64,
-        [
+        revlist([
             Field("wdata", 32),
             Field("wstrb", 4),
             Field("wlast", 1),
-        ],
+        ]),
     ),
     Struct(
         "BFlit_id4",
         U8,
-        [
+        revlist([
             Field("bid", 4),
             Field("bresp", 2),
-        ],
+        ]),
     ),
     Struct(
         "ARFlit_id4_addr64_user0",
         BackingArray.LSB(U32, 4),
-        [
+        revlist([
             Field("arid", 4),
             Field("araddr", 64),
             Field("arlen", 8),
@@ -466,18 +467,18 @@ BLUESPEC_SANITIZEDAXI_STRUCTS = [
             Field("arcache", 4),
             Field("arprot", 3),
             Field("arqos", 4),
-            Field("arregion", 8),
-        ],
+            Field("arregion", 4),
+        ]),
     ),
     Struct(
         "RFlit_id4_data32",
         U64,
-        [
+        revlist([
             Field("rid", 4),
             Field("rdata", 32),
             Field("rresp", 2),
             Field("rlast", 1),
-        ],
+        ]),
     ),
 ]
 
@@ -485,11 +486,22 @@ BLUESPEC_TUPLE2_KEYID_MAYBE_KEY = [
     Struct(
         "Tuple2_KeyId_MaybeKey",
         BackingArray.LSB(U32, 5),
+        # Tuple2#(KeyId, Maybe#(Key))
+        # Tuple2#(X, Y) = struct { X, Y }; which is packed with X in the MSB and Y in the LSB
+        # i.e. KeyId in the MSB and Maybe#(Key) in the LSB
+        # |-- KeyId --|-- Maybe#(Key) --|
+        # Maybe#(Key) = tagged Invalid | tagged Valid Key;
+        # The tag is the most significant bit, so it's packed like
+        # |-- ValidTag --|-- Key --|
+        # and overall
+        # |-- KeyId --|-- ValidTag --|-- Key --|
+        # Key is a Bit#(128). The top 64 bits are packed before the bottom 64 bits resulting in
+        # |-- KeyId --|-- ValidTag --|-- KeyTop --|-- KeyBot --|
         [
-            Field("keyId", 8),
-            Field("keyValid", 1),
-            Field("keyTop", 64),
             Field("keyBot", 64),
+            Field("keyTop", 64),
+            Field("keyValid", 1),
+            Field("keyId", 8),
         ]
     )
 ]

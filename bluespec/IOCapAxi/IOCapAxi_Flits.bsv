@@ -6,6 +6,27 @@ import SourceSink :: *;
 import IOCapAxi_Types :: *;
 import Cap2024_02 :: *;
 
+/*
+
+The IOCapAxi protocol adds support to the AW and AR channels to attach 256-bit metadata
+to each read and write transaction without excessively extending the user bits.
+Each transaction on these channels may use one flit as normal (for accesses without metadata)
+or four flits (with metadata attached).
+Four-flit transactions are known upfront to be four-flit, making flow control easy.
+The first of a four-flit transaction is the normal AW/AR flit, and the next three communicate
+86 metadata-bits each.
+Three additional USER bits are attached to each channel: one to indicate if the flit 
+uses metadata, and two to indicate the sequence number in a four-flit transaction.
+
+The IOCapAxi convention for attaching 256-bit cryptographically authenticated capabilities
+is to treat the 128-bit capability text as the bottom 128-bits of the metadata,
+and the 128-bit capability signature as the top 128-bits.
+
+TODO: The metadata bits are packed in the opposite order to the field bits
+e.g. we pack awaddr with lower bits than awlen, even though Bluespec packs awaddr into the more-significant-bits.
+TODO reverse this order
+*/
+
 typedef union tagged {
     // TODO no_iocap_flit Unauthenticated;
     no_iocap_flit Start;
@@ -279,6 +300,8 @@ module mkSimpleAddressChannelCapUnwrapper(AddressChannelCapUnwrapper#(iocap_flit
     Bits#(iocap_flit, b__),
     // Must be able to pack a flit-with-no-iocap-bits into an iocap-flit, with the user bits for signalling extra capability data
     IOCapPackableFlit#(iocap_flit, no_iocap_flit),
+    // Must be able to print the IOCap flit
+    FShow#(iocap_flit),
     // Must be able to print the authenticated flit
     FShow#(AuthenticatedFlit#(no_iocap_flit))
 );
@@ -296,7 +319,7 @@ module mkSimpleAddressChannelCapUnwrapper(AddressChannelCapUnwrapper#(iocap_flit
         if (spec matches tagged Start .flit) begin
             flitInProgress <= tuple2(flit, 0);
         end else begin
-            $error("IOCap protocol error");
+            $error("IOCap protocol error ", fshow(pack(startFlit)));
         end
         state <= 1;
     endrule
@@ -312,7 +335,7 @@ module mkSimpleAddressChannelCapUnwrapper(AddressChannelCapUnwrapper#(iocap_flit
                 { 0, bits }
             );
         end else begin
-            $error("IOCap protocol error");
+            $error("IOCap protocol error ", fshow(bitsFlit));
         end
         state <= 2;
     endrule
@@ -329,7 +352,7 @@ module mkSimpleAddressChannelCapUnwrapper(AddressChannelCapUnwrapper#(iocap_flit
                 { 0, bits, bitsInProgress[85:0] }
             );
         end else begin
-            $error("IOCap protocol error");
+            $error("IOCap protocol error ", fshow(bitsFlit));
         end
         state <= 3;
     endrule
@@ -350,7 +373,7 @@ module mkSimpleAddressChannelCapUnwrapper(AddressChannelCapUnwrapper#(iocap_flit
             $display("IOCap - Received auth flitpack ", fshow(authFlit));
             outFlits.enq(authFlit);
         end else begin
-            $error("IOCap protocol error");
+            $error("IOCap protocol error ", fshow(bitsFlit));
         end
         state <= 0;
     endrule

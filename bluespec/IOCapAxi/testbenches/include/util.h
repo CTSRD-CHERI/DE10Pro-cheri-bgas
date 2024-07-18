@@ -24,4 +24,20 @@ template <class T> class fmt::formatter<std::optional<T>> {
     }
 };
 
+struct U128 {
+    uint64_t top;
+    uint64_t bottom;
+
+    bool operator==(const U128& other) const = default;
+};
+
+template <> class fmt::formatter<U128> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (U128 const& key, Context& ctx) const {
+        return format_to(ctx.out(), "0x{:016x}{:016x}", key.top, key.bottom);
+    }
+};
+
 #endif // UTIL_H

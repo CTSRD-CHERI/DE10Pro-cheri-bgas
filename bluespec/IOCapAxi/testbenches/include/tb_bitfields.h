@@ -9,280 +9,272 @@
 
 namespace axi::IOCapAxi {
 	struct AWFlit_id4_addr64_user3 {
-		/** 4-bit field */
-		uint8_t awid;
-		/** 64-bit field */
-		uint64_t awaddr;
-		/** 8-bit field */
-		uint8_t awlen;
 		/** 3-bit field */
-		uint8_t awsize;
-		/** 2-bit field */
-		uint8_t awburst;
-		/** 1-bit field */
-		uint8_t awlock;
+		uint8_t awuser;
 		/** 4-bit field */
-		uint8_t awcache;
+		uint8_t awregion;
+		/** 4-bit field */
+		uint8_t awqos;
 		/** 3-bit field */
 		uint8_t awprot;
 		/** 4-bit field */
-		uint8_t awqos;
-		/** 8-bit field */
-		uint8_t awregion;
+		uint8_t awcache;
+		/** 1-bit field */
+		uint8_t awlock;
+		/** 2-bit field */
+		uint8_t awburst;
 		/** 3-bit field */
-		uint8_t awuser;
+		uint8_t awsize;
+		/** 8-bit field */
+		uint8_t awlen;
+		/** 64-bit field */
+		uint64_t awaddr;
+		/** 4-bit field */
+		uint8_t awid;
 	
 		static AWFlit_id4_addr64_user3 unpack(const std::array<uint32_t, 4>& backing) {
 			AWFlit_id4_addr64_user3 value{};
-			value.awid = (
-				uint8_t((backing[0] >> 0u) & 0xfu)
-			);
-			value.awaddr = (
-				(uint64_t((backing[0] >> 4u) & 0xfffffffu) << 0) | 
-				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 28) | 
-				(uint64_t((backing[2] >> 0u) & 0xfu) << 60)
-			);
-			value.awlen = (
-				uint8_t((backing[2] >> 4u) & 0xffu)
-			);
-			value.awsize = (
-				uint8_t((backing[2] >> 12u) & 0x7u)
-			);
-			value.awburst = (
-				uint8_t((backing[2] >> 15u) & 0x3u)
-			);
-			value.awlock = (
-				uint8_t((backing[2] >> 17u) & 0x1u)
-			);
-			value.awcache = (
-				uint8_t((backing[2] >> 18u) & 0xfu)
-			);
-			value.awprot = (
-				uint8_t((backing[2] >> 22u) & 0x7u)
-			);
-			value.awqos = (
-				uint8_t((backing[2] >> 25u) & 0xfu)
+			value.awuser = (
+				uint8_t((backing[0] >> 0u) & 0x7u)
 			);
 			value.awregion = (
-				(uint8_t((backing[2] >> 29u) & 0x7u) << 0) | 
-				(uint8_t((backing[3] >> 0u) & 0x1fu) << 3)
+				uint8_t((backing[0] >> 3u) & 0xfu)
 			);
-			value.awuser = (
-				uint8_t((backing[3] >> 5u) & 0x7u)
+			value.awqos = (
+				uint8_t((backing[0] >> 7u) & 0xfu)
+			);
+			value.awprot = (
+				uint8_t((backing[0] >> 11u) & 0x7u)
+			);
+			value.awcache = (
+				uint8_t((backing[0] >> 14u) & 0xfu)
+			);
+			value.awlock = (
+				uint8_t((backing[0] >> 18u) & 0x1u)
+			);
+			value.awburst = (
+				uint8_t((backing[0] >> 19u) & 0x3u)
+			);
+			value.awsize = (
+				uint8_t((backing[0] >> 21u) & 0x7u)
+			);
+			value.awlen = (
+				uint8_t((backing[0] >> 24u) & 0xffu)
+			);
+			value.awaddr = (
+				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 0) | 
+				(uint64_t((backing[2] >> 0u) & 0xffffffffu) << 32)
+			);
+			value.awid = (
+				uint8_t((backing[3] >> 0u) & 0xfu)
 			);
 			return value;
 		}
 		std::array<uint32_t, 4> pack() const {
 			std::array<uint32_t, 4> backing{};
 			backing[0] = (
-				(uint32_t((awid >> 0u) & uint8_t(0xful)) << 0) | 
-				(uint32_t((awaddr >> 0u) & 0xffffffful) << 4)
+				(uint32_t((awuser >> 0u) & uint8_t(0x7ul)) << 0) | 
+				(uint32_t((awregion >> 0u) & uint8_t(0xful)) << 3) | 
+				(uint32_t((awqos >> 0u) & uint8_t(0xful)) << 7) | 
+				(uint32_t((awprot >> 0u) & uint8_t(0x7ul)) << 11) | 
+				(uint32_t((awcache >> 0u) & uint8_t(0xful)) << 14) | 
+				(uint32_t((awlock >> 0u) & uint8_t(0x1ul)) << 18) | 
+				(uint32_t((awburst >> 0u) & uint8_t(0x3ul)) << 19) | 
+				(uint32_t((awsize >> 0u) & uint8_t(0x7ul)) << 21) | 
+				(uint32_t((awlen >> 0u) & uint8_t(0xfful)) << 24)
 			);
 			backing[1] = (
-				uint32_t((awaddr >> 28u) & 0xfffffffful)
+				uint32_t((awaddr >> 0u) & 0xfffffffful)
 			);
 			backing[2] = (
-				(uint32_t((awaddr >> 60u) & 0xful) << 0) | 
-				(uint32_t((awlen >> 0u) & uint8_t(0xfful)) << 4) | 
-				(uint32_t((awsize >> 0u) & uint8_t(0x7ul)) << 12) | 
-				(uint32_t((awburst >> 0u) & uint8_t(0x3ul)) << 15) | 
-				(uint32_t((awlock >> 0u) & uint8_t(0x1ul)) << 17) | 
-				(uint32_t((awcache >> 0u) & uint8_t(0xful)) << 18) | 
-				(uint32_t((awprot >> 0u) & uint8_t(0x7ul)) << 22) | 
-				(uint32_t((awqos >> 0u) & uint8_t(0xful)) << 25) | 
-				(uint32_t((awregion >> 0u) & uint8_t(0x7ul)) << 29)
+				uint32_t((awaddr >> 32u) & 0xfffffffful)
 			);
 			backing[3] = (
-				(uint32_t((awregion >> 3u) & uint8_t(0x1ful)) << 0) | 
-				(uint32_t((awuser >> 0u) & uint8_t(0x7ul)) << 5)
+				uint32_t((awid >> 0u) & uint8_t(0xful))
 			);
 			return backing;
 		}
 		bool operator==(const AWFlit_id4_addr64_user3&) const = default;
 	};
 	struct WFlit_data32 {
-		/** 32-bit field */
-		uint32_t wdata;
-		/** 4-bit field */
-		uint8_t wstrb;
 		/** 1-bit field */
 		uint8_t wlast;
+		/** 4-bit field */
+		uint8_t wstrb;
+		/** 32-bit field */
+		uint32_t wdata;
 	
 		static WFlit_data32 unpack(const uint64_t& backing) {
 			WFlit_data32 value{};
-			value.wdata = (
-				uint32_t((backing >> 0u) & 0xfffffffful)
+			value.wlast = (
+				uint8_t((backing >> 0u) & 0x1ul)
 			);
 			value.wstrb = (
-				uint8_t((backing >> 32u) & 0xful)
+				uint8_t((backing >> 1u) & 0xful)
 			);
-			value.wlast = (
-				uint8_t((backing >> 36u) & 0x1ul)
+			value.wdata = (
+				uint32_t((backing >> 5u) & 0xfffffffful)
 			);
 			return value;
 		}
 		uint64_t pack() const {
 			uint64_t backing{};
 			backing = (
-				(uint64_t((wdata >> 0u) & 0xffffffffu) << 0) | 
-				(uint64_t((wstrb >> 0u) & uint8_t(0xful)) << 32) | 
-				(uint64_t((wlast >> 0u) & uint8_t(0x1ul)) << 36)
+				(uint64_t((wlast >> 0u) & uint8_t(0x1ul)) << 0) | 
+				(uint64_t((wstrb >> 0u) & uint8_t(0xful)) << 1) | 
+				(uint64_t((wdata >> 0u) & 0xffffffffu) << 5)
 			);
 			return backing;
 		}
 		bool operator==(const WFlit_data32&) const = default;
 	};
 	struct BFlit_id4 {
-		/** 4-bit field */
-		uint8_t bid;
 		/** 2-bit field */
 		uint8_t bresp;
+		/** 4-bit field */
+		uint8_t bid;
 	
 		static BFlit_id4 unpack(const uint8_t& backing) {
 			BFlit_id4 value{};
-			value.bid = (
-				((backing >> 0u) & uint8_t(0xful))
-			);
 			value.bresp = (
-				((backing >> 4u) & uint8_t(0x3ul))
+				((backing >> 0u) & uint8_t(0x3ul))
+			);
+			value.bid = (
+				((backing >> 2u) & uint8_t(0xful))
 			);
 			return value;
 		}
 		uint8_t pack() const {
 			uint8_t backing{};
 			backing = (
-				(((bid >> 0u) & uint8_t(0xful)) << 0) | 
-				(((bresp >> 0u) & uint8_t(0x3ul)) << 4)
+				(((bresp >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(((bid >> 0u) & uint8_t(0xful)) << 2)
 			);
 			return backing;
 		}
 		bool operator==(const BFlit_id4&) const = default;
 	};
 	struct ARFlit_id4_addr64_user3 {
-		/** 4-bit field */
-		uint8_t arid;
-		/** 64-bit field */
-		uint64_t araddr;
-		/** 8-bit field */
-		uint8_t arlen;
 		/** 3-bit field */
-		uint8_t arsize;
-		/** 2-bit field */
-		uint8_t arburst;
-		/** 1-bit field */
-		uint8_t arlock;
+		uint8_t aruser;
 		/** 4-bit field */
-		uint8_t arcache;
+		uint8_t arregion;
+		/** 4-bit field */
+		uint8_t arqos;
 		/** 3-bit field */
 		uint8_t arprot;
 		/** 4-bit field */
-		uint8_t arqos;
-		/** 8-bit field */
-		uint8_t arregion;
+		uint8_t arcache;
+		/** 1-bit field */
+		uint8_t arlock;
+		/** 2-bit field */
+		uint8_t arburst;
 		/** 3-bit field */
-		uint8_t aruser;
+		uint8_t arsize;
+		/** 8-bit field */
+		uint8_t arlen;
+		/** 64-bit field */
+		uint64_t araddr;
+		/** 4-bit field */
+		uint8_t arid;
 	
 		static ARFlit_id4_addr64_user3 unpack(const std::array<uint32_t, 4>& backing) {
 			ARFlit_id4_addr64_user3 value{};
-			value.arid = (
-				uint8_t((backing[0] >> 0u) & 0xfu)
-			);
-			value.araddr = (
-				(uint64_t((backing[0] >> 4u) & 0xfffffffu) << 0) | 
-				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 28) | 
-				(uint64_t((backing[2] >> 0u) & 0xfu) << 60)
-			);
-			value.arlen = (
-				uint8_t((backing[2] >> 4u) & 0xffu)
-			);
-			value.arsize = (
-				uint8_t((backing[2] >> 12u) & 0x7u)
-			);
-			value.arburst = (
-				uint8_t((backing[2] >> 15u) & 0x3u)
-			);
-			value.arlock = (
-				uint8_t((backing[2] >> 17u) & 0x1u)
-			);
-			value.arcache = (
-				uint8_t((backing[2] >> 18u) & 0xfu)
-			);
-			value.arprot = (
-				uint8_t((backing[2] >> 22u) & 0x7u)
-			);
-			value.arqos = (
-				uint8_t((backing[2] >> 25u) & 0xfu)
+			value.aruser = (
+				uint8_t((backing[0] >> 0u) & 0x7u)
 			);
 			value.arregion = (
-				(uint8_t((backing[2] >> 29u) & 0x7u) << 0) | 
-				(uint8_t((backing[3] >> 0u) & 0x1fu) << 3)
+				uint8_t((backing[0] >> 3u) & 0xfu)
 			);
-			value.aruser = (
-				uint8_t((backing[3] >> 5u) & 0x7u)
+			value.arqos = (
+				uint8_t((backing[0] >> 7u) & 0xfu)
+			);
+			value.arprot = (
+				uint8_t((backing[0] >> 11u) & 0x7u)
+			);
+			value.arcache = (
+				uint8_t((backing[0] >> 14u) & 0xfu)
+			);
+			value.arlock = (
+				uint8_t((backing[0] >> 18u) & 0x1u)
+			);
+			value.arburst = (
+				uint8_t((backing[0] >> 19u) & 0x3u)
+			);
+			value.arsize = (
+				uint8_t((backing[0] >> 21u) & 0x7u)
+			);
+			value.arlen = (
+				uint8_t((backing[0] >> 24u) & 0xffu)
+			);
+			value.araddr = (
+				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 0) | 
+				(uint64_t((backing[2] >> 0u) & 0xffffffffu) << 32)
+			);
+			value.arid = (
+				uint8_t((backing[3] >> 0u) & 0xfu)
 			);
 			return value;
 		}
 		std::array<uint32_t, 4> pack() const {
 			std::array<uint32_t, 4> backing{};
 			backing[0] = (
-				(uint32_t((arid >> 0u) & uint8_t(0xful)) << 0) | 
-				(uint32_t((araddr >> 0u) & 0xffffffful) << 4)
+				(uint32_t((aruser >> 0u) & uint8_t(0x7ul)) << 0) | 
+				(uint32_t((arregion >> 0u) & uint8_t(0xful)) << 3) | 
+				(uint32_t((arqos >> 0u) & uint8_t(0xful)) << 7) | 
+				(uint32_t((arprot >> 0u) & uint8_t(0x7ul)) << 11) | 
+				(uint32_t((arcache >> 0u) & uint8_t(0xful)) << 14) | 
+				(uint32_t((arlock >> 0u) & uint8_t(0x1ul)) << 18) | 
+				(uint32_t((arburst >> 0u) & uint8_t(0x3ul)) << 19) | 
+				(uint32_t((arsize >> 0u) & uint8_t(0x7ul)) << 21) | 
+				(uint32_t((arlen >> 0u) & uint8_t(0xfful)) << 24)
 			);
 			backing[1] = (
-				uint32_t((araddr >> 28u) & 0xfffffffful)
+				uint32_t((araddr >> 0u) & 0xfffffffful)
 			);
 			backing[2] = (
-				(uint32_t((araddr >> 60u) & 0xful) << 0) | 
-				(uint32_t((arlen >> 0u) & uint8_t(0xfful)) << 4) | 
-				(uint32_t((arsize >> 0u) & uint8_t(0x7ul)) << 12) | 
-				(uint32_t((arburst >> 0u) & uint8_t(0x3ul)) << 15) | 
-				(uint32_t((arlock >> 0u) & uint8_t(0x1ul)) << 17) | 
-				(uint32_t((arcache >> 0u) & uint8_t(0xful)) << 18) | 
-				(uint32_t((arprot >> 0u) & uint8_t(0x7ul)) << 22) | 
-				(uint32_t((arqos >> 0u) & uint8_t(0xful)) << 25) | 
-				(uint32_t((arregion >> 0u) & uint8_t(0x7ul)) << 29)
+				uint32_t((araddr >> 32u) & 0xfffffffful)
 			);
 			backing[3] = (
-				(uint32_t((arregion >> 3u) & uint8_t(0x1ful)) << 0) | 
-				(uint32_t((aruser >> 0u) & uint8_t(0x7ul)) << 5)
+				uint32_t((arid >> 0u) & uint8_t(0xful))
 			);
 			return backing;
 		}
 		bool operator==(const ARFlit_id4_addr64_user3&) const = default;
 	};
 	struct RFlit_id4_data32 {
-		/** 4-bit field */
-		uint8_t rid;
-		/** 32-bit field */
-		uint32_t rdata;
-		/** 2-bit field */
-		uint8_t rresp;
 		/** 1-bit field */
 		uint8_t rlast;
+		/** 2-bit field */
+		uint8_t rresp;
+		/** 32-bit field */
+		uint32_t rdata;
+		/** 4-bit field */
+		uint8_t rid;
 	
 		static RFlit_id4_data32 unpack(const uint64_t& backing) {
 			RFlit_id4_data32 value{};
-			value.rid = (
-				uint8_t((backing >> 0u) & 0xful)
-			);
-			value.rdata = (
-				uint32_t((backing >> 4u) & 0xfffffffful)
+			value.rlast = (
+				uint8_t((backing >> 0u) & 0x1ul)
 			);
 			value.rresp = (
-				uint8_t((backing >> 36u) & 0x3ul)
+				uint8_t((backing >> 1u) & 0x3ul)
 			);
-			value.rlast = (
-				uint8_t((backing >> 38u) & 0x1ul)
+			value.rdata = (
+				uint32_t((backing >> 3u) & 0xfffffffful)
+			);
+			value.rid = (
+				uint8_t((backing >> 35u) & 0xful)
 			);
 			return value;
 		}
 		uint64_t pack() const {
 			uint64_t backing{};
 			backing = (
-				(uint64_t((rid >> 0u) & uint8_t(0xful)) << 0) | 
-				(uint64_t((rdata >> 0u) & 0xffffffffu) << 4) | 
-				(uint64_t((rresp >> 0u) & uint8_t(0x3ul)) << 36) | 
-				(uint64_t((rlast >> 0u) & uint8_t(0x1ul)) << 38)
+				(uint64_t((rlast >> 0u) & uint8_t(0x1ul)) << 0) | 
+				(uint64_t((rresp >> 0u) & uint8_t(0x3ul)) << 1) | 
+				(uint64_t((rdata >> 0u) & 0xffffffffu) << 3) | 
+				(uint64_t((rid >> 0u) & uint8_t(0xful)) << 35)
 			);
 			return backing;
 		}
@@ -293,150 +285,146 @@ namespace axi::IOCapAxi {
 
 namespace axi::SanitizedAxi {
 	struct AWFlit_id4_addr64_user0 {
-		/** 4-bit field */
-		uint8_t awid;
-		/** 64-bit field */
-		uint64_t awaddr;
-		/** 8-bit field */
-		uint8_t awlen;
 		/** 3-bit field */
-		uint8_t awsize;
-		/** 2-bit field */
-		uint8_t awburst;
-		/** 1-bit field */
-		uint8_t awlock;
+		uint8_t awuser;
 		/** 4-bit field */
-		uint8_t awcache;
+		uint8_t awregion;
+		/** 4-bit field */
+		uint8_t awqos;
 		/** 3-bit field */
 		uint8_t awprot;
 		/** 4-bit field */
-		uint8_t awqos;
-		/** 8-bit field */
-		uint8_t awregion;
+		uint8_t awcache;
+		/** 1-bit field */
+		uint8_t awlock;
+		/** 2-bit field */
+		uint8_t awburst;
 		/** 3-bit field */
-		uint8_t awuser;
+		uint8_t awsize;
+		/** 8-bit field */
+		uint8_t awlen;
+		/** 64-bit field */
+		uint64_t awaddr;
+		/** 4-bit field */
+		uint8_t awid;
 	
 		static AWFlit_id4_addr64_user0 unpack(const std::array<uint32_t, 4>& backing) {
 			AWFlit_id4_addr64_user0 value{};
-			value.awid = (
-				uint8_t((backing[0] >> 0u) & 0xfu)
-			);
-			value.awaddr = (
-				(uint64_t((backing[0] >> 4u) & 0xfffffffu) << 0) | 
-				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 28) | 
-				(uint64_t((backing[2] >> 0u) & 0xfu) << 60)
-			);
-			value.awlen = (
-				uint8_t((backing[2] >> 4u) & 0xffu)
-			);
-			value.awsize = (
-				uint8_t((backing[2] >> 12u) & 0x7u)
-			);
-			value.awburst = (
-				uint8_t((backing[2] >> 15u) & 0x3u)
-			);
-			value.awlock = (
-				uint8_t((backing[2] >> 17u) & 0x1u)
-			);
-			value.awcache = (
-				uint8_t((backing[2] >> 18u) & 0xfu)
-			);
-			value.awprot = (
-				uint8_t((backing[2] >> 22u) & 0x7u)
-			);
-			value.awqos = (
-				uint8_t((backing[2] >> 25u) & 0xfu)
+			value.awuser = (
+				uint8_t((backing[0] >> 0u) & 0x7u)
 			);
 			value.awregion = (
-				(uint8_t((backing[2] >> 29u) & 0x7u) << 0) | 
-				(uint8_t((backing[3] >> 0u) & 0x1fu) << 3)
+				uint8_t((backing[0] >> 3u) & 0xfu)
 			);
-			value.awuser = (
-				uint8_t((backing[3] >> 5u) & 0x7u)
+			value.awqos = (
+				uint8_t((backing[0] >> 7u) & 0xfu)
+			);
+			value.awprot = (
+				uint8_t((backing[0] >> 11u) & 0x7u)
+			);
+			value.awcache = (
+				uint8_t((backing[0] >> 14u) & 0xfu)
+			);
+			value.awlock = (
+				uint8_t((backing[0] >> 18u) & 0x1u)
+			);
+			value.awburst = (
+				uint8_t((backing[0] >> 19u) & 0x3u)
+			);
+			value.awsize = (
+				uint8_t((backing[0] >> 21u) & 0x7u)
+			);
+			value.awlen = (
+				uint8_t((backing[0] >> 24u) & 0xffu)
+			);
+			value.awaddr = (
+				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 0) | 
+				(uint64_t((backing[2] >> 0u) & 0xffffffffu) << 32)
+			);
+			value.awid = (
+				uint8_t((backing[3] >> 0u) & 0xfu)
 			);
 			return value;
 		}
 		std::array<uint32_t, 4> pack() const {
 			std::array<uint32_t, 4> backing{};
 			backing[0] = (
-				(uint32_t((awid >> 0u) & uint8_t(0xful)) << 0) | 
-				(uint32_t((awaddr >> 0u) & 0xffffffful) << 4)
+				(uint32_t((awuser >> 0u) & uint8_t(0x7ul)) << 0) | 
+				(uint32_t((awregion >> 0u) & uint8_t(0xful)) << 3) | 
+				(uint32_t((awqos >> 0u) & uint8_t(0xful)) << 7) | 
+				(uint32_t((awprot >> 0u) & uint8_t(0x7ul)) << 11) | 
+				(uint32_t((awcache >> 0u) & uint8_t(0xful)) << 14) | 
+				(uint32_t((awlock >> 0u) & uint8_t(0x1ul)) << 18) | 
+				(uint32_t((awburst >> 0u) & uint8_t(0x3ul)) << 19) | 
+				(uint32_t((awsize >> 0u) & uint8_t(0x7ul)) << 21) | 
+				(uint32_t((awlen >> 0u) & uint8_t(0xfful)) << 24)
 			);
 			backing[1] = (
-				uint32_t((awaddr >> 28u) & 0xfffffffful)
+				uint32_t((awaddr >> 0u) & 0xfffffffful)
 			);
 			backing[2] = (
-				(uint32_t((awaddr >> 60u) & 0xful) << 0) | 
-				(uint32_t((awlen >> 0u) & uint8_t(0xfful)) << 4) | 
-				(uint32_t((awsize >> 0u) & uint8_t(0x7ul)) << 12) | 
-				(uint32_t((awburst >> 0u) & uint8_t(0x3ul)) << 15) | 
-				(uint32_t((awlock >> 0u) & uint8_t(0x1ul)) << 17) | 
-				(uint32_t((awcache >> 0u) & uint8_t(0xful)) << 18) | 
-				(uint32_t((awprot >> 0u) & uint8_t(0x7ul)) << 22) | 
-				(uint32_t((awqos >> 0u) & uint8_t(0xful)) << 25) | 
-				(uint32_t((awregion >> 0u) & uint8_t(0x7ul)) << 29)
+				uint32_t((awaddr >> 32u) & 0xfffffffful)
 			);
 			backing[3] = (
-				(uint32_t((awregion >> 3u) & uint8_t(0x1ful)) << 0) | 
-				(uint32_t((awuser >> 0u) & uint8_t(0x7ul)) << 5)
+				uint32_t((awid >> 0u) & uint8_t(0xful))
 			);
 			return backing;
 		}
 		bool operator==(const AWFlit_id4_addr64_user0&) const = default;
 	};
 	struct WFlit_data32 {
-		/** 32-bit field */
-		uint32_t wdata;
-		/** 4-bit field */
-		uint8_t wstrb;
 		/** 1-bit field */
 		uint8_t wlast;
+		/** 4-bit field */
+		uint8_t wstrb;
+		/** 32-bit field */
+		uint32_t wdata;
 	
 		static WFlit_data32 unpack(const uint64_t& backing) {
 			WFlit_data32 value{};
-			value.wdata = (
-				uint32_t((backing >> 0u) & 0xfffffffful)
+			value.wlast = (
+				uint8_t((backing >> 0u) & 0x1ul)
 			);
 			value.wstrb = (
-				uint8_t((backing >> 32u) & 0xful)
+				uint8_t((backing >> 1u) & 0xful)
 			);
-			value.wlast = (
-				uint8_t((backing >> 36u) & 0x1ul)
+			value.wdata = (
+				uint32_t((backing >> 5u) & 0xfffffffful)
 			);
 			return value;
 		}
 		uint64_t pack() const {
 			uint64_t backing{};
 			backing = (
-				(uint64_t((wdata >> 0u) & 0xffffffffu) << 0) | 
-				(uint64_t((wstrb >> 0u) & uint8_t(0xful)) << 32) | 
-				(uint64_t((wlast >> 0u) & uint8_t(0x1ul)) << 36)
+				(uint64_t((wlast >> 0u) & uint8_t(0x1ul)) << 0) | 
+				(uint64_t((wstrb >> 0u) & uint8_t(0xful)) << 1) | 
+				(uint64_t((wdata >> 0u) & 0xffffffffu) << 5)
 			);
 			return backing;
 		}
 		bool operator==(const WFlit_data32&) const = default;
 	};
 	struct BFlit_id4 {
-		/** 4-bit field */
-		uint8_t bid;
 		/** 2-bit field */
 		uint8_t bresp;
+		/** 4-bit field */
+		uint8_t bid;
 	
 		static BFlit_id4 unpack(const uint8_t& backing) {
 			BFlit_id4 value{};
-			value.bid = (
-				((backing >> 0u) & uint8_t(0xful))
-			);
 			value.bresp = (
-				((backing >> 4u) & uint8_t(0x3ul))
+				((backing >> 0u) & uint8_t(0x3ul))
+			);
+			value.bid = (
+				((backing >> 2u) & uint8_t(0xful))
 			);
 			return value;
 		}
 		uint8_t pack() const {
 			uint8_t backing{};
 			backing = (
-				(((bid >> 0u) & uint8_t(0xful)) << 0) | 
-				(((bresp >> 0u) & uint8_t(0x3ul)) << 4)
+				(((bresp >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(((bid >> 0u) & uint8_t(0xful)) << 2)
 			);
 			return backing;
 		}
@@ -444,123 +432,123 @@ namespace axi::SanitizedAxi {
 	};
 	struct ARFlit_id4_addr64_user0 {
 		/** 4-bit field */
-		uint8_t arid;
-		/** 64-bit field */
-		uint64_t araddr;
-		/** 8-bit field */
-		uint8_t arlen;
-		/** 3-bit field */
-		uint8_t arsize;
-		/** 2-bit field */
-		uint8_t arburst;
-		/** 1-bit field */
-		uint8_t arlock;
+		uint8_t arregion;
 		/** 4-bit field */
-		uint8_t arcache;
+		uint8_t arqos;
 		/** 3-bit field */
 		uint8_t arprot;
 		/** 4-bit field */
-		uint8_t arqos;
+		uint8_t arcache;
+		/** 1-bit field */
+		uint8_t arlock;
+		/** 2-bit field */
+		uint8_t arburst;
+		/** 3-bit field */
+		uint8_t arsize;
 		/** 8-bit field */
-		uint8_t arregion;
+		uint8_t arlen;
+		/** 64-bit field */
+		uint64_t araddr;
+		/** 4-bit field */
+		uint8_t arid;
 	
 		static ARFlit_id4_addr64_user0 unpack(const std::array<uint32_t, 4>& backing) {
 			ARFlit_id4_addr64_user0 value{};
-			value.arid = (
+			value.arregion = (
 				uint8_t((backing[0] >> 0u) & 0xfu)
 			);
-			value.araddr = (
-				(uint64_t((backing[0] >> 4u) & 0xfffffffu) << 0) | 
-				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 28) | 
-				(uint64_t((backing[2] >> 0u) & 0xfu) << 60)
-			);
-			value.arlen = (
-				uint8_t((backing[2] >> 4u) & 0xffu)
-			);
-			value.arsize = (
-				uint8_t((backing[2] >> 12u) & 0x7u)
-			);
-			value.arburst = (
-				uint8_t((backing[2] >> 15u) & 0x3u)
-			);
-			value.arlock = (
-				uint8_t((backing[2] >> 17u) & 0x1u)
-			);
-			value.arcache = (
-				uint8_t((backing[2] >> 18u) & 0xfu)
+			value.arqos = (
+				uint8_t((backing[0] >> 4u) & 0xfu)
 			);
 			value.arprot = (
-				uint8_t((backing[2] >> 22u) & 0x7u)
+				uint8_t((backing[0] >> 8u) & 0x7u)
 			);
-			value.arqos = (
-				uint8_t((backing[2] >> 25u) & 0xfu)
+			value.arcache = (
+				uint8_t((backing[0] >> 11u) & 0xfu)
 			);
-			value.arregion = (
+			value.arlock = (
+				uint8_t((backing[0] >> 15u) & 0x1u)
+			);
+			value.arburst = (
+				uint8_t((backing[0] >> 16u) & 0x3u)
+			);
+			value.arsize = (
+				uint8_t((backing[0] >> 18u) & 0x7u)
+			);
+			value.arlen = (
+				uint8_t((backing[0] >> 21u) & 0xffu)
+			);
+			value.araddr = (
+				(uint64_t((backing[0] >> 29u) & 0x7u) << 0) | 
+				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 3) | 
+				(uint64_t((backing[2] >> 0u) & 0x1fffffffu) << 35)
+			);
+			value.arid = (
 				(uint8_t((backing[2] >> 29u) & 0x7u) << 0) | 
-				(uint8_t((backing[3] >> 0u) & 0x1fu) << 3)
+				(uint8_t((backing[3] >> 0u) & 0x1u) << 3)
 			);
 			return value;
 		}
 		std::array<uint32_t, 4> pack() const {
 			std::array<uint32_t, 4> backing{};
 			backing[0] = (
-				(uint32_t((arid >> 0u) & uint8_t(0xful)) << 0) | 
-				(uint32_t((araddr >> 0u) & 0xffffffful) << 4)
+				(uint32_t((arregion >> 0u) & uint8_t(0xful)) << 0) | 
+				(uint32_t((arqos >> 0u) & uint8_t(0xful)) << 4) | 
+				(uint32_t((arprot >> 0u) & uint8_t(0x7ul)) << 8) | 
+				(uint32_t((arcache >> 0u) & uint8_t(0xful)) << 11) | 
+				(uint32_t((arlock >> 0u) & uint8_t(0x1ul)) << 15) | 
+				(uint32_t((arburst >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((arsize >> 0u) & uint8_t(0x7ul)) << 18) | 
+				(uint32_t((arlen >> 0u) & uint8_t(0xfful)) << 21) | 
+				(uint32_t((araddr >> 0u) & 0x7ul) << 29)
 			);
 			backing[1] = (
-				uint32_t((araddr >> 28u) & 0xfffffffful)
+				uint32_t((araddr >> 3u) & 0xfffffffful)
 			);
 			backing[2] = (
-				(uint32_t((araddr >> 60u) & 0xful) << 0) | 
-				(uint32_t((arlen >> 0u) & uint8_t(0xfful)) << 4) | 
-				(uint32_t((arsize >> 0u) & uint8_t(0x7ul)) << 12) | 
-				(uint32_t((arburst >> 0u) & uint8_t(0x3ul)) << 15) | 
-				(uint32_t((arlock >> 0u) & uint8_t(0x1ul)) << 17) | 
-				(uint32_t((arcache >> 0u) & uint8_t(0xful)) << 18) | 
-				(uint32_t((arprot >> 0u) & uint8_t(0x7ul)) << 22) | 
-				(uint32_t((arqos >> 0u) & uint8_t(0xful)) << 25) | 
-				(uint32_t((arregion >> 0u) & uint8_t(0x7ul)) << 29)
+				(uint32_t((araddr >> 35u) & 0x1ffffffful) << 0) | 
+				(uint32_t((arid >> 0u) & uint8_t(0x7ul)) << 29)
 			);
 			backing[3] = (
-				uint32_t((arregion >> 3u) & uint8_t(0x1ful))
+				uint32_t((arid >> 3u) & uint8_t(0x1ul))
 			);
 			return backing;
 		}
 		bool operator==(const ARFlit_id4_addr64_user0&) const = default;
 	};
 	struct RFlit_id4_data32 {
-		/** 4-bit field */
-		uint8_t rid;
-		/** 32-bit field */
-		uint32_t rdata;
-		/** 2-bit field */
-		uint8_t rresp;
 		/** 1-bit field */
 		uint8_t rlast;
+		/** 2-bit field */
+		uint8_t rresp;
+		/** 32-bit field */
+		uint32_t rdata;
+		/** 4-bit field */
+		uint8_t rid;
 	
 		static RFlit_id4_data32 unpack(const uint64_t& backing) {
 			RFlit_id4_data32 value{};
-			value.rid = (
-				uint8_t((backing >> 0u) & 0xful)
-			);
-			value.rdata = (
-				uint32_t((backing >> 4u) & 0xfffffffful)
+			value.rlast = (
+				uint8_t((backing >> 0u) & 0x1ul)
 			);
 			value.rresp = (
-				uint8_t((backing >> 36u) & 0x3ul)
+				uint8_t((backing >> 1u) & 0x3ul)
 			);
-			value.rlast = (
-				uint8_t((backing >> 38u) & 0x1ul)
+			value.rdata = (
+				uint32_t((backing >> 3u) & 0xfffffffful)
+			);
+			value.rid = (
+				uint8_t((backing >> 35u) & 0xful)
 			);
 			return value;
 		}
 		uint64_t pack() const {
 			uint64_t backing{};
 			backing = (
-				(uint64_t((rid >> 0u) & uint8_t(0xful)) << 0) | 
-				(uint64_t((rdata >> 0u) & 0xffffffffu) << 4) | 
-				(uint64_t((rresp >> 0u) & uint8_t(0x3ul)) << 36) | 
-				(uint64_t((rlast >> 0u) & uint8_t(0x1ul)) << 38)
+				(uint64_t((rlast >> 0u) & uint8_t(0x1ul)) << 0) | 
+				(uint64_t((rresp >> 0u) & uint8_t(0x3ul)) << 1) | 
+				(uint64_t((rdata >> 0u) & 0xffffffffu) << 3) | 
+				(uint64_t((rid >> 0u) & uint8_t(0xful)) << 35)
 			);
 			return backing;
 		}
@@ -571,54 +559,50 @@ namespace axi::SanitizedAxi {
 
 namespace key_manager {
 	struct Tuple2_KeyId_MaybeKey {
-		/** 8-bit field */
-		uint8_t keyId;
-		/** 1-bit field */
-		uint8_t keyValid;
-		/** 64-bit field */
-		uint64_t keyTop;
 		/** 64-bit field */
 		uint64_t keyBot;
+		/** 64-bit field */
+		uint64_t keyTop;
+		/** 1-bit field */
+		uint8_t keyValid;
+		/** 8-bit field */
+		uint8_t keyId;
 	
 		static Tuple2_KeyId_MaybeKey unpack(const std::array<uint32_t, 5>& backing) {
 			Tuple2_KeyId_MaybeKey value{};
-			value.keyId = (
-				uint8_t((backing[0] >> 0u) & 0xffu)
-			);
-			value.keyValid = (
-				uint8_t((backing[0] >> 8u) & 0x1u)
+			value.keyBot = (
+				(uint64_t((backing[0] >> 0u) & 0xffffffffu) << 0) | 
+				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 32)
 			);
 			value.keyTop = (
-				(uint64_t((backing[0] >> 9u) & 0x7fffffu) << 0) | 
-				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 23) | 
-				(uint64_t((backing[2] >> 0u) & 0x1ffu) << 55)
+				(uint64_t((backing[2] >> 0u) & 0xffffffffu) << 0) | 
+				(uint64_t((backing[3] >> 0u) & 0xffffffffu) << 32)
 			);
-			value.keyBot = (
-				(uint64_t((backing[2] >> 9u) & 0x7fffffu) << 0) | 
-				(uint64_t((backing[3] >> 0u) & 0xffffffffu) << 23) | 
-				(uint64_t((backing[4] >> 0u) & 0x1ffu) << 55)
+			value.keyValid = (
+				uint8_t((backing[4] >> 0u) & 0x1u)
+			);
+			value.keyId = (
+				uint8_t((backing[4] >> 1u) & 0xffu)
 			);
 			return value;
 		}
 		std::array<uint32_t, 5> pack() const {
 			std::array<uint32_t, 5> backing{};
 			backing[0] = (
-				(uint32_t((keyId >> 0u) & uint8_t(0xfful)) << 0) | 
-				(uint32_t((keyValid >> 0u) & uint8_t(0x1ul)) << 8) | 
-				(uint32_t((keyTop >> 0u) & 0x7ffffful) << 9)
+				uint32_t((keyBot >> 0u) & 0xfffffffful)
 			);
 			backing[1] = (
-				uint32_t((keyTop >> 23u) & 0xfffffffful)
+				uint32_t((keyBot >> 32u) & 0xfffffffful)
 			);
 			backing[2] = (
-				(uint32_t((keyTop >> 55u) & 0x1fful) << 0) | 
-				(uint32_t((keyBot >> 0u) & 0x7ffffful) << 9)
+				uint32_t((keyTop >> 0u) & 0xfffffffful)
 			);
 			backing[3] = (
-				uint32_t((keyBot >> 23u) & 0xfffffffful)
+				uint32_t((keyTop >> 32u) & 0xfffffffful)
 			);
 			backing[4] = (
-				uint32_t((keyBot >> 55u) & 0x1fful)
+				(uint32_t((keyValid >> 0u) & uint8_t(0x1ul)) << 0) | 
+				(uint32_t((keyId >> 0u) & uint8_t(0xfful)) << 1)
 			);
 			return backing;
 		}
@@ -633,7 +617,7 @@ template <> class fmt::formatter<axi::IOCapAxi::AWFlit_id4_addr64_user3> {
 	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
 	template <typename Context>
 	constexpr auto format (axi::IOCapAxi::AWFlit_id4_addr64_user3 const& s, Context& ctx) const {
-		return format_to(ctx.out(), "AWFlit_id4_addr64_user3 {{ .awid = 0x{:01x}, .awaddr = 0x{:016x}, .awlen = 0x{:02x}, .awsize = 0x{:01x}, .awburst = 0x{:01x}, .awlock = 0x{:01x}, .awcache = 0x{:01x}, .awprot = 0x{:01x}, .awqos = 0x{:01x}, .awregion = 0x{:02x}, .awuser = 0x{:01x} }}", s.awid, s.awaddr, s.awlen, s.awsize, s.awburst, s.awlock, s.awcache, s.awprot, s.awqos, s.awregion, s.awuser);
+		return format_to(ctx.out(), "AWFlit_id4_addr64_user3 {{ .awuser = 0x{:01x}, .awregion = 0x{:01x}, .awqos = 0x{:01x}, .awprot = 0x{:01x}, .awcache = 0x{:01x}, .awlock = 0x{:01x}, .awburst = 0x{:01x}, .awsize = 0x{:01x}, .awlen = 0x{:02x}, .awaddr = 0x{:016x}, .awid = 0x{:01x} }}", s.awuser, s.awregion, s.awqos, s.awprot, s.awcache, s.awlock, s.awburst, s.awsize, s.awlen, s.awaddr, s.awid);
 	}
 };
 template <> class fmt::formatter<axi::IOCapAxi::WFlit_data32> {
@@ -642,7 +626,7 @@ template <> class fmt::formatter<axi::IOCapAxi::WFlit_data32> {
 	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
 	template <typename Context>
 	constexpr auto format (axi::IOCapAxi::WFlit_data32 const& s, Context& ctx) const {
-		return format_to(ctx.out(), "WFlit_data32 {{ .wdata = 0x{:08x}, .wstrb = 0x{:01x}, .wlast = 0x{:01x} }}", s.wdata, s.wstrb, s.wlast);
+		return format_to(ctx.out(), "WFlit_data32 {{ .wlast = 0x{:01x}, .wstrb = 0x{:01x}, .wdata = 0x{:08x} }}", s.wlast, s.wstrb, s.wdata);
 	}
 };
 template <> class fmt::formatter<axi::IOCapAxi::BFlit_id4> {
@@ -651,7 +635,7 @@ template <> class fmt::formatter<axi::IOCapAxi::BFlit_id4> {
 	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
 	template <typename Context>
 	constexpr auto format (axi::IOCapAxi::BFlit_id4 const& s, Context& ctx) const {
-		return format_to(ctx.out(), "BFlit_id4 {{ .bid = 0x{:01x}, .bresp = 0x{:01x} }}", s.bid, s.bresp);
+		return format_to(ctx.out(), "BFlit_id4 {{ .bresp = 0x{:01x}, .bid = 0x{:01x} }}", s.bresp, s.bid);
 	}
 };
 template <> class fmt::formatter<axi::IOCapAxi::ARFlit_id4_addr64_user3> {
@@ -660,7 +644,7 @@ template <> class fmt::formatter<axi::IOCapAxi::ARFlit_id4_addr64_user3> {
 	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
 	template <typename Context>
 	constexpr auto format (axi::IOCapAxi::ARFlit_id4_addr64_user3 const& s, Context& ctx) const {
-		return format_to(ctx.out(), "ARFlit_id4_addr64_user3 {{ .arid = 0x{:01x}, .araddr = 0x{:016x}, .arlen = 0x{:02x}, .arsize = 0x{:01x}, .arburst = 0x{:01x}, .arlock = 0x{:01x}, .arcache = 0x{:01x}, .arprot = 0x{:01x}, .arqos = 0x{:01x}, .arregion = 0x{:02x}, .aruser = 0x{:01x} }}", s.arid, s.araddr, s.arlen, s.arsize, s.arburst, s.arlock, s.arcache, s.arprot, s.arqos, s.arregion, s.aruser);
+		return format_to(ctx.out(), "ARFlit_id4_addr64_user3 {{ .aruser = 0x{:01x}, .arregion = 0x{:01x}, .arqos = 0x{:01x}, .arprot = 0x{:01x}, .arcache = 0x{:01x}, .arlock = 0x{:01x}, .arburst = 0x{:01x}, .arsize = 0x{:01x}, .arlen = 0x{:02x}, .araddr = 0x{:016x}, .arid = 0x{:01x} }}", s.aruser, s.arregion, s.arqos, s.arprot, s.arcache, s.arlock, s.arburst, s.arsize, s.arlen, s.araddr, s.arid);
 	}
 };
 template <> class fmt::formatter<axi::IOCapAxi::RFlit_id4_data32> {
@@ -669,7 +653,7 @@ template <> class fmt::formatter<axi::IOCapAxi::RFlit_id4_data32> {
 	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
 	template <typename Context>
 	constexpr auto format (axi::IOCapAxi::RFlit_id4_data32 const& s, Context& ctx) const {
-		return format_to(ctx.out(), "RFlit_id4_data32 {{ .rid = 0x{:01x}, .rdata = 0x{:08x}, .rresp = 0x{:01x}, .rlast = 0x{:01x} }}", s.rid, s.rdata, s.rresp, s.rlast);
+		return format_to(ctx.out(), "RFlit_id4_data32 {{ .rlast = 0x{:01x}, .rresp = 0x{:01x}, .rdata = 0x{:08x}, .rid = 0x{:01x} }}", s.rlast, s.rresp, s.rdata, s.rid);
 	}
 };
 template <> class fmt::formatter<axi::SanitizedAxi::AWFlit_id4_addr64_user0> {
@@ -678,7 +662,7 @@ template <> class fmt::formatter<axi::SanitizedAxi::AWFlit_id4_addr64_user0> {
 	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
 	template <typename Context>
 	constexpr auto format (axi::SanitizedAxi::AWFlit_id4_addr64_user0 const& s, Context& ctx) const {
-		return format_to(ctx.out(), "AWFlit_id4_addr64_user0 {{ .awid = 0x{:01x}, .awaddr = 0x{:016x}, .awlen = 0x{:02x}, .awsize = 0x{:01x}, .awburst = 0x{:01x}, .awlock = 0x{:01x}, .awcache = 0x{:01x}, .awprot = 0x{:01x}, .awqos = 0x{:01x}, .awregion = 0x{:02x}, .awuser = 0x{:01x} }}", s.awid, s.awaddr, s.awlen, s.awsize, s.awburst, s.awlock, s.awcache, s.awprot, s.awqos, s.awregion, s.awuser);
+		return format_to(ctx.out(), "AWFlit_id4_addr64_user0 {{ .awuser = 0x{:01x}, .awregion = 0x{:01x}, .awqos = 0x{:01x}, .awprot = 0x{:01x}, .awcache = 0x{:01x}, .awlock = 0x{:01x}, .awburst = 0x{:01x}, .awsize = 0x{:01x}, .awlen = 0x{:02x}, .awaddr = 0x{:016x}, .awid = 0x{:01x} }}", s.awuser, s.awregion, s.awqos, s.awprot, s.awcache, s.awlock, s.awburst, s.awsize, s.awlen, s.awaddr, s.awid);
 	}
 };
 template <> class fmt::formatter<axi::SanitizedAxi::WFlit_data32> {
@@ -687,7 +671,7 @@ template <> class fmt::formatter<axi::SanitizedAxi::WFlit_data32> {
 	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
 	template <typename Context>
 	constexpr auto format (axi::SanitizedAxi::WFlit_data32 const& s, Context& ctx) const {
-		return format_to(ctx.out(), "WFlit_data32 {{ .wdata = 0x{:08x}, .wstrb = 0x{:01x}, .wlast = 0x{:01x} }}", s.wdata, s.wstrb, s.wlast);
+		return format_to(ctx.out(), "WFlit_data32 {{ .wlast = 0x{:01x}, .wstrb = 0x{:01x}, .wdata = 0x{:08x} }}", s.wlast, s.wstrb, s.wdata);
 	}
 };
 template <> class fmt::formatter<axi::SanitizedAxi::BFlit_id4> {
@@ -696,7 +680,7 @@ template <> class fmt::formatter<axi::SanitizedAxi::BFlit_id4> {
 	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
 	template <typename Context>
 	constexpr auto format (axi::SanitizedAxi::BFlit_id4 const& s, Context& ctx) const {
-		return format_to(ctx.out(), "BFlit_id4 {{ .bid = 0x{:01x}, .bresp = 0x{:01x} }}", s.bid, s.bresp);
+		return format_to(ctx.out(), "BFlit_id4 {{ .bresp = 0x{:01x}, .bid = 0x{:01x} }}", s.bresp, s.bid);
 	}
 };
 template <> class fmt::formatter<axi::SanitizedAxi::ARFlit_id4_addr64_user0> {
@@ -705,7 +689,7 @@ template <> class fmt::formatter<axi::SanitizedAxi::ARFlit_id4_addr64_user0> {
 	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
 	template <typename Context>
 	constexpr auto format (axi::SanitizedAxi::ARFlit_id4_addr64_user0 const& s, Context& ctx) const {
-		return format_to(ctx.out(), "ARFlit_id4_addr64_user0 {{ .arid = 0x{:01x}, .araddr = 0x{:016x}, .arlen = 0x{:02x}, .arsize = 0x{:01x}, .arburst = 0x{:01x}, .arlock = 0x{:01x}, .arcache = 0x{:01x}, .arprot = 0x{:01x}, .arqos = 0x{:01x}, .arregion = 0x{:02x} }}", s.arid, s.araddr, s.arlen, s.arsize, s.arburst, s.arlock, s.arcache, s.arprot, s.arqos, s.arregion);
+		return format_to(ctx.out(), "ARFlit_id4_addr64_user0 {{ .arregion = 0x{:01x}, .arqos = 0x{:01x}, .arprot = 0x{:01x}, .arcache = 0x{:01x}, .arlock = 0x{:01x}, .arburst = 0x{:01x}, .arsize = 0x{:01x}, .arlen = 0x{:02x}, .araddr = 0x{:016x}, .arid = 0x{:01x} }}", s.arregion, s.arqos, s.arprot, s.arcache, s.arlock, s.arburst, s.arsize, s.arlen, s.araddr, s.arid);
 	}
 };
 template <> class fmt::formatter<axi::SanitizedAxi::RFlit_id4_data32> {
@@ -714,7 +698,7 @@ template <> class fmt::formatter<axi::SanitizedAxi::RFlit_id4_data32> {
 	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
 	template <typename Context>
 	constexpr auto format (axi::SanitizedAxi::RFlit_id4_data32 const& s, Context& ctx) const {
-		return format_to(ctx.out(), "RFlit_id4_data32 {{ .rid = 0x{:01x}, .rdata = 0x{:08x}, .rresp = 0x{:01x}, .rlast = 0x{:01x} }}", s.rid, s.rdata, s.rresp, s.rlast);
+		return format_to(ctx.out(), "RFlit_id4_data32 {{ .rlast = 0x{:01x}, .rresp = 0x{:01x}, .rdata = 0x{:08x}, .rid = 0x{:01x} }}", s.rlast, s.rresp, s.rdata, s.rid);
 	}
 };
 template <> class fmt::formatter<key_manager::Tuple2_KeyId_MaybeKey> {
@@ -723,7 +707,7 @@ template <> class fmt::formatter<key_manager::Tuple2_KeyId_MaybeKey> {
 	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
 	template <typename Context>
 	constexpr auto format (key_manager::Tuple2_KeyId_MaybeKey const& s, Context& ctx) const {
-		return format_to(ctx.out(), "Tuple2_KeyId_MaybeKey {{ .keyId = 0x{:02x}, .keyValid = 0x{:01x}, .keyTop = 0x{:016x}, .keyBot = 0x{:016x} }}", s.keyId, s.keyValid, s.keyTop, s.keyBot);
+		return format_to(ctx.out(), "Tuple2_KeyId_MaybeKey {{ .keyBot = 0x{:016x}, .keyTop = 0x{:016x}, .keyValid = 0x{:01x}, .keyId = 0x{:02x} }}", s.keyBot, s.keyTop, s.keyValid, s.keyId);
 	}
 };
 
