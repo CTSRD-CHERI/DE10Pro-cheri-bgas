@@ -10,7 +10,7 @@
 
 #include "dtl/dtl.hpp"
 
-// TbOutput MUST be parameterized on 
+#include "util.h"
 
 struct TestBase {
     virtual ~TestBase() = default;
@@ -25,14 +25,17 @@ struct TestParams {
     uint64_t endTime;
 };
 
-template<class DUT, class TbOutput>
-concept ValidTbOutput = requires(DUT dut, TbOutput out) {
+template<class T>
+concept ValidTbStim = requires(T out) {
+    {out.time} -> std::convertible_to<uint64_t>;
     {out == out} -> std::convertible_to<bool>;
-    {pull_output(dut, out)} -> std::convertible_to<void>;
-} && fmt::formattable<TbOutput>;
+} && fmt::formattable<T>;
 
 template<class DUT, class TbInput, class TbOutput>
-    requires ValidTbOutput<DUT, TbOutput>
+    requires ValidTbStim<TbInput> && ValidTbStim<TbOutput> && requires(DUT dut, TbInput in, TbOutput out) {
+        {push_input(dut, in)} -> std::same_as<void>;
+        {pull_output(dut, out)} -> std::same_as<void>;
+    }
 struct CycleTest : TestBase {
     TestParams params;
     std::vector<TbInput> inputs;
@@ -158,6 +161,46 @@ struct CycleTest : TestBase {
         }
 
         return false;
+    }
+};
+
+/**
+ * Container for items of type T where (T::time) is a uint64_t, allowing Python defaultdict-style creation.
+ * e.g. from an empty Maker, `maker[100].blah = "blah";` will construct a T, map it to time 100 and set `t.time = 100`, then return a reference for the user to modify.
+ * The asVec() function converts it to a vector of T ordered by time.
+ */
+template<class T>
+    // Don't use the full ValidTbStim concept here - that requires fmt::is_formattable,
+    // which is only true once the compiler has seen the template specialization of fmt::formatter,
+    // which has to be defined at the top-level namespace,
+    // which means if you define T and use TimeSeriesMaker<T> together in a namespace, you won't have defined fmt::formatter yet.
+    // All the TimeSeriesMaker cares about is that t.time = uint64_t
+    // This should be possible with same_as, but we need to use convertible_to otherwise we get errors for reasons I can't explain.
+    requires requires(T t) {
+        {t.time} -> std::convertible_to<uint64_t>;
+    }
+class TimeSeriesMaker {
+    std::map<uint64_t, T> elems;
+
+public:
+
+    std::vector<T> asVec() {
+        std::vector<T> v;
+        for (const auto& [time, elem] : elems) {
+            v.push_back(elem);
+        }
+        return v;
+    }
+
+    T& operator[](const uint64_t& key) {
+        auto iter = elems.find(key);
+        if (iter == elems.end()) {
+            T elem{};
+            elem.time = key;
+            elems[key] = elem;
+            return elems[key];
+        }
+        return (*iter).second;
     }
 };
 

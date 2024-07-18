@@ -5,6 +5,8 @@
 #include "key_manager.h"
 #include "tb.h"
 
+#include "util.h"
+
 #include <array>
 #include <algorithm>
 #include <cstdint>
