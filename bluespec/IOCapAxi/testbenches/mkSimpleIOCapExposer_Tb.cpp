@@ -45,16 +45,82 @@ int main(int argc, char** argv) {
         inputs[110].iocap_flit_aw = axi::IOCapAxi::packCap1_aw(cap, sig);
         inputs[120].iocap_flit_aw = axi::IOCapAxi::packCap2_aw(cap, sig);
         inputs[130].iocap_flit_aw = axi::IOCapAxi::packCap3_aw(cap, sig);
+        // This will arrive at 135, exiting the AddressChannelCapUnwrapper at 145
+
+        // The above capability claims to use KeyId 111 (TODO actually put it through a cap lib and check)
+        // so the exposer should ask for it
+        outputs[150].keyManager.keyRequest = 111;
+        // and we will hand it over (the value doesn't matter)
+        inputs[160].keyManager.keyResponse = key_manager::KeyResponse {
+            .keyId = 111,
+            .key = sig
+        };
+        // Then it will at some point later shove it out, while bumping the bad-write counter.
+        // The clean_flit will come out one cycle after the perf counter is bumped, because it passes through a FIFO.
+        // Overall the authenticated flit passes through four fifos:
+        // - At 145 it passes through a mkSizedBypassFIFOF awIn.out (0 cycle delay)
+        // - into awPreCheckBuffer, a mkFIFOF (1 cycle), exits @ 155
+        // - the keyResponse applies immediately
+        // - into awChecker.checkRequest, a mkFIFOF (1 cycle) exits @ 165
+        // It then splits into parallel lanes, because the key was valid:
+        // - decodeIn (mkFIFOF, 2 cycle)  - sigCheckIn (mkFIFOF, 1 cycle) exits @ 175
+        // - decodeOut (mkFIFOF, 2 cycle) - AES (8? cycles)
+        // -           resps (mkFIFOF, 1 cycle) enters @ 255, exits @ 265
+        //             we set the perf counter in check_aw and enqueue into awOut @265
+        // -           awOut (mkFIFOF, 1 cycle) exits @ 275
+        // -           we pick it up at 280
+        outputs[270].keyManager.bumpPerfCounterBadWrite = true;
+        outputs[280].clean_flit_aw = axi::SanitizedAxi::AWFlit_id4_addr64_user0 {
+            .awburst = uint8_t(axi::AXI4_Burst::Incr),
+            .awsize = axi::transfer_width_to_size(32),
+            .awlen = axi::n_transfers_to_len(1),
+            .awaddr = 0xdeadbeefdeadbeef,
+            .awid = 0b1011,
+        };
+
         inputs[140].iocap_flit_w = axi::IOCapAxi::WFlit_data32 {
             .wlast = 1,
             .wstrb = 0b1111,
             .wdata = 0xfefefefe,
+        };
+        outputs[150].clean_flit_w = axi::SanitizedAxi::WFlit_data32 {
+            .wlast = 1,
+            .wstrb = 0b1111,
+            .wdata = 0xfefefefe,
+        };
+
+        // Eventually we get a write response
+        inputs[400].clean_flit_b = axi::SanitizedAxi::BFlit_id4 {
+            .bresp = uint8_t(axi::AXI4_Resp::Okay),
+            .bid = 0b1011,
+        };
+        outputs[420].iocap_flit_b = axi::IOCapAxi::BFlit_id4 {
+            .bresp = uint8_t(axi::AXI4_Resp::Okay),
+            .bid = 0b1011,
         };
 
         if (!ExposerCycleTest(params, inputs.asVec(), outputs.asVec()).run()) {
             success = EXIT_FAILURE;
         }
     }
+
+    // TODO test with invalid key
+
+    // TODO test that invalid caps don't let their flits through (contingent on switch flip)
+    // TODO test valid cap
+    // TODO test valid cap with 1 cav
+    // TODO test valid cap with 2 cav
+    // TODO test valid cap with out-of-cap-bounds access
+    // TODO test the above for reads and writes
+
+    // TODO test inbalanced completions > starts
+
+    // TODO test revocation when no accesses are pending
+    // TODO test revocation when accesses are pending but not using the key
+    // TODO test revocation when an access hasn't started checking but uses the same key
+    // TODO test revocation when an access has started checking but uses the same key
+    // TODO test the above for reads and writes
+
 
     // {
     //     TestParams params = TestParams {

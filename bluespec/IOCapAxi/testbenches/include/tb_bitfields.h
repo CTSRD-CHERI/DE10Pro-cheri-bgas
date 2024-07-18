@@ -285,8 +285,6 @@ namespace axi::IOCapAxi {
 
 namespace axi::SanitizedAxi {
 	struct AWFlit_id4_addr64_user0 {
-		/** 3-bit field */
-		uint8_t awuser;
 		/** 4-bit field */
 		uint8_t awregion;
 		/** 4-bit field */
@@ -310,63 +308,63 @@ namespace axi::SanitizedAxi {
 	
 		static AWFlit_id4_addr64_user0 unpack(const std::array<uint32_t, 4>& backing) {
 			AWFlit_id4_addr64_user0 value{};
-			value.awuser = (
-				uint8_t((backing[0] >> 0u) & 0x7u)
-			);
 			value.awregion = (
-				uint8_t((backing[0] >> 3u) & 0xfu)
+				uint8_t((backing[0] >> 0u) & 0xfu)
 			);
 			value.awqos = (
-				uint8_t((backing[0] >> 7u) & 0xfu)
+				uint8_t((backing[0] >> 4u) & 0xfu)
 			);
 			value.awprot = (
-				uint8_t((backing[0] >> 11u) & 0x7u)
+				uint8_t((backing[0] >> 8u) & 0x7u)
 			);
 			value.awcache = (
-				uint8_t((backing[0] >> 14u) & 0xfu)
+				uint8_t((backing[0] >> 11u) & 0xfu)
 			);
 			value.awlock = (
-				uint8_t((backing[0] >> 18u) & 0x1u)
+				uint8_t((backing[0] >> 15u) & 0x1u)
 			);
 			value.awburst = (
-				uint8_t((backing[0] >> 19u) & 0x3u)
+				uint8_t((backing[0] >> 16u) & 0x3u)
 			);
 			value.awsize = (
-				uint8_t((backing[0] >> 21u) & 0x7u)
+				uint8_t((backing[0] >> 18u) & 0x7u)
 			);
 			value.awlen = (
-				uint8_t((backing[0] >> 24u) & 0xffu)
+				uint8_t((backing[0] >> 21u) & 0xffu)
 			);
 			value.awaddr = (
-				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 0) | 
-				(uint64_t((backing[2] >> 0u) & 0xffffffffu) << 32)
+				(uint64_t((backing[0] >> 29u) & 0x7u) << 0) | 
+				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 3) | 
+				(uint64_t((backing[2] >> 0u) & 0x1fffffffu) << 35)
 			);
 			value.awid = (
-				uint8_t((backing[3] >> 0u) & 0xfu)
+				(uint8_t((backing[2] >> 29u) & 0x7u) << 0) | 
+				(uint8_t((backing[3] >> 0u) & 0x1u) << 3)
 			);
 			return value;
 		}
 		std::array<uint32_t, 4> pack() const {
 			std::array<uint32_t, 4> backing{};
 			backing[0] = (
-				(uint32_t((awuser >> 0u) & uint8_t(0x7ul)) << 0) | 
-				(uint32_t((awregion >> 0u) & uint8_t(0xful)) << 3) | 
-				(uint32_t((awqos >> 0u) & uint8_t(0xful)) << 7) | 
-				(uint32_t((awprot >> 0u) & uint8_t(0x7ul)) << 11) | 
-				(uint32_t((awcache >> 0u) & uint8_t(0xful)) << 14) | 
-				(uint32_t((awlock >> 0u) & uint8_t(0x1ul)) << 18) | 
-				(uint32_t((awburst >> 0u) & uint8_t(0x3ul)) << 19) | 
-				(uint32_t((awsize >> 0u) & uint8_t(0x7ul)) << 21) | 
-				(uint32_t((awlen >> 0u) & uint8_t(0xfful)) << 24)
+				(uint32_t((awregion >> 0u) & uint8_t(0xful)) << 0) | 
+				(uint32_t((awqos >> 0u) & uint8_t(0xful)) << 4) | 
+				(uint32_t((awprot >> 0u) & uint8_t(0x7ul)) << 8) | 
+				(uint32_t((awcache >> 0u) & uint8_t(0xful)) << 11) | 
+				(uint32_t((awlock >> 0u) & uint8_t(0x1ul)) << 15) | 
+				(uint32_t((awburst >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((awsize >> 0u) & uint8_t(0x7ul)) << 18) | 
+				(uint32_t((awlen >> 0u) & uint8_t(0xfful)) << 21) | 
+				(uint32_t((awaddr >> 0u) & 0x7ul) << 29)
 			);
 			backing[1] = (
-				uint32_t((awaddr >> 0u) & 0xfffffffful)
+				uint32_t((awaddr >> 3u) & 0xfffffffful)
 			);
 			backing[2] = (
-				uint32_t((awaddr >> 32u) & 0xfffffffful)
+				(uint32_t((awaddr >> 35u) & 0x1ffffffful) << 0) | 
+				(uint32_t((awid >> 0u) & uint8_t(0x7ul)) << 29)
 			);
 			backing[3] = (
-				uint32_t((awid >> 0u) & uint8_t(0xful))
+				uint32_t((awid >> 3u) & uint8_t(0x1ul))
 			);
 			return backing;
 		}
@@ -662,7 +660,7 @@ template <> class fmt::formatter<axi::SanitizedAxi::AWFlit_id4_addr64_user0> {
 	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
 	template <typename Context>
 	constexpr auto format (axi::SanitizedAxi::AWFlit_id4_addr64_user0 const& s, Context& ctx) const {
-		return format_to(ctx.out(), "AWFlit_id4_addr64_user0 {{ .awuser = 0x{:01x}, .awregion = 0x{:01x}, .awqos = 0x{:01x}, .awprot = 0x{:01x}, .awcache = 0x{:01x}, .awlock = 0x{:01x}, .awburst = 0x{:01x}, .awsize = 0x{:01x}, .awlen = 0x{:02x}, .awaddr = 0x{:016x}, .awid = 0x{:01x} }}", s.awuser, s.awregion, s.awqos, s.awprot, s.awcache, s.awlock, s.awburst, s.awsize, s.awlen, s.awaddr, s.awid);
+		return format_to(ctx.out(), "AWFlit_id4_addr64_user0 {{ .awregion = 0x{:01x}, .awqos = 0x{:01x}, .awprot = 0x{:01x}, .awcache = 0x{:01x}, .awlock = 0x{:01x}, .awburst = 0x{:01x}, .awsize = 0x{:01x}, .awlen = 0x{:02x}, .awaddr = 0x{:016x}, .awid = 0x{:01x} }}", s.awregion, s.awqos, s.awprot, s.awcache, s.awlock, s.awburst, s.awsize, s.awlen, s.awaddr, s.awid);
 	}
 };
 template <> class fmt::formatter<axi::SanitizedAxi::WFlit_data32> {

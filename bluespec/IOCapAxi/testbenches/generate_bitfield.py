@@ -434,7 +434,6 @@ BLUESPEC_SANITIZEDAXI_STRUCTS = [
             Field("awprot", 3),
             Field("awqos", 4),
             Field("awregion", 4),
-            Field("awuser", 3),
         ]),
     ),
     Struct(

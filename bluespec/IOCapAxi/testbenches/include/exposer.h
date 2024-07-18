@@ -293,6 +293,22 @@ void pull_output(DUT& dut, ShimmedExposerOutput& output) {
         NOPOP(keyStoreShim_finishedEpochs);
     }
 
+    if (dut.keyStoreShim_bumpedPerfCounterGoodWrite___05Fread) {
+        output.keyManager.bumpPerfCounterGoodWrite = true;
+    }
+
+    if (dut.keyStoreShim_bumpedPerfCounterBadWrite___05Fread) {
+        output.keyManager.bumpPerfCounterBadWrite = true;
+    }
+
+    if (dut.keyStoreShim_bumpedPerfCounterGoodRead___05Fread) {
+        output.keyManager.bumpPerfCounterGoodRead = true;
+    }
+
+    if (dut.keyStoreShim_bumpedPerfCounterBadRead___05Fread) {
+        output.keyManager.bumpPerfCounterBadRead = true;
+    }
+
     #undef NOPOP
     #undef POP
     #undef CANPEEK
