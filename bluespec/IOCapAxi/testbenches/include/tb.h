@@ -25,7 +25,14 @@ struct TestParams {
     uint64_t endTime;
 };
 
+template<class DUT, class TbOutput>
+concept ValidTbOutput = requires(DUT dut, TbOutput out) {
+    {out == out} -> std::convertible_to<bool>;
+    {pull_output(dut, out)} -> std::convertible_to<void>;
+} && fmt::formattable<TbOutput>;
+
 template<class DUT, class TbInput, class TbOutput>
+    requires ValidTbOutput<DUT, TbOutput>
 struct CycleTest : TestBase {
     TestParams params;
     std::vector<TbInput> inputs;
