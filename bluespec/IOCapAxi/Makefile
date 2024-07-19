@@ -23,7 +23,7 @@ $(BUILDDIR)/verilog/%.v: ./testbenches/%.bsv alwaysRemake
 	bsc $(BSCFLAGS) -verilog -g $* -u $<
 
 $(BUILDDIR)/%.vsim: $(BUILDDIR)/verilog/%.v ./testbenches/%.cpp alwaysRemake
-	verilator --Mdir $(BUILDDIR) --no-timing --trace --top-module $* --cc --build --exe -CFLAGS -std=gnu++20 -CFLAGS -I../testbenches/include -o $*.vsim -I$(BSCDIR)lib/Verilog/ $(BSCDIR)lib/Verilator/verilator_config.vlt $(shell echo $(BUILDDIR)/verilog/*.v) ./testbenches/$*.cpp
+	verilator --Mdir $(BUILDDIR) --no-timing --trace --top-module $* --cc --build --exe -CFLAGS -std=gnu++20 -CFLAGS -I../testbenches/include -CFLAGS -I../testbenches/librust_caps_c -o $*.vsim -I$(BSCDIR)lib/Verilog/ $(BSCDIR)lib/Verilator/verilator_config.vlt $(shell echo $(BUILDDIR)/verilog/*.v) ./testbenches/$*.cpp $(shell pwd)/testbenches/librust_caps_c/librust_caps_c.a
 
 .PHONY: list alwaysRemake
 

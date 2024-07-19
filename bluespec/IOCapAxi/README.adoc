@@ -31,3 +31,4 @@ C++ dependencies:
 
 * dtl (https://github.com/cubicdaiya/dtl/tree/master) for diffing test outputs, from commit hash https://github.com/cubicdaiya/dtl/commit/32567bb9ec704f09040fb1ed7431a3d967e3df03[32567bb9ec704f09040fb1ed7431a3d967e3df03]
 * fmt (https://github.com/fmtlib/fmt/releases/tag/11.0.1) for printing test outputs for diffing
+* crypto-cap-experiments (Samuel private repository) rust_caps_c Rust crate, compiled to a static .a library. This is provided as a .a file, that has only been build for x86-64 Linux.
