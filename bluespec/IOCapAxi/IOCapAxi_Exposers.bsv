@@ -65,7 +65,7 @@ typedef union tagged {
 } IOCapFlitInProgress#(type no_iocap_flit) deriving (Bits, FShow);
 
 // One-at-a-time IOCap flit checker
-module mkSimpleIOCapAxiChecker(IOCapAxiChecker#(no_iocap_flit)) provisos (Bits#(AuthenticatedFlit#(no_iocap_flit), a__), AxiCtrlFlit64#(no_iocap_flit));
+module mkSimpleIOCapAxiChecker(IOCapAxiChecker#(no_iocap_flit)) provisos (Bits#(AuthenticatedFlit#(no_iocap_flit), a__), AxiCtrlFlit64#(no_iocap_flit), FShow#(no_iocap_flit));
     FIFOF#(Tuple2#(AuthenticatedFlit#(no_iocap_flit), Maybe#(Key))) reqs <- mkFIFOF;
     // TODO this could be a bypass fifof...
     FIFOF#(Tuple2#(no_iocap_flit, Bool)) resps <- mkFIFOF;
@@ -102,6 +102,7 @@ module mkSimpleIOCapAxiChecker(IOCapAxiChecker#(no_iocap_flit)) provisos (Bits#(
             end
             { .authFlit, tagged Valid .key } : begin                
                 flitInProgress <= tagged Valid (tagged WaitingForBoundsAndDecodeAndSig (authFlit.flit));
+                $display("IOCap - starting check on flit with secret ", fshow(key), " - cap ", fshow(pack(authFlit.cap)), " - expectedSig ", fshow(authFlit.sig));
                 // Will take ~18 cycles at most
                 sigCheckIn.enq(CapSigCheckIn {
                     cap: authFlit.cap,
@@ -154,6 +155,10 @@ module mkSimpleIOCapAxiChecker(IOCapAxiChecker#(no_iocap_flit)) provisos (Bits#(
             bounds_failed = True;
         end
 
+        if (bounds_failed) begin
+            $display("IOCap - flit failed Bounds ", fshow(flit));
+        end
+
         flitInProgress <= tagged Valid (tagged WaitingForDecodeAndSig {
             flit: flit,
             min_addr: min_addr,
@@ -187,6 +192,10 @@ module mkSimpleIOCapAxiChecker(IOCapAxiChecker#(no_iocap_flit)) provisos (Bits#(
                 end
                 tagged Fail .* : fail = True;
             endcase
+
+            if (fail) begin
+                $display("IOCap - flit failed Decode ", fshow(flit), " - ", fshow(decodeRes));
+            end
         end
 
         flitInProgress <= tagged Valid (tagged WaitingForSig {
@@ -202,6 +211,7 @@ module mkSimpleIOCapAxiChecker(IOCapAxiChecker#(no_iocap_flit)) provisos (Bits#(
         let allow = True;
         if (sigCheckRes matches tagged Fail .*) begin
             allow = False;
+            $display("IOCap - flit failed sigcheck");
         end else if (decodedFlit.bounds_or_decode_failed) begin
             allow = False;
         end

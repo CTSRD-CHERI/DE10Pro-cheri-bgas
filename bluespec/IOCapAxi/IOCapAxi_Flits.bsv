@@ -131,8 +131,8 @@ instance IOCapPackableFlit#(
                 , awuser: ?
             };
             // TODO get the ordering right...
-            IOCapAXI4_AddrUserBits { start: False, flitnum: 1 } : return tagged CapBits1 ({ pack(x.awqos)[1], pack(x.awprot), pack(x.awcache), pack(x.awlock), pack(x.awburst), pack(x.awsize), x.awlen, x.awaddr });
-            IOCapAXI4_AddrUserBits { start: False, flitnum: 2 } : return tagged CapBits2 ({ pack(x.awqos)[1], pack(x.awprot), pack(x.awcache), pack(x.awlock), pack(x.awburst), pack(x.awsize), x.awlen, x.awaddr });
+            IOCapAXI4_AddrUserBits { start: False, flitnum: 1 } : return tagged CapBits1 ({ pack(x.awqos)[0], pack(x.awprot), pack(x.awcache), pack(x.awlock), pack(x.awburst), pack(x.awsize), x.awlen, x.awaddr });
+            IOCapAXI4_AddrUserBits { start: False, flitnum: 2 } : return tagged CapBits2 ({ pack(x.awqos)[0], pack(x.awprot), pack(x.awcache), pack(x.awlock), pack(x.awburst), pack(x.awsize), x.awlen, x.awaddr });
             IOCapAXI4_AddrUserBits { start: False, flitnum: 3 } : return tagged CapBits3 ({ pack(x.awprot)[1:0], pack(x.awcache), pack(x.awlock), pack(x.awburst), pack(x.awsize), x.awlen, x.awaddr });
             default: return ?;
         endcase
@@ -230,8 +230,8 @@ instance IOCapPackableFlit#(
                 , aruser: ?
             };
             // TODO get the ordering right...
-            IOCapAXI4_AddrUserBits { start: False, flitnum: 1 } : return tagged CapBits1 ({ pack(x.arqos)[1], pack(x.arprot), pack(x.arcache), pack(x.arlock), pack(x.arburst), pack(x.arsize), x.arlen, x.araddr });
-            IOCapAXI4_AddrUserBits { start: False, flitnum: 2 } : return tagged CapBits2 ({ pack(x.arqos)[1], pack(x.arprot), pack(x.arcache), pack(x.arlock), pack(x.arburst), pack(x.arsize), x.arlen, x.araddr });
+            IOCapAXI4_AddrUserBits { start: False, flitnum: 1 } : return tagged CapBits1 ({ pack(x.arqos)[0], pack(x.arprot), pack(x.arcache), pack(x.arlock), pack(x.arburst), pack(x.arsize), x.arlen, x.araddr });
+            IOCapAXI4_AddrUserBits { start: False, flitnum: 2 } : return tagged CapBits2 ({ pack(x.arqos)[0], pack(x.arprot), pack(x.arcache), pack(x.arlock), pack(x.arburst), pack(x.arsize), x.arlen, x.araddr });
             IOCapAXI4_AddrUserBits { start: False, flitnum: 3 } : return tagged CapBits3 ({ pack(x.arprot)[1:0], pack(x.arcache), pack(x.arlock), pack(x.arburst), pack(x.arsize), x.arlen, x.araddr });
             default: return ?;
         endcase
@@ -370,6 +370,7 @@ module mkSimpleAddressChannelCapUnwrapper(AddressChannelCapUnwrapper#(iocap_flit
                 cap: unpack(combinedBits[127:0]),
                 sig: combinedBits[255:128]
             };
+            $display("IOCap - Recevied bits ", fshow(combinedBits));
             $display("IOCap - Received auth flitpack ", fshow(authFlit));
             outFlits.enq(authFlit);
         end else begin
