@@ -8,6 +8,40 @@ extern "C" {
     #include "librust_caps_c.h"
 }
 
+CCap2024_02 initial_resource_cap(const U128& key, uint64_t base, uint64_t length, bool is_almighty, uint32_t secret_id, CCapPerms perms) {
+    CCapU128 cap_key;
+    key.to_le(cap_key);
+    CCap2024_02 cap;
+    if (is_almighty) {
+        if (ccap_init_almighty(&cap, &cap_key, secret_id, perms) != Success) {
+            throw std::runtime_error("Failed to ccap_init_almighty");
+        }
+    } else {
+        if (ccap_init_inexact(&cap, &cap_key, base, length, secret_id, perms) != Success) {
+            throw std::runtime_error("Failed to ccap_init_inexact");
+        }
+    }
+
+    return cap;
+}
+
+CCap2024_02 initial_resource_cap_exact(const U128& key, uint64_t base, uint64_t length, bool is_almighty, uint32_t secret_id, CCapPerms perms) {
+    CCapU128 cap_key;
+    key.to_le(cap_key);
+    CCap2024_02 cap;
+    if (is_almighty) {
+        if (ccap_init_almighty(&cap, &cap_key, secret_id, perms) != Success) {
+            throw std::runtime_error("Failed to ccap_init_almighty");
+        }
+    } else {
+        if (ccap_init_exact(&cap, &cap_key, base, length, secret_id, perms) != Success) {
+            throw std::runtime_error("Failed to ccap_init_inexact");
+        }
+    }
+
+    return cap;
+}
+
 /**
  * Generate a random Cap2024_02 with a uniformly distributed log(length).
  */
@@ -27,20 +61,7 @@ CCap2024_02 random_initial_resource_cap(Generator& g, const U128& key, uint32_t 
     // Generate a base that fits inside [0, (1 << 64) - length]
     uint64_t base = std::uniform_int_distribution<uint64_t>(0, std::numeric_limits<uint64_t>::max() - length + 1)(g);
 
-    CCapU128 cap_key;
-    key.to_le(cap_key);
-    CCap2024_02 cap;
-    if (log_length == 64) {
-        if (ccap_init_almighty(&cap, &cap_key, secret_id, perms) != Success) {
-            throw std::runtime_error("Failed to ccap_init_almighty");
-        }
-    } else {
-        if (ccap_init_inexact(&cap, &cap_key, base, length, secret_id, perms) != Success) {
-            throw std::runtime_error("Failed to ccap_init_inexact");
-        }
-    }
-
-    return cap;
+    return initial_resource_cap(key, base, length, (log_length == 64), secret_id, perms);
 }
 
 #endif // CAPABILITIES_H
