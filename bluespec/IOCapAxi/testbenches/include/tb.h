@@ -4,6 +4,7 @@
 #include <verilated.h>
 #include <cstdint>
 #include <vector>
+#include <random>
 
 #define FMT_HEADER_ONLY
 #include "fmt/format.h"
@@ -15,14 +16,7 @@
 struct TestBase {
     virtual ~TestBase() = default;
 
-    virtual bool run() = 0;
-};
-
-struct TestParams {
-    const char* testName;
-    int argc;
-    char** argv;
-    uint64_t endTime;
+    virtual bool run(int argc, char** argv) = 0;
 };
 
 template<class T>
@@ -37,21 +31,18 @@ template<class DUT, class TbInput, class TbOutput>
         {pull_output(dut, out)} -> std::same_as<void>;
     }
 struct CycleTest : TestBase {
-    TestParams params;
-    std::vector<TbInput> inputs;
-    std::vector<TbOutput> expectedOutputs;
+    std::mt19937 rng;
 
-    CycleTest(
-        TestParams params,
-        std::vector<TbInput> inputs,
-        std::vector<TbOutput> expectedOutputs
-    ) : params(params), inputs(inputs), expectedOutputs(expectedOutputs) {}
+    CycleTest(int seed = 123908104) : rng(seed) {}
     virtual ~CycleTest() override = default;
+
+    virtual std::string_view name() = 0;
+    virtual std::pair<std::vector<TbInput>, std::vector<TbOutput>> stimuli() = 0;
 
     /**
      * Create and run a DUT using this test's parameters
      */
-    std::vector<TbOutput> getOutputs() {
+    std::vector<TbOutput> execute(std::vector<TbInput> inputs, uint64_t end_time, int argc, char** argv) {
         // Step through the input vector in order
         size_t input_idx = 0;
 
@@ -59,7 +50,7 @@ struct CycleTest : TestBase {
 
         {
             VerilatedContext ctx{};
-            ctx.commandArgs(params.argc, params.argv);    // remember args
+            ctx.commandArgs(argc, argv);    // remember args
             // Make a design-under-test
             DUT dut{&ctx};
 
@@ -69,7 +60,7 @@ struct CycleTest : TestBase {
             dut.RST_N = 1;
             dut.CLK = 0;
 
-            while ((!ctx.gotFinish()) && (main_time <= params.endTime) ) { // $finish executed
+            while ((!ctx.gotFinish()) && (main_time <= end_time) ) { // $finish executed
                 if (main_time == 2) {
                     dut.RST_N = 0;    // assert reset
                 }
@@ -131,17 +122,25 @@ struct CycleTest : TestBase {
      * Returns true if it did, false if it didn't.
      * Prints a diff of the outputs if it didn't match.
      */
-    virtual bool run() override {
-        fprintf(stderr, "\033[1;33mTest: %s\033[0m\n", params.testName);
+    virtual bool run(int argc, char** argv) override {
+        fmt::println(stderr, "\033[1;33mTest: {}\033[0m", name());
 
-        auto outputs = getOutputs();
+        auto [inputs, expectedOutputs] = stimuli();
+        uint64_t end_time = 0;
+        if (inputs.size() > 0) {
+            end_time = inputs[inputs.size() - 1].time;
+        }
+        if (expectedOutputs.size() > 0) {
+            end_time = std::max(end_time, expectedOutputs[expectedOutputs.size() - 1].time);
+        }
+        auto outputs = execute(inputs, end_time, argc, argv);
 
         if (expectedOutputs == outputs) {
-            fprintf(stderr, "\033[1;32mTest-Success\033[0m\n");
+            fmt::println(stderr, "\033[1;32mTest-Success\033[0m");
             return true;
         }
 
-        fprintf(stderr, "\033[1;31mTest-Failure: Output Diff\033[0m\n");
+        fmt::println(stderr, "\033[1;31mTest-Failure: Output Diff\033[0m");
 
         dtl::Diff<TbOutput, std::vector<TbOutput>> diff(expectedOutputs, outputs);
         diff.compose();

@@ -9,20 +9,15 @@
 
 using namespace key_manager;
 
-using KeyManagerCycleTest = CycleTest<VmkSimpleIOCapKeyManager_Tb, KeyManagerInput, KeyManagerOutput>;
+template<class DUT>
+using KeyManagerCycleTest = CycleTest<DUT, KeyManagerInput, KeyManagerOutput>;
 
-int main(int argc, char** argv) {
-    int success = EXIT_SUCCESS;
-
-    {
-        TestParams params = TestParams {
-            .testName = "Write and enable key over AXI",
-            .argc = argc,
-            .argv = argv,
-             // Run for 1k cycles
-            .endTime = 1000 * 10
-        };
-        
+template<class DUT>
+struct WriteAndEnableKeyTest : public KeyManagerCycleTest<DUT> {
+    virtual std::string_view name() override {
+        return "Write and enable key over AXI";
+    }
+    virtual std::pair<KeyManagerInputs, KeyManagerOutputs> stimuli() {
         KeyManagerInputs inputs = {
             // Initialize a key's contents
             KeyManagerInput {
@@ -153,22 +148,18 @@ int main(int argc, char** argv) {
             },
         };
 
-        if (!KeyManagerCycleTest(params, inputs, expectedOut).run()) {
-            success = EXIT_FAILURE;
-        }
+        return {inputs, expectedOut};
     }
+};
 
-    {
-        TestParams params = TestParams {
-            .testName="Write and enable key over AXI - event-based construction",
-            .argc = argc,
-            .argv = argv,
-             // Run for 1k cycles
-            .endTime = 1000 * 10
-        };
-
-        KeyManagerInputsMaker inputs{};
-        KeyManagerOutputsMaker outputs{};
+template<class DUT>
+struct WriteAndEnableKeyTest_EventBased : public KeyManagerCycleTest<DUT> {
+    virtual std::string_view name() override {
+        return "Write and enable key over AXI - event-based construction";
+    }
+    virtual std::pair<KeyManagerInputs, KeyManagerOutputs> stimuli() {
+        KeyManagerInputsMaker inputs;
+        KeyManagerOutputsMaker outputs;
 
         // Initialize a key's contents - all write responses are delayed by 2 cycles and must return true
         inputs[100].writeReq = some(AxiWriteReq {
@@ -232,23 +223,18 @@ int main(int argc, char** argv) {
         // The AXI read response will return with 2 cycle latency and will be 1 (key valid)
         outputs[180].readResp = some(AxiReadResp { .good = true, .data = 1 });
 
-        if (!KeyManagerCycleTest(params, inputs.asVec(), outputs.asVec()).run()) {
-            success = EXIT_FAILURE;
-        }
+        return {inputs.asVec(), outputs.asVec()};
     }
-    
-    // TODO test write_enable
+};
 
-    {
-        TestParams params = TestParams {
-            .testName = "Invalidation Epochs",
-            .argc = argc,
-            .argv = argv,
-             // Run for 1k cycles
-            .endTime = 1000 * 10
-        };
-        KeyManagerInputsMaker inputs{};
-        KeyManagerOutputsMaker outputs{};
+template<class DUT>
+struct InvalidationEpochs : public KeyManagerCycleTest<DUT> {
+    virtual std::string_view name() override {
+        return "Invalidation Epochs";
+    }
+    virtual std::pair<KeyManagerInputs, KeyManagerOutputs> stimuli() {
+        KeyManagerInputsMaker inputs;
+        KeyManagerOutputsMaker outputs;
 
         // Initialize some keys
         for (uint16_t i = 0; i < 10; i++) {
@@ -355,21 +341,18 @@ int main(int argc, char** argv) {
             .data = 0,
         });
 
-        if (!KeyManagerCycleTest(params, inputs.asVec(), outputs.asVec()).run()) {
-            success = EXIT_FAILURE;
-        }
+        return {inputs.asVec(), outputs.asVec()};
     }
+};
 
-    {
-        TestParams params = TestParams {
-            .testName = "Key Request - 1/cycle Throughput",
-            .argc = argc,
-            .argv = argv,
-             // Run until t = 3000
-            .endTime = 3000
-        };
-        KeyManagerInputsMaker inputs{};
-        KeyManagerOutputsMaker outputs{};
+template<class DUT>
+struct OneKeyRequestPerCycle : public KeyManagerCycleTest<DUT> {
+    virtual std::string_view name() override {
+        return "Key Request - 1/cycle Throughput";
+    }
+    virtual std::pair<KeyManagerInputs, KeyManagerOutputs> stimuli() {
+        KeyManagerInputsMaker inputs;
+        KeyManagerOutputsMaker outputs;
 
         // Request a key on every cycle - the BRAM should be able to sustain this throughput.
         for (uint16_t i = 0; i < 256; i++) {
@@ -382,25 +365,19 @@ int main(int argc, char** argv) {
             });
         }
 
-        if (!KeyManagerCycleTest(params, inputs.asVec(), outputs.asVec()).run()) {
-            success = EXIT_FAILURE;
-        }
+        return {inputs.asVec(), outputs.asVec()};
     }
+};
 
-    {
-        TestParams params = TestParams {
-            .testName = "Performance Counting",
-            .argc = argc,
-            .argv = argv,
-            .endTime = 2500
-        };
+template<class DUT>
+struct PerformanceCounting : public CycleTest<DUT, KeyManagerInput, KeyManagerOutput> {
+    virtual std::string_view name() override {
+        return "Performance Counting";
+    }
+    virtual std::pair<KeyManagerInputs, KeyManagerOutputs> stimuli() override {
+        KeyManagerInputsMaker inputs;
+        KeyManagerOutputsMaker outputs;
 
-        KeyManagerInputsMaker inputs{};
-        KeyManagerOutputsMaker outputs{};
-
-        // Use a random generator to decide which counters to bump
-        uint32_t seed = 10298293;
-        std::mt19937 rng{seed};
         // Make an int in [0, 1] for each counter
         std::uniform_int_distribution<> distrib(0, 1);
         // Make an int in [0, 3] to figure out which counter to read every cycle
@@ -414,26 +391,26 @@ int main(int argc, char** argv) {
         };
 
         for (uint64_t time = 100; time < 2000; time += 10) {
-            if (distrib(rng) == 1) {
+            if (distrib(this->rng) == 1) {
                 stats[0]++; // goodWrite++;
                 inputs[time].bumpPerfCounterGoodWrite = true;
             }
-            if (distrib(rng) == 1) {
+            if (distrib(this->rng) == 1) {
                 stats[1]++; // badWrite++;
                 inputs[time].bumpPerfCounterBadWrite = true;
             }
-            if (distrib(rng) == 1) {
+            if (distrib(this->rng) == 1) {
                 stats[2]++; // goodRead++;
                 inputs[time].bumpPerfCounterGoodRead = true;
             }
-            if (distrib(rng) == 1) {
+            if (distrib(this->rng) == 1) {
                 stats[3]++; // badRead++;
                 inputs[time].bumpPerfCounterBadRead = true;
             }
 
             // Read a random status.
             // The read is processed one cycle after we put() it in the FIFO, at which point the perf counter will have been bumped.
-            int toRead = readDistrib(rng);
+            int toRead = readDistrib(this->rng);
             inputs[time].readReq = some(AxiReadReq {
                 .address = uint16_t(0x1000 + (8 * toRead)),
             });
@@ -443,29 +420,43 @@ int main(int argc, char** argv) {
             });
         }
 
-        if (!KeyManagerCycleTest(params, inputs.asVec(), outputs.asVec()).run()) {
+        return {inputs.asVec(), outputs.asVec()};
+    }
+};
+
+// TODO test write_enable
+
+// Template for further test creation
+
+// struct TODO : public KeyManagerCycleTest {
+//     virtual std::string_view name() override {
+//         return "TODO";
+//     }
+//     virtual std::pair<KeyManagerInputs, KeyManagerOutputs> stimuli() {
+//         KeyManagerInputsMaker inputs;
+//         KeyManagerOutputsMaker outputs;
+//
+//         // TODO
+//
+//         return {inputs.asVec(), outputs.asVec()};
+//     }
+// };
+
+int main(int argc, char** argv) {
+    int success = EXIT_SUCCESS;
+
+    std::vector<KeyManagerCycleTest<VmkSimpleIOCapKeyManager_Tb>*> tests = {
+        new WriteAndEnableKeyTest<VmkSimpleIOCapKeyManager_Tb>(),
+        new WriteAndEnableKeyTest_EventBased<VmkSimpleIOCapKeyManager_Tb>(),
+        new InvalidationEpochs<VmkSimpleIOCapKeyManager_Tb>(),
+        new OneKeyRequestPerCycle<VmkSimpleIOCapKeyManager_Tb>(),
+        new PerformanceCounting<VmkSimpleIOCapKeyManager_Tb>(),
+    };
+    for (auto* test : tests) {
+        if (!test->run(argc, argv)) {
             success = EXIT_FAILURE;
         }
     }
-
-    // Template for further test creation
-    /*
-    {
-        TestParams params = TestParams {
-            .testName = ,
-            .argc = argc,
-            .argv = argv,
-             // Run for 1k cycles
-            .endTime = 1000 * 10
-        };
-        KeyManagerInputsMaker inputs{};
-        KeyManagerOutputsMaker outputs{};
-
-        if (!KeyManagerCycleTest(params, inputs.asVec(), outputs.asVec()).run()) {
-            success = EXIT_FAILURE;
-        }
-    }
-    */
     
     return success;
 }
