@@ -53,7 +53,7 @@ struct ExposerCycleTest : public CycleTest<DUT, ShimmedExposerInput, ShimmedExpo
         CapWithRange data{};
 
         data.cap = random_initial_resource_cap(this->rng, key, secret_id, perms);
-        if (ccap_read_range(&data.cap, &data.cap_base, &data.cap_len, &data.cap_is_almighty) != Success) {
+        if (ccap_read_range(&data.cap, &data.cap_base, &data.cap_len, &data.cap_is_almighty) != CCapResult_Success) {
             throw std::runtime_error("Failed to ccap_read_range");
         }
         
@@ -72,7 +72,7 @@ struct ValidKeyValidCapValidWrite : public ExposerCycleTest<DUT> {
 
         // Generate a random key, a random writable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
-        auto cap_data = this->test_random_initial_resource_cap(key, 111, CCapPerms::Write);
+        auto cap_data = this->test_random_initial_resource_cap(key, 111, CCapPerms_Write);
         auto axi_params = cap_data.valid_transfer_params(32, 20);
        
         U128 cap128 = U128::from_le(cap_data.cap.data);
@@ -161,7 +161,7 @@ struct ValidKeyValidCapValidRead : public ExposerCycleTest<DUT> {
 
         // Generate a random key, a random readable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
-        auto cap_data = this->test_random_initial_resource_cap(key, 111, CCapPerms::Read);
+        auto cap_data = this->test_random_initial_resource_cap(key, 111, CCapPerms_Read);
         auto axi_params = cap_data.valid_transfer_params(32, 20);
        
         U128 cap128 = U128::from_le(cap_data.cap.data);
@@ -235,7 +235,7 @@ struct ValidReadThenValidWrite : public ExposerCycleTest<DUT> {
 
         // Generate a random key, a random read/write capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
-        auto cap_data = this->test_random_initial_resource_cap(key, 111, CCapPerms::ReadWrite);
+        auto cap_data = this->test_random_initial_resource_cap(key, 111, CCapPerms_ReadWrite);
         auto axi_params = cap_data.valid_transfer_params(32, 20);
        
         U128 cap128 = U128::from_le(cap_data.cap.data);
@@ -367,7 +367,7 @@ struct OOBWrite_Passthrough : public ExposerCycleTest<DUT> {
 
         // Generate a random key, a random writable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
-        CCap2024_02 cap = initial_resource_cap_exact(key, 0xdeadbeef0000, 0x1000, false, 111, CCapPerms::Write);
+        CCap2024_02 cap = initial_resource_cap_exact(key, 0xdeadbeef0000, 0x1000, false, 111, CCapPerms_Write);
         uint8_t transfer_width = 32;
         uint8_t n_transfers = 4;
         // Start in bounds, end OOB
@@ -447,7 +447,7 @@ struct OOBRead_Passthrough : public ExposerCycleTest<DUT> {
 
         // Generate a random key, a random writable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
-        CCap2024_02 cap = initial_resource_cap_exact(key, 0xdeadbeef0000, 0x1000, false, 111, CCapPerms::Read);
+        CCap2024_02 cap = initial_resource_cap_exact(key, 0xdeadbeef0000, 0x1000, false, 111, CCapPerms_Read);
         uint8_t transfer_width = 32;
         uint8_t n_transfers = 4;
         // Start in bounds, end OOB
@@ -523,7 +523,7 @@ struct MismatchedPerms_Passthrough : public ExposerCycleTest<DUT> {
 
         // Generate a random key, a random writable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
-        auto cap_data = this->test_random_initial_resource_cap(key, 111, CCapPerms::Read);
+        auto cap_data = this->test_random_initial_resource_cap(key, 111, CCapPerms_Read);
         auto axi_params = cap_data.valid_transfer_params(32, 20);
        
         U128 cap128 = U128::from_le(cap_data.cap.data);
@@ -703,11 +703,11 @@ struct NewEpoch_PreAccess : public ExposerCycleTest<DUT> {
 
         // Generate a random key, a random writable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
-        CCap2024_02 cap = random_initial_resource_cap(this->rng, key, 111, CCapPerms::Write);
+        CCap2024_02 cap = random_initial_resource_cap(this->rng, key, 111, CCapPerms_Write);
         uint64_t cap_base = 0;
         uint64_t cap_len = 0;
         bool cap_is_almighty = false;
-        if (ccap_read_range(&cap, &cap_base, &cap_len, &cap_is_almighty) != Success) {
+        if (ccap_read_range(&cap, &cap_base, &cap_len, &cap_is_almighty) != CCapResult_Success) {
             throw std::runtime_error("Failed to ccap_read_range");
         }
         uint8_t transfer_width = 32;
@@ -820,11 +820,11 @@ struct NewEpoch_SameCycle : public ExposerCycleTest<DUT> {
 
         // Generate a random key, a random writable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
-        CCap2024_02 cap = random_initial_resource_cap(this->rng, key, 111, CCapPerms::Write);
+        CCap2024_02 cap = random_initial_resource_cap(this->rng, key, 111, CCapPerms_Write);
         uint64_t cap_base = 0;
         uint64_t cap_len = 0;
         bool cap_is_almighty = false;
-        if (ccap_read_range(&cap, &cap_base, &cap_len, &cap_is_almighty) != Success) {
+        if (ccap_read_range(&cap, &cap_base, &cap_len, &cap_is_almighty) != CCapResult_Success) {
             throw std::runtime_error("Failed to ccap_read_range");
         }
         uint8_t transfer_width = 32;
@@ -936,11 +936,11 @@ struct NewEpoch_PostAccess : public ExposerCycleTest<DUT> {
 
         // Generate a random key, a random writable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
-        CCap2024_02 cap = random_initial_resource_cap(this->rng, key, 111, CCapPerms::Write);
+        CCap2024_02 cap = random_initial_resource_cap(this->rng, key, 111, CCapPerms_Write);
         uint64_t cap_base = 0;
         uint64_t cap_len = 0;
         bool cap_is_almighty = false;
-        if (ccap_read_range(&cap, &cap_base, &cap_len, &cap_is_almighty) != Success) {
+        if (ccap_read_range(&cap, &cap_base, &cap_len, &cap_is_almighty) != CCapResult_Success) {
             throw std::runtime_error("Failed to ccap_read_range");
         }
         uint8_t transfer_width = 32;
@@ -1052,11 +1052,11 @@ struct NewEpoch_BetweenAccesses : public ExposerCycleTest<DUT> {
 
         // Generate a random key, a random writable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
-        CCap2024_02 cap = random_initial_resource_cap(this->rng, key, 111, CCapPerms::ReadWrite);
+        CCap2024_02 cap = random_initial_resource_cap(this->rng, key, 111, CCapPerms_ReadWrite);
         uint64_t cap_base = 0;
         uint64_t cap_len = 0;
         bool cap_is_almighty = false;
-        if (ccap_read_range(&cap, &cap_base, &cap_len, &cap_is_almighty) != Success) {
+        if (ccap_read_range(&cap, &cap_base, &cap_len, &cap_is_almighty) != CCapResult_Success) {
             throw std::runtime_error("Failed to ccap_read_range");
         }
         uint8_t transfer_width = 32;
@@ -1222,7 +1222,7 @@ struct NewEpoch_BetweenAccesses : public ExposerCycleTest<DUT> {
 // };
 
 int main(int argc, char** argv) {
-    int success = EXIT_SUCCESS;
+    int ccapresult_success = EXIT_SUCCESS;
 
     std::vector<ExposerCycleTest<VmkSimpleIOCapExposer_Tb>*> tests = {
         // Test valid caps are accepted
@@ -1259,9 +1259,9 @@ int main(int argc, char** argv) {
     };
     for (auto* test : tests) {
         if (!test->run(argc, argv)) {
-            success = EXIT_FAILURE;
+            ccapresult_success = EXIT_FAILURE;
         }
     }
 
-    return success;
+    return ccapresult_success;
 }

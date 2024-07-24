@@ -4,20 +4,18 @@
 #include <random>
 #include "util.h"
 
-extern "C" {
-    #include "librust_caps_c.h"
-}
+#include "librust_caps_c.h"
 
 CCap2024_02 initial_resource_cap(const U128& key, uint64_t base, uint64_t length, bool is_almighty, uint32_t secret_id, CCapPerms perms) {
     CCapU128 cap_key;
     key.to_le(cap_key);
     CCap2024_02 cap;
     if (is_almighty) {
-        if (ccap_init_almighty(&cap, &cap_key, secret_id, perms) != Success) {
+        if (ccap_init_almighty(&cap, &cap_key, secret_id, perms) != CCapResult_Success) {
             throw std::runtime_error("Failed to ccap_init_almighty");
         }
     } else {
-        if (ccap_init_inexact(&cap, &cap_key, base, length, secret_id, perms) != Success) {
+        if (ccap_init_inexact(&cap, &cap_key, base, length, secret_id, perms) != CCapResult_Success) {
             throw std::runtime_error("Failed to ccap_init_inexact");
         }
     }
@@ -30,11 +28,11 @@ CCap2024_02 initial_resource_cap_exact(const U128& key, uint64_t base, uint64_t 
     key.to_le(cap_key);
     CCap2024_02 cap;
     if (is_almighty) {
-        if (ccap_init_almighty(&cap, &cap_key, secret_id, perms) != Success) {
+        if (ccap_init_almighty(&cap, &cap_key, secret_id, perms) != CCapResult_Success) {
             throw std::runtime_error("Failed to ccap_init_almighty");
         }
     } else {
-        if (ccap_init_exact(&cap, &cap_key, base, length, secret_id, perms) != Success) {
+        if (ccap_init_exact(&cap, &cap_key, base, length, secret_id, perms) != CCapResult_Success) {
             throw std::runtime_error("Failed to ccap_init_inexact");
         }
     }
