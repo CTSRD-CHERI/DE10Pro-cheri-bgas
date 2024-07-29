@@ -4,6 +4,7 @@
 #include <random>
 #include "util.h"
 
+#define LIBRUST_CAPS_C_HOSTED 1
 #include "librust_caps_c.h"
 
 CCap2024_02 initial_resource_cap(const U128& key, uint64_t base, uint64_t length, bool is_almighty, uint32_t secret_id, CCapPerms perms) {

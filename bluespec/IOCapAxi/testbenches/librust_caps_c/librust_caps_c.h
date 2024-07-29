@@ -11,14 +11,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-// If we're on Linux, the crate should have been compiled with the 'std' feature
-// and thus won't need ccap_panic_write_utf8() to be defined.
-#if defined(__linux__)
-#define LIBRUST_CAPS_C_HOSTED
-#else
-// TODO are there other situations in which this library is 'hosted' i.e. doesn't need a manual panic handler?
-#endif
-
 enum CCapPerms
 #ifdef __cplusplus
   : uint8_t
