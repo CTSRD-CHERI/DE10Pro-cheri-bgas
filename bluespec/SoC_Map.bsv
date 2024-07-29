@@ -178,7 +178,7 @@ module mkSoC_Map (SoC_Map_IFC);
    // IOCap Exposer (key storage)
 
    let iocap_exposer_addr_range = Range {
-      base: 'h_4010_0000,
+      base: 'h_5000_0000,
       size: 'h_0010_0000    // 1M
    };
 

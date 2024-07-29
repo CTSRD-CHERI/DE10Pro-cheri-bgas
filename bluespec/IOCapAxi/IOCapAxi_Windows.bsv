@@ -10,11 +10,11 @@ import IOCapAxi_Flits :: *;
 import IOCapAxi_Exposers :: *;
 
 typedef struct {
-    // 0x88 .. 0x108
+    // 0x18 .. 0x28
     Bit#(128) sig;
-    // 0x8 .. 0x88
+    // 0x08 .. 0x18
     Bit#(128) cap;
-    // 0x0 .. 0x8
+    // 0x00 .. 0x08
     Bit#(64)  windowAddr;
 } WindowData deriving (Bits, FShow);
 
