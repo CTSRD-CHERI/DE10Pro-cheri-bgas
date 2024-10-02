@@ -83,7 +83,7 @@ This repo also indirectly relies on (among others) the following repositories:
 - https://github.com/CTSRD-CHERI/BlueUnixBridges[BlueUnixBridges]
 - https://github.com/CTSRD-CHERI/BlueBasics[BlueBasics]
 
-=== Build a Stratix 10 bitfile
+=== Build dependencies
 
 Building the `vipbundle` tool requires a working installation of the `ghc`
 haskell compiler with the `regex-tdfa` haskell library. It will be built
@@ -93,7 +93,39 @@ Additionally, you will need a working installation of
 https://www.intel.com/content/www/us/en/programmable/downloads/download-center.html[Quartus 23.2pro]
 and a https://github.com/B-Lang-org/bsc[bluespec compiler].
 
-You can then run:
+==== Building in Docker (optional)
+
+To deal with dependencies, you can also run in Docker.  For this you will need
+an existing Quartus Pro 23.2 installation, which will be passed through to
+your Docker container.
+
+First, ensure your `QUARTUS_ROOTDIR` and `LM_LICENSE_FILE` variables are set
+as appropriate for your installation:
+
+[source, shell]
+----
+$ export QUARTUS_ROOTDIR=/opt/intelfpga/23.2pro/quartus
+$ export LM_LICENSE_FILE=27001@lmserv-intelfpga.example.com
+----
+
+Now build the Docker environment (takes some time as it installs GHC and
+builds BSC):
+
+[source, shell]
+----
+$ make build-docker
+----
+
+and then launch a shell inside it:
+
+[source, shell]
+----
+$ make shell
+----
+
+=== Build a Stratix 10 bitfile
+
+To generate a bitfile you can run:
 
 [source, shell]
 ----
