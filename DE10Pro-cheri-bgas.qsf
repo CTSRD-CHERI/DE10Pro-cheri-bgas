@@ -1626,7 +1626,7 @@ set_global_assignment -name SIGNALTAP_FILE cheri_bgas_top_axi.stp
 set_global_assignment -name OPTIMIZATION_MODE BALANCED
 set_global_assignment -name ALLOW_REGISTER_RETIMING ON
 set_global_assignment -name SEED 4
-set_global_assignment -name NUM_PARALLEL_PROCESSORS 2
+#set_global_assignment -name NUM_PARALLEL_PROCESSORS 2
 set_global_assignment -name POWER_APPLY_THERMAL_MARGIN ADDITIONAL
 
 set_global_assignment -name VERILOG_FILE "DE10Pro-cheri-bgas.v"
@@ -1670,7 +1670,6 @@ set_global_assignment -name VERILOG_FILE "\$env(DE10SERIALLITE3DIR)/S10FPGA/s10s
 set_global_assignment -name SEARCH_PATH "\$env(DE10SERIALLITE3DIR)/"
 set_global_assignment -name SEARCH_PATH "\$env(DE10SERIALLITE3DIR)/S10FPGA"
 set_global_assignment -name SEARCH_PATH "\$env(DE10SERIALLITE3DIR)/S10FPGA/output"
-set_global_assignment -name IP_SEARCH_PATHS "\$env(DE10SERIALLITE3DIR)/S10FPGA/output/*"
 set_global_assignment -name IP_SEARCH_PATHS bluespec/BSVFan/**/*
 set_global_assignment -name SDC_FILE "DE10Pro-cheri-bgas.sdc"
 
@@ -1884,3 +1883,50 @@ set_instance_assignment -name HSSI_PARAMETER "pma_tx_buf_powermode_dc_post_tap =
 set_instance_assignment -name HSSI_PARAMETER "pma_tx_buf_pre_emp_switching_ctrl_1st_post_tap=9" -to QSFP28D_TX_p[3]
 # set_instance_assignment -name HSSI_PARAMETER "pma_tx_buf_term_sel=<value>" -to QSFP28D_TX_p[3]
 set_global_assignment -name BOARD default
+set_instance_assignment -name PARTITION core_0 -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|core_0 -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION_COLOUR 4286578655 -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|core_0 -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PLACE_REGION "X0 Y10 X294 Y224" -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|core_0
+set_instance_assignment -name RESERVE_PLACE_REGION OFF -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|core_0
+set_instance_assignment -name CORE_ONLY_PLACE_REGION ON -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|core_0
+set_instance_assignment -name REGION_NAME core_0 -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|core_0
+set_instance_assignment -name PARTITION_COLOUR 4294941934 -to DE10Pro_cheri_bgas -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION_COLOUR 4294954130 -to auto_fab_0 -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION core_1 -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|core_1 -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION_COLOUR 4294918829 -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|core_1 -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PLACE_REGION "X0 Y208 X294 Y422" -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|core_1
+set_instance_assignment -name RESERVE_PLACE_REGION OFF -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|core_1
+set_instance_assignment -name CORE_ONLY_PLACE_REGION ON -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|core_1
+set_instance_assignment -name REGION_NAME core_1 -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|core_1
+set_instance_assignment -name PARTITION mkLLCache -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|llc -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION_COLOUR 4287429631 -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|llc -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PLACE_REGION "X0 Y175 X294 Y259" -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|llc
+set_instance_assignment -name RESERVE_PLACE_REGION OFF -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|llc
+set_instance_assignment -name CORE_ONLY_PLACE_REGION ON -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|llc
+set_instance_assignment -name REGION_NAME mkLLCache -to soc|cheri_bgas_top|cheri_bgas_top|noSigIfc|sys_0_both_proc|llc
+set_instance_assignment -name PARTITION mkBERT_Instance_a -to soc|seriallite3_wrapper|mkbert_instance_a -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION_COLOUR 4282684927 -to soc|seriallite3_wrapper|mkbert_instance_a -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION mkBERT_Instance_b -to soc|seriallite3_wrapper|mkbert_instance_b -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION_COLOUR 4289444607 -to soc|seriallite3_wrapper|mkbert_instance_b -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION mkBERT_Instance_c -to soc|seriallite3_wrapper|mkbert_instance_c -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION_COLOUR 4287168398 -to soc|seriallite3_wrapper|mkbert_instance_c -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION mkBERT_Instance_d -to soc|seriallite3_wrapper|mkbert_instance_d -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION_COLOUR 4290445124 -to soc|seriallite3_wrapper|mkbert_instance_d -entity DE10Pro_cheri_bgas
+set_instance_assignment -name REGION_NAME mkBERT_Instance_a -to soc|seriallite3_wrapper|mkbert_instance_a
+set_instance_assignment -name REGION_NAME mkBERT_Instance_b -to soc|seriallite3_wrapper|mkbert_instance_b
+set_instance_assignment -name REGION_NAME mkBERT_Instance_c -to soc|seriallite3_wrapper|mkbert_instance_c
+set_instance_assignment -name REGION_NAME mkBERT_Instance_d -to soc|seriallite3_wrapper|mkbert_instance_d
+set_instance_assignment -name FLOATING_REGION AUTO -to soc|seriallite3_wrapper|mkbert_instance_a
+set_instance_assignment -name FLOATING_REGION AUTO -to soc|seriallite3_wrapper|mkbert_instance_b
+set_instance_assignment -name FLOATING_REGION AUTO -to soc|seriallite3_wrapper|mkbert_instance_c
+set_instance_assignment -name FLOATING_REGION AUTO -to soc|seriallite3_wrapper|mkbert_instance_d
+set_global_assignment -name FLOW_ENABLE_HYPER_RETIMER_FAST_FORWARD ON
+set_instance_assignment -name PARTITION mkSerialLite3_Instance_a -to soc|seriallite3_wrapper|mkseriallite3_instance_a -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION_COLOUR 4294952301 -to soc|seriallite3_wrapper|mkseriallite3_instance_a -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION mkSerialLite3_Instance_b -to soc|seriallite3_wrapper|mkseriallite3_instance_b -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION_COLOUR 4294932173 -to soc|seriallite3_wrapper|mkseriallite3_instance_b -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION mkSerialLite3_Instance_c -to soc|seriallite3_wrapper|mkseriallite3_instance_c -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION_COLOUR 4289483775 -to soc|seriallite3_wrapper|mkseriallite3_instance_c -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION mkSerialLite3_Instance_d -to soc|seriallite3_wrapper|mkseriallite3_instance_d -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION_COLOUR 4282908490 -to soc|seriallite3_wrapper|mkseriallite3_instance_d -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION mkStatusDevice_Instance_Status15_0 -to soc|seriallite3_wrapper|mkstatusdevice_instance_status15_0 -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PARTITION_COLOUR 4283622143 -to soc|seriallite3_wrapper|mkstatusdevice_instance_status15_0 -entity DE10Pro_cheri_bgas

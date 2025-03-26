@@ -57,6 +57,7 @@ set_false_path -from * -to [get_ports {LED[0]}]
 set_false_path -from * -to [get_ports {LED[1]}]
 set_false_path -from * -to [get_ports {LED[2]}]
 set_false_path -from * -to [get_ports {LED[3]}]
+set_false_path -from * -to [get_keepers -no_duplicates {soc|*|stratix10ChipID_chip_id_reader_getid|*|chip_id[*]}]
 set_max_skew -to [get_ports "HPS_EMAC0_MDC"] 2
 set_max_skew -to [get_ports "HPS_EMAC0_MDIO"] 2
 #source ./jtag.sdc
