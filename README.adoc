@@ -17,8 +17,7 @@ At the moment, the project uses Quartus 23.2pro.
 This repository also includes RTL sources under the
 https://github.com/CTSRD-CHERI/DE10Pro-cheri-bgas/tree/main/bluespec[bluespec/]
 folder, where various git submodules are used and suplemented with a few `.bsv`
-files providing some "toplevel glue" as well as a minimal simulation
-framework.
+files providing some "toplevel glue" as well as a https://github.com/CTSRD-CHERI/DE10Pro-cheri-bgas/tree/main/bluespec/README.adoc#2-simulation[simulation] framework.
 
 [discrete]
 == Contents
