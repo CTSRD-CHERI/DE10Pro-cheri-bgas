@@ -242,11 +242,11 @@ defaultOptions :: Options
 defaultOptions = Options {
     verbosity = 0
   , simCmd = "../build/simdir/sim_CHERI_BGAS"
-  , devfsCmd = "./cheri-bgas-fuse-devfs/cheri-bgas-fuse-devfs"
-  , connectCmd = "./forever-splice/forever-splice"
-  , openocdCmd = "openocd"
+  , devfsCmd = "./tools/cheri-bgas-fuse-devfs"
+  , connectCmd = "./tools/forever-splice"
+  , openocdCmd = "./tools/openocd"
   , openocdConf = "./openocd.cfg"
-  , jtagvpi_to_fmemdmiCmd = "./jtagvpi_to_fmemdmi/jtagvpi_to_fmemdmi"
+  , jtagvpi_to_fmemdmiCmd = "./tools/jtagvpi_to_fmemdmi"
   , runFolder = "./sim-cheri-bgas"
   , topology = (1,1)
   }
@@ -303,7 +303,7 @@ main = do
   simCmd <- makeAbsolute opts.simCmd
   devfsCmd <- makeAbsolute opts.devfsCmd
   connectCmd <- makeAbsolute opts.connectCmd
-  let openocdCmd = opts.openocdCmd
+  openocdCmd <- makeAbsolute opts.openocdCmd
   openocdConf <- makeAbsolute opts.openocdConf
   jtagvpi_to_fmemdmiCmd <- makeAbsolute opts.jtagvpi_to_fmemdmiCmd
   let (width, height) = opts.topology

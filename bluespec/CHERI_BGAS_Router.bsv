@@ -238,7 +238,8 @@ module mkAXI4StreamBridge
      , Sink #(t_r_flit)  rSnk )
    , AXI4_Router_Port #( t_id, t_addr, t_data
                        , t_awuser, t_wuser, t_buser
-                       , t_aruser, t_ruser ) rPort )
+                       , t_aruser, t_ruser ) rPort
+   , Bool guard )
   (Global_Port #(t_global_flit_container))
   provisos (
   // local type aliases
@@ -339,13 +340,15 @@ module mkAXI4StreamBridge
     unpack (zeroExtend (pack (x)));
   function t_global_flit fromContainer (t_global_flit_container x) =
     unpack (truncate (pack (x)));
-  interface tx = mapSource (toContainer, toSource (globalOutFF));
+  interface tx = guardSource( mapSource (toContainer, toSource (globalOutFF))
+                            , guard);
   interface rx = mapSink (fromContainer, toSink (globalInFF));
 
 endmodule
 
 module mkCHERI_BGAS_StreamBridge
  #( parameter NumProxy #(t_max_credit) maxCreditProxy
+  , Bool guard
   , AXI4_Router_Port #( t_id, t_addr, t_data
                       , t_awuser, t_wuser, t_buser
                       , t_aruser, t_ruser ) inPort )
@@ -466,7 +469,11 @@ module mkCHERI_BGAS_StreamBridge
     endrule
   endmodule
   // wrap ports and return interface
-  let outPort <- mkAXI4StreamBridge (maxCreditProxy, bundle, unbundle, inPort);
+  let outPort <- mkAXI4StreamBridge ( maxCreditProxy
+                                    , bundle
+                                    , unbundle
+                                    , inPort
+                                    , guard );
   return outPort;
 endmodule
 
@@ -482,7 +489,12 @@ interface CHERI_BGAS_Router_Ifc #(
 , numeric type t_awuser, numeric type t_wuser, numeric type t_buser
 , numeric type t_aruser, numeric type t_ruser
   // container type for global flits
-, type t_global_flit_container );
+, type t_global_flit_container
+`ifdef BSIM
+, numeric type t_x_sz
+, numeric type t_y_sz
+`endif
+);
   interface AXI4_Slave #( t_mngnt_id, t_mngnt_addr, t_mngnt_data
                         , t_mngnt_awuser, t_mngnt_wuser, t_mngnt_buser
                         , t_mngnt_aruser, t_mngnt_ruser ) mngmntSubordinate;
@@ -496,6 +508,9 @@ interface CHERI_BGAS_Router_Ifc #(
   interface Global_Port #(t_global_flit_container) southPort;
   interface Global_Port #(t_global_flit_container) eastPort;
   interface Global_Port #(t_global_flit_container) northPort;
+`ifdef BSIM
+  method Action setRouterId (Maybe#(RouterId#(t_x_sz, t_y_sz)) _);
+`endif
 endinterface
 
 module mkCHERI_BGAS_Router #(Maybe #(RouterId #(t_x_sz, t_y_sz)) initRouterId)
@@ -505,7 +520,12 @@ module mkCHERI_BGAS_Router #(Maybe #(RouterId #(t_x_sz, t_y_sz)) initRouterId)
                           , t_s_id, t_m_id, t_addr, t_data
                           , t_awuser, t_wuser, t_buser
                           , t_aruser, t_ruser
-                          , t_global_flit_container ))
+                          , t_global_flit_container
+                          `ifdef BSIM
+                          , t_x_sz
+                          , t_y_sz
+                          `endif
+                          ))
   provisos (
     // local type aliases
     NumAlias #(t_id, TAdd #(t_s_id, t_router_id_sz))
@@ -600,7 +620,8 @@ module mkCHERI_BGAS_Router #(Maybe #(RouterId #(t_x_sz, t_y_sz)) initRouterId)
   // wrap ports and return interface
   NumProxy #(32) maxCreditProxy = ?;
   Vector #(4, Global_Port #(t_global_flit_container))
-    remotePorts <- mapM ( mkCHERI_BGAS_StreamBridge (maxCreditProxy)
+    remotePorts <- mapM ( mkCHERI_BGAS_StreamBridge ( maxCreditProxy
+                                                    , !isValid (routerId) )
                         , tail (ports) );
   // interfaces
   interface mngmntSubordinate = mngntShim.slave;
@@ -610,6 +631,9 @@ module mkCHERI_BGAS_Router #(Maybe #(RouterId #(t_x_sz, t_y_sz)) initRouterId)
   interface southPort = remotePorts[1];
   interface eastPort  = remotePorts[2];
   interface northPort = remotePorts[3];
+`ifdef BSIM
+  method setRouterId = routerId._write;
+`endif
 endmodule
 
 endpackage

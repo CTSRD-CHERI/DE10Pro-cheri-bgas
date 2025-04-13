@@ -6015,7 +6015,7 @@ https://fpgasoftware.intel.com/eula.-->
           <ipxact:vectors>
             <ipxact:vector>
               <ipxact:left>0</ipxact:left>
-              <ipxact:right>20</ipxact:right>
+              <ipxact:right>19</ipxact:right>
             </ipxact:vector>
           </ipxact:vectors>
           <ipxact:wireTypeDefs>
@@ -6183,7 +6183,7 @@ https://fpgasoftware.intel.com/eula.-->
           <ipxact:vectors>
             <ipxact:vector>
               <ipxact:left>0</ipxact:left>
-              <ipxact:right>20</ipxact:right>
+              <ipxact:right>19</ipxact:right>
             </ipxact:vector>
           </ipxact:vectors>
           <ipxact:wireTypeDefs>
@@ -8833,7 +8833,7 @@ https://fpgasoftware.intel.com/eula.-->
                     &lt;name&gt;axls_h2f_lw_araddr&lt;/name&gt;
                     &lt;role&gt;araddr&lt;/role&gt;
                     &lt;direction&gt;Input&lt;/direction&gt;
-                    &lt;width&gt;21&lt;/width&gt;
+                    &lt;width&gt;20&lt;/width&gt;
                     &lt;lowerBound&gt;0&lt;/lowerBound&gt;
                     &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
                     &lt;terminationValue&gt;0&lt;/terminationValue&gt;
@@ -8932,7 +8932,7 @@ https://fpgasoftware.intel.com/eula.-->
                     &lt;name&gt;axls_h2f_lw_awaddr&lt;/name&gt;
                     &lt;role&gt;awaddr&lt;/role&gt;
                     &lt;direction&gt;Input&lt;/direction&gt;
-                    &lt;width&gt;21&lt;/width&gt;
+                    &lt;width&gt;20&lt;/width&gt;
                     &lt;lowerBound&gt;0&lt;/lowerBound&gt;
                     &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
                     &lt;terminationValue&gt;0&lt;/terminationValue&gt;

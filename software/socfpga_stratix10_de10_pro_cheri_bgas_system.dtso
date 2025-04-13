@@ -69,6 +69,40 @@
           reg = <0x0 0x4000>;
         };
     };
+    fmem_seriallite3_wrapper@f9100000 {
+        #address-cells = <1>;
+        #size-cells = <1>;
+        compatible = "cheri,fmem";
+        reg = <0xf9100000 0x00050000>;
+        status = "okay";
+        seriallite3_a {
+            reg = <0x0 0x00010000>;
+        };
+        seriallite3_b {
+            reg = <0x00010000 0x00010000>;
+        };
+        seriallite3_c {
+            reg = <0x00020000 0x00010000>;
+        };
+        seriallite3_d {
+            reg = <0x00030000 0x00010000>;
+        };
+        bert_a {
+            reg = <0x00040000 0x00001000>;
+        };
+        bert_b {
+            reg = <0x00041000 0x00001000>;
+        };
+        bert_c {
+            reg = <0x00042000 0x00001000>;
+        };
+        bert_d {
+            reg = <0x00043000 0x00001000>;
+        };
+        seriallite3_status {
+            reg = <0x00044000 0x00001000>;
+        };
+    };
     fmem_h2f_dflt@80000000 {
         #address-cells = <1>;
         #size-cells = <1>;

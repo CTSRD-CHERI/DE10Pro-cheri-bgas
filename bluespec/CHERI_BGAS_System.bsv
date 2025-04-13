@@ -321,7 +321,7 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
     // type constraints
     ////////////////////////////////////////////////////////////////////////////
     // AXI4Lite subordinate port
-  , Add #(0, 20, t_axil_sub_addr) // XXX hard-coded in CoreW_IFC
+  , Add #(0, 21, t_axil_sub_addr) // XXX hard-coded in CoreW_IFC
   , Add #(0, 32, t_axil_sub_data) // XXX hard-coded in CoreW_IFC
   , Add #(0, 0, t_axil_sub_awuser)
   , Add #(0, 0, t_axil_sub_wuser)

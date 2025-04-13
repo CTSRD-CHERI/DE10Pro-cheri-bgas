@@ -162,7 +162,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="DERIVED_CLOCK_RATE" type="longint">
           <ipxact:name>DERIVED_CLOCK_RATE</ipxact:name>
           <ipxact:displayName>Derived clock rate</ipxact:displayName>
-          <ipxact:value>45000000</ipxact:value>
+          <ipxact:value>47000000</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="EXPLICIT_CLOCK_RATE" type="longint">
           <ipxact:name>EXPLICIT_CLOCK_RATE</ipxact:name>
@@ -328,7 +328,7 @@ https://fpgasoftware.intel.com/eula.-->
                 &lt;suppliedSystemInfos&gt;
                     &lt;entry&gt;
                         &lt;key&gt;CLOCK_RATE&lt;/key&gt;
-                        &lt;value&gt;45000000&lt;/value&gt;
+                        &lt;value&gt;47000000&lt;/value&gt;
                     &lt;/entry&gt;
                 &lt;/suppliedSystemInfos&gt;
                 &lt;consumedSystemInfos/&gt;

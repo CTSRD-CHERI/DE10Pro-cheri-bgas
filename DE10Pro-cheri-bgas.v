@@ -43,10 +43,10 @@
 `define ENABLE_TEMP_I2C
 //`define ENABLE_GPIO
 //`define ENABLE_PCIE
-//`define ENABLE_QSFP28A
-//`define ENABLE_QSFP28B
-//`define ENABLE_QSFP28C
-//`define ENABLE_QSFP28D
+`define ENABLE_QSFP28A
+`define ENABLE_QSFP28B
+`define ENABLE_QSFP28C
+`define ENABLE_QSFP28D
 `define ENABLE_HPS
 
 module DE10Pro_cheri_bgas (
@@ -490,14 +490,34 @@ module DE10Pro_cheri_bgas (
   `endif // ENABLE_HPS
   `ifdef ENABLE_FAN_I2C
   `ifdef ENABLE_TEMP_I2C
-  , .fan_controller_fan_i2c_sda                    (FAN_I2C_SDA)
-  , .fan_controller_fan_i2c_scl                    (FAN_I2C_SCL)
-  , .fan_controller_temp_i2c_sda                   (TEMP_I2C_SDA)
-  , .fan_controller_temp_i2c_scl                   (TEMP_I2C_SCL)
-  , .fan_controller_led_led                        (LED_OUT)
-  , .fan_controller_reset_source_reset_n           (fan_reset_n)
+  , .de10_fan_fan_i2c_sda                    (FAN_I2C_SDA)
+  , .de10_fan_fan_i2c_scl                    (FAN_I2C_SCL)
+  , .de10_fan_temp_i2c_sda                   (TEMP_I2C_SDA)
+  , .de10_fan_temp_i2c_scl                   (TEMP_I2C_SCL)
+  , .de10_fan_led_led                        (LED_OUT)
+  , .de10_fan_reset_source_reset_n           (fan_reset_n)
   `endif // ENABLE_TEMP_I2C
   `endif // ENABLE_FAN_I2C
+  `ifdef ENABLE_QSFP28A
+  , .seriallite3_wrapper_coe_qsfp28_rx_pins_x_a_conduit_4 (QSFP28A_RX_p)
+  , .seriallite3_wrapper_coe_qsfp28_tx_pins_a_conduit_4   (QSFP28A_TX_p)
+  , .seriallite3_wrapper_csi_qsfp_refclk_a_clk            (QSFP28A_REFCLK_p)
+  `endif // ENABLE_QSFP28A
+  `ifdef ENABLE_QSFP28B
+  , .seriallite3_wrapper_coe_qsfp28_rx_pins_x_b_conduit_4 (QSFP28B_RX_p)
+  , .seriallite3_wrapper_coe_qsfp28_tx_pins_b_conduit_4   (QSFP28B_TX_p)
+  , .seriallite3_wrapper_csi_qsfp_refclk_b_clk            (QSFP28B_REFCLK_p)
+  `endif // ENABLE_QSFP28B
+  `ifdef ENABLE_QSFP28C
+  , .seriallite3_wrapper_coe_qsfp28_rx_pins_x_c_conduit_4 (QSFP28C_RX_p)
+  , .seriallite3_wrapper_coe_qsfp28_tx_pins_c_conduit_4   (QSFP28C_TX_p)
+  , .seriallite3_wrapper_csi_qsfp_refclk_c_clk            (QSFP28C_REFCLK_p)
+  `endif // ENABLE_QSFP28C
+  `ifdef ENABLE_QSFP28D
+  , .seriallite3_wrapper_coe_qsfp28_rx_pins_x_d_conduit_4 (QSFP28D_RX_p)
+  , .seriallite3_wrapper_coe_qsfp28_tx_pins_d_conduit_4   (QSFP28D_TX_p)
+  , .seriallite3_wrapper_csi_qsfp_refclk_d_clk            (QSFP28D_REFCLK_p)
+  `endif // ENABLE_QSFP28D
   );
 
 endmodule

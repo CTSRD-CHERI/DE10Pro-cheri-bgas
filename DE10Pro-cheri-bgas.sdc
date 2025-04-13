@@ -43,6 +43,7 @@ create_clock -period "166.667 MHz" [get_ports DDR4D_REFCLK_p]
 set_clock_groups -asynchronous -group {[get_clocks { DDR4B_REFCLK_p }]}
 set_clock_groups -asynchronous -group {[get_clocks { DDR4C_REFCLK_p }]}
 set_clock_groups -asynchronous -group {[get_clocks { DDR4D_REFCLK_p }]}
+set_clock_groups -asynchronous -group { hps_user0_clk }
 set_false_path -from [get_ports {CPU_RESET_n}]
 set_false_path -from [get_ports {BUTTON[0]}] -to *
 set_false_path -from [get_ports {BUTTON[1]}] -to *

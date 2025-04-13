@@ -30,7 +30,7 @@ BSC = bsc
 BLUESPECDIR ?= $(shell which $(BSC) | xargs dirname | xargs dirname)/lib
 
 NB_SYSTEMS ?= 1
-CORE_NUM ?= 2
+CORE_NUM ?= 1
 
 # RiscyOOO flags
 ifeq ($(NB_SYSTEMS),1)
@@ -62,6 +62,8 @@ CORE_DIR ?= $(CURDIR)/Toooba
 
 include $(CORE_DIR)/builds/Resources/Include_RISCY_Config.mk
 
+SERIALLITE3_DIRS ?= $(CURDIR)/../de10pro-seriallite3/S10FPGA
+
 VIRTUALDEVICE_DIRS ?= $(CURDIR)/VirtualDevice
 RECIPEDIR = $(CURDIR)/Recipe
 
@@ -73,7 +75,7 @@ VDIR ?= $(CURDIR)/verilogdir
 VERILATORDIR ?= $(CURDIR)/verilatordir
 
 # search path for bsc imports
-EXTRABSVPATH = +:$(DE10PROBSVSHELLDIR):$(RECIPEDIR):$(VIRTUALDEVICE_DIRS)
+EXTRABSVPATH = +:$(DE10PROBSVSHELLDIR):$(RECIPEDIR):$(VIRTUALDEVICE_DIRS):$(SERIALLITE3_DIRS)
 BSCFLAGS = $(BSC_PATH) -p $(EXTRABSVPATH)
 
 # design configuration variables
@@ -134,11 +136,14 @@ $(BDIR)/%.bo:
 	$(info building $@)
 	bsc -elab $(BSCFLAGS) $<
 
+$(SERIALLITE3_DIRS)/TimeStamp.bsv:
+	make -C $(SERIALLITE3_DIRS) TimeStamp.bsv
+
 rtl: $(VDIR)/mkCHERI_BGAS_Top_Sig.v
 
 bluesim: $(SIMDIR)/sim_CHERI_BGAS
 
-$(SIMDIR)/sim_CHERI_BGAS: CHERI_BGAS_Top_Sim.bsv $(TOPFILE_BO) $(BLUESTUFFDIR)/BlueUtils/MemSim.c $(BLUEUNIXBRIDGESDIR)/BlueUnixFifo.c TagTableStructure.bsv GenerateHPMVector.bsv StatCounters.bsv
+$(SIMDIR)/sim_CHERI_BGAS: CHERI_BGAS_Top_Sim.bsv $(TOPFILE_BO) $(BLUESTUFFDIR)/BlueUtils/MemSim.c $(BLUEUNIXBRIDGESDIR)/BlueUnixFifo.c TagTableStructure.bsv GenerateHPMVector.bsv StatCounters.bsv $(SERIALLITE3_DIRS)/TimeStamp.bsv
 	mkdir -p $(BDIR)
 	mkdir -p $(SIMDIR)
 	$(BSC) $(BSCFLAGS) $(BSCBSIMFLAGS) -sim -g mkCHERI_BGAS_Top_Sim -u CHERI_BGAS_Top_Sim.bsv
@@ -171,7 +176,7 @@ verilatorsim: $(VDIR)/mkCHERI_BGAS_Top_Sim.v CHERI_BGAS_Top_verilator_sim.cpp
 	#-Wno-fatal
 	make -C $(VERILATORDIR) -j -f VmkCHERI_BGAS_Top_Sim.mk mkCHERI_BGAS_Top_Sim
 
-$(VDIR)/mkCHERI_BGAS_Top_Sim.v: $(VDIR)/mkCHERI_BGAS_Top_Sig.v
+$(VDIR)/mkCHERI_BGAS_Top_Sim.v: $(VDIR)/mkCHERI_BGAS_Top_Sig.v $(SERIALLITE3_DIRS)/TimeStamp.bsv
 	mkdir -p $(BDIR)
 	mkdir -p $(VDIR)
 	$(BSC) $(BSCFLAGS) $(BSCVERILOGFLAGS) -verilog -g mkCHERI_BGAS_Top_Sim -u CHERI_BGAS_Top_Sim.bsv
@@ -203,6 +208,7 @@ StatCounters.bsv: $(RISCV_HPM_EVENTS_DIR)/parse_counters.py
 .PHONY: clean mrproper
 
 clean:
+	rm -f .depends.mk
 	rm -f TagTableStructure.bsv
 	rm -f GenerateHPMVector.bsv
 	rm -f StatCounters.bsv

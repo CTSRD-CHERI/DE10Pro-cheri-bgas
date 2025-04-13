@@ -46,6 +46,11 @@ import SoC_Map :: *;
 import CHERI_BGAS_System :: *;
 import CHERI_BGAS_Router :: *;
 
+
+`ifdef BSIM
+import "BDPI" getenv_as_uint = function UInt#(64) getenv_as_uint(String envVar);
+`endif
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -60,7 +65,7 @@ Integer nbCheriBgasSystems = valueOf (NBCheriBgasSystems);
 // Concrete parameters definitions
 // -------------------------------
 
-`define H2F_LW_ADDR   20 // from 20 (1MB) to 21 (2MB)
+`define H2F_LW_ADDR   21 // from 20 (1MB) to 21 (2MB)
 `define H2F_LW_DATA   32
 `define H2F_LW_AWUSER  0
 `define H2F_LW_WUSER   0
@@ -289,7 +294,11 @@ provisos (
              , t_global_axi_addr, t_global_axi_data
              , t_global_axi_awuser, t_global_axi_wuser, t_global_axi_buser
              , t_global_axi_aruser, t_global_axi_ruser
-             , t_global_flit ) )
+             , t_global_flit
+             `ifdef BSIM
+             , 8, 8
+             `endif
+             ) )
 , Alias #( t_sys_axi_sub_0, AXI4_Slave #(
       t_sys_axi_sub_0_id, t_sys_axi_sub_0_addr, t_sys_axi_sub_0_data
     , t_sys_axi_sub_0_awuser, t_sys_axi_sub_0_wuser, t_sys_axi_sub_0_buser
@@ -363,8 +372,19 @@ provisos (
     sys <- replicateM (mkCHERI_BGAS_System (reset_by newRst.new_rst));
   Vector #(NBCheriBgasSystems, t_router_ifc) router;
   Maybe #(t_router_id) initRouterId = Invalid;
-  for (Integer i = 0; i < nbCheriBgasSystems; i = i + 1)
+  for (Integer i = 0; i < nbCheriBgasSystems; i = i + 1) begin
     router[i] <- mkCHERI_BGAS_Router (initRouterId, reset_by newRst.new_rst);
+    `ifdef BSIM
+    let routerId_setup <- mkReg(False, reset_by newRst.new_rst);
+    rule init_routerId (!routerId_setup);
+      router[i].setRouterId(Valid(RouterId {
+          y: truncate(pack(getenv_as_uint("ROUTER_Y")))
+        , x: truncate(pack(getenv_as_uint("ROUTER_X")))
+        }));
+      routerId_setup <= True;
+    endrule
+    `endif
+  end
   Vector #(NBCheriBgasSystems, t_global_mngr)
     globalMngr = replicate (?);
   Vector #(NBCheriBgasSystems, t_sys_global_sub)
@@ -404,7 +424,7 @@ provisos (
     t_global_mngr mngr = zero_AXI4_Master_user (getGlobalMngr (sys[i]));
     Vector #(2, t_global_sub) subs;
     subs[0] = router[i].mngmntSubordinate;
-    subs[1] = router[i].localSubordinate;
+    subs[1] <- mkSimpleAXI4Slave_Firewall(50_000_000, router[i].localSubordinate);
     function route_to_router (addr);
       Vector #(2, Bool) x = replicate (False);
       if (inRange (soc_map.m_global_bgas_addr_range, addr))
@@ -429,7 +449,7 @@ provisos (
     NumProxy #(2) proxyBufSz = ?;
     t_router_port noRouteRaw <- mkCHERI_BGAS_NoRouteTile;
     Global_Port #(t_global_flit)
-      noRouteIfc <- mkCHERI_BGAS_StreamBridge (proxyBufSz, noRouteRaw);
+      noRouteIfc <- mkCHERI_BGAS_StreamBridge (proxyBufSz, False, noRouteRaw);
     return noRouteIfc;
   endmodule
   // for 2 or 3 system cases:

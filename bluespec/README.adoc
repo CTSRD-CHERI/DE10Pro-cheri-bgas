@@ -100,13 +100,57 @@ https://github.com/CTSRD-CHERI/DE10Pro-cheri-bgas/blob/main/bluespec/CHERI_BGAS_
 
 == Simulation
 
-The
-https://github.com/CTSRD-CHERI/DE10Pro-cheri-bgas/blob/main/bluespec/CHERI_BGAS_Top_Sim.bsv[CHERI_BGAS_Top_Sim.bsv]
-file instantiates `mkCHERI_BGAS_Top` and, at the moment, leaves most of its
-ports unconnected, except for "h2f_lw" and "ddrb".
+The https://github.com/CTSRD-CHERI/DE10Pro-cheri-bgas/blob/main/bluespec/CHERI_BGAS_Top_Sim.bsv[CHERI_BGAS_Top_Sim.bsv]
+file instantiates `mkCHERI_BGAS_Top` and connects it to 3 simulated DDR
+memories, as well as to a set of unix fifos to bridge with other unix processes.
 
-- "h2f_lw" is connected to a driver controlled by a state machine
-- "ddrb" is connected to a fake DDR module with a single word of memory
+Running an instance of the simulator will create a folder with the following:
+```sh
+.
+├── bgas-global-ports
+│   ├── a
+│   │   ├── rx
+│   │   └── tx
+│   ├── b
+│   │   ├── rx
+│   │   └── tx
+│   ├── c
+│   │   ├── rx
+│   │   └── tx
+│   └── d
+│       ├── rx
+│       └── tx
+├── f2h
+│   ├── arSource
+│   ├── awSource
+│   ├── bSink
+│   ├── rSink
+│   └── wSource
+├── h2f
+│   ├── arSink
+│   ├── awSink
+│   ├── bSource
+│   ├── rSource
+│   └── wSink
+└── h2f_lw
+    ├── arSink
+    ├── awSink
+    ├── bSource
+    ├── rSource
+    └── wSink
+```
+Each leaf file is a unix fifo directly connected to the relevan Bluespec module and that lets
+arbitrary processes communicate with the simulated BGAS node. The f2h, h2f and h2f_lw ports
+emulate the channels existing between the softlogic and the HPS system on the Stratix10. The
+bgas-global-ports a, b, c and d emulate the QSFP links of the DE10 board and are meant for
+node to node communication.
+
+The provided https://github.com/CTSRD-CHERI/DE10Pro-cheri-bgas/blob/main/bluespec/sim-utils/cheri-bgas-sim.py[cheri-bgas-sim.py]
+script spawns a requested number of bgas nodes as separate simulator processes as well as a splice processe per connection
+between node to enable simulated communication.
+
+The HPS <-> FPGA emulated channels enable exposing fmem devices and the debugger for a better developper
+experience.
 
 === Build a simulator
 
@@ -119,11 +163,19 @@ $ make bluesim
 
 will generate a bluesim simulator.
 
-With a working installation of `verilator` as well, one can run
+Once the simulator is built, one can run a simulation by using the
+https://github.com/CTSRD-CHERI/DE10Pro-cheri-bgas/blob/main/bluespec/sim-utils/cheri-bgas-sim.py[cheri-bgas-sim.py]
+script. The following options are available:
+```sh
+usage: cheri-bgas-sim.py [-h] [-t WIDTH HEIGHT] [-r SIM_RUN_DIR] [-v]
 
-[source, shell]
-----
-$ make verilatorsim
-----
+Run a CHERI-BGAS simulation
 
-to get a verilator-based simulator.
+options:
+  -h, --help            show this help message and exit
+  -t WIDTH HEIGHT, --topology WIDTH HEIGHT
+                        The WIDTH and HEIGHT of the mesh of nodes to simulate
+  -r SIM_RUN_DIR, --simulation-run-directory SIM_RUN_DIR
+                        The SIM_RUN_DIR path to the run directory for the simulation
+  -v, --verbose         Increase verbosity level by adding more "v".
+```
