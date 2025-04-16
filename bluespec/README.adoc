@@ -139,7 +139,7 @@ Running an instance of the simulator will create a folder with the following:
     ├── rSource
     └── wSink
 ```
-Each leaf file is a unix fifo directly connected to the relevan Bluespec module and that lets
+Each leaf file is a unix fifo directly connected to the relevant Bluespec module and that lets
 arbitrary processes communicate with the simulated BGAS node. The f2h, h2f and h2f_lw ports
 emulate the channels existing between the softlogic and the HPS system on the Stratix10. The
 bgas-global-ports a, b, c and d emulate the QSFP links of the DE10 board and are meant for
