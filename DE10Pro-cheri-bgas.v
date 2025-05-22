@@ -497,6 +497,7 @@ module DE10Pro_cheri_bgas (
   , .de10_fan_led_led                        (LED_OUT)
   , .de10_fan_reset_source_reset_n           (fan_reset_n)
   `endif // ENABLE_TEMP_I2C
+  `endif // ENABLE_FAN_I2C
   );
 
 endmodule
