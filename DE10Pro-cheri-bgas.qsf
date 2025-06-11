@@ -1670,7 +1670,6 @@ set_global_assignment -name VERILOG_FILE "\$env(DE10SERIALLITE3DIR)/S10FPGA/s10s
 set_global_assignment -name SEARCH_PATH "\$env(DE10SERIALLITE3DIR)/"
 set_global_assignment -name SEARCH_PATH "\$env(DE10SERIALLITE3DIR)/S10FPGA"
 set_global_assignment -name SEARCH_PATH "\$env(DE10SERIALLITE3DIR)/S10FPGA/output"
-set_global_assignment -name IP_SEARCH_PATHS "\$env(DE10SERIALLITE3DIR)/S10FPGA/output/*"
 set_global_assignment -name IP_SEARCH_PATHS bluespec/BSVFan/**/*
 set_global_assignment -name SDC_FILE "DE10Pro-cheri-bgas.sdc"
 

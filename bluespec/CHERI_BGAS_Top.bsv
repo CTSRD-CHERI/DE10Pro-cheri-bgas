@@ -44,7 +44,7 @@ import Connectable :: *;
 import SoC_Map :: *;
 
 import CHERI_BGAS_System :: *;
-import CHERI_BGAS_Router :: *;
+//import CHERI_BGAS_Router :: *;
 
 
 `ifdef BSIM
@@ -153,8 +153,7 @@ typedef DE10Pro_bsv_shell #( `H2F_LW_ADDR
                            , `DRAM_BUSER
                            , `DRAM_ARUSER
                            , `DRAM_RUSER
-                           , Bit #(512)
-                           , Bit #(512) ) DE10ProIfc;
+                           ) DE10ProIfc;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -251,7 +250,7 @@ provisos (
 , Alias #( t_irqs, Vector #(32, Irq))
   //////////////////////////////////////////////////////////////////////////////
   // local CHERI-BGAS system types
-, Alias #(t_router_id, RouterId #(8, 8))
+//, Alias #(t_router_id, RouterId #(8, 8))
 , Alias #( t_cheri_bgas_sys, CHERI_BGAS_System_Ifc # (
     // AXI4Lite subordinate port - incoming control traffic
       t_sys_axil_sub_addr, t_sys_axil_sub_data
@@ -279,26 +278,26 @@ provisos (
     , t_sys_axi_mngr2_aruser, t_sys_axi_mngr2_ruser ) )
   //////////////////////////////////////////////////////////////////////////////
 
-, Alias #( t_global_flit, Bit #(512) )
-, Alias #( t_router_port
-         , AXI4_Router_Port #(
-               t_global_axi_id, t_global_axi_addr, t_global_axi_data
-             , t_global_axi_awuser, t_global_axi_wuser, t_global_axi_buser
-             , t_global_axi_aruser, t_global_axi_ruser ) )
-, Alias #( t_router_ifc
-         , CHERI_BGAS_Router_Ifc #(
-               t_sys_axi_mngr2_id, t_global_axi_addr, t_global_axi_data
-             , t_global_axi_awuser, t_global_axi_wuser, t_global_axi_buser
-             , t_global_axi_aruser, t_global_axi_ruser
-             , t_sys_axi_mngr2_id, t_sys_axi_sub_1_id
-             , t_global_axi_addr, t_global_axi_data
-             , t_global_axi_awuser, t_global_axi_wuser, t_global_axi_buser
-             , t_global_axi_aruser, t_global_axi_ruser
-             , t_global_flit
-             `ifdef BSIM
-             , 8, 8
-             `endif
-             ) )
+//, Alias #( t_global_flit, Bit #(512) )
+//, Alias #( t_router_port
+//         , AXI4_Router_Port #(
+//               t_global_axi_id, t_global_axi_addr, t_global_axi_data
+//             , t_global_axi_awuser, t_global_axi_wuser, t_global_axi_buser
+//             , t_global_axi_aruser, t_global_axi_ruser ) )
+//, Alias #( t_router_ifc
+//         , CHERI_BGAS_Router_Ifc #(
+//               t_sys_axi_mngr2_id, t_global_axi_addr, t_global_axi_data
+//             , t_global_axi_awuser, t_global_axi_wuser, t_global_axi_buser
+//             , t_global_axi_aruser, t_global_axi_ruser
+//             , t_sys_axi_mngr2_id, t_sys_axi_sub_1_id
+//             , t_global_axi_addr, t_global_axi_data
+//             , t_global_axi_awuser, t_global_axi_wuser, t_global_axi_buser
+//             , t_global_axi_aruser, t_global_axi_ruser
+//             , t_global_flit
+//             `ifdef BSIM
+//             , 8, 8
+//             `endif
+//             ) )
 , Alias #( t_sys_axi_sub_0, AXI4_Slave #(
       t_sys_axi_sub_0_id, t_sys_axi_sub_0_addr, t_sys_axi_sub_0_data
     , t_sys_axi_sub_0_awuser, t_sys_axi_sub_0_wuser, t_sys_axi_sub_0_buser
@@ -370,25 +369,25 @@ provisos (
   let newRst <- mkReset (0, True, clk, reset_by rst);
   Vector #(NBCheriBgasSystems, t_cheri_bgas_sys)
     sys <- replicateM (mkCHERI_BGAS_System (reset_by newRst.new_rst));
-  Vector #(NBCheriBgasSystems, t_router_ifc) router;
-  Maybe #(t_router_id) initRouterId = Invalid;
-  for (Integer i = 0; i < nbCheriBgasSystems; i = i + 1) begin
-    router[i] <- mkCHERI_BGAS_Router (initRouterId, reset_by newRst.new_rst);
-    `ifdef BSIM
-    let routerId_setup <- mkReg(False, reset_by newRst.new_rst);
-    rule init_routerId (!routerId_setup);
-      router[i].setRouterId(Valid(RouterId {
-          y: truncate(pack(getenv_as_uint("ROUTER_Y")))
-        , x: truncate(pack(getenv_as_uint("ROUTER_X")))
-        }));
-      routerId_setup <= True;
-    endrule
-    `endif
-  end
-  Vector #(NBCheriBgasSystems, t_global_mngr)
-    globalMngr = replicate (?);
-  Vector #(NBCheriBgasSystems, t_sys_global_sub)
-    globalSub = replicate (?);
+//  Vector #(NBCheriBgasSystems, t_router_ifc) router;
+//  Maybe #(t_router_id) initRouterId = Invalid;
+//  for (Integer i = 0; i < nbCheriBgasSystems; i = i + 1) begin
+//    router[i] <- mkCHERI_BGAS_Router (initRouterId, reset_by newRst.new_rst);
+//    `ifdef BSIM
+//    let routerId_setup <- mkReg(False, reset_by newRst.new_rst);
+//    rule init_routerId (!routerId_setup);
+//      router[i].setRouterId(Valid(RouterId {
+//          y: truncate(pack(getenv_as_uint("ROUTER_Y")))
+//        , x: truncate(pack(getenv_as_uint("ROUTER_X")))
+//        }));
+//      routerId_setup <= True;
+//    endrule
+//    `endif
+//  end
+//  Vector #(NBCheriBgasSystems, t_global_mngr)
+//    globalMngr = replicate (?);
+//  Vector #(NBCheriBgasSystems, t_sys_global_sub)
+//    globalSub = replicate (?);
 
   // instanciate the SoC_Map
   //////////////////////////////////////////////////////////////////////////////
@@ -413,7 +412,7 @@ provisos (
   // XXX field should be exported.
   // connect up global router's local manager and subordinate ports as well as
   // management subordinate port
-  for (Integer i = 0; i < nbCheriBgasSystems; i = i + 1) begin
+/*  for (Integer i = 0; i < nbCheriBgasSystems; i = i + 1) begin
     // incoming traffic
     t_sys_global_sub sub =
       zero_AXI4_Slave_user (
@@ -478,7 +477,7 @@ provisos (
       mkConnection (router[2].northPort, noRouteNorth2);
     end
   endcase
-
+*/
   // aggregate AXI Lite control traffic
   //////////////////////////////////////////////////////////////////////////////
   // Allocate 16 bits of address space per system, route to a system based on
@@ -598,14 +597,14 @@ provisos (
   interface axm_ddrc = debugAXI4_Master (culDeSac, $format ("ddrd"));
   interface axm_ddrd = debugAXI4_Master (ddr[1], $format ("ddrd"));
   // XXX
-  interface tx_north = tileNorthPort.tx;
-  interface rx_north = tileNorthPort.rx;
-  interface  tx_east = tileEastPort.tx;
-  interface  rx_east = tileEastPort.rx;
-  interface tx_south = tileSouthPort.tx;
-  interface rx_south = tileSouthPort.rx;
-  interface  tx_west = tileWestPort.tx;
-  interface  rx_west = tileWestPort.rx;
+  //interface tx_north = tileNorthPort.tx;
+  //interface rx_north = tileNorthPort.rx;
+  //interface  tx_east = tileEastPort.tx;
+  //interface  rx_east = tileEastPort.rx;
+  //interface tx_south = tileSouthPort.tx;
+  //interface rx_south = tileSouthPort.rx;
+  //interface  tx_west = tileWestPort.tx;
+  //interface  rx_west = tileWestPort.rx;
   interface     irqs = allIrqs;
 endmodule
 
@@ -660,8 +659,7 @@ typedef DE10Pro_bsv_shell_Sig #( `H2F_LW_ADDR
                                , `DRAM_BUSER
                                , `DRAM_ARUSER
                                , `DRAM_RUSER
-                               , Bit #(512)
-                               , Bit #(512) ) DE10ProIfcSig;
+                               ) DE10ProIfcSig;
 
 (* synthesize *)
 module mkCHERI_BGAS_Top_Sig (DE10ProIfcSig);
@@ -717,8 +715,7 @@ typedef DE10Pro_bsv_shell_Sig_Avalon #( `H2F_LW_ADDR
                                       , `DRAM_BUSER
                                       , `DRAM_ARUSER
                                       , `DRAM_RUSER
-                                      , Bit #(512)
-                                      , Bit #(512) ) DE10ProIfcSigAvalon;
+                                      ) DE10ProIfcSigAvalon;
 
 (* synthesize *)
 module mkCHERI_BGAS_Top_Sig_Avalon (DE10ProIfcSigAvalon);
