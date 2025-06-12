@@ -92,18 +92,6 @@ BSCFLAGS += -keep-fires
 BSCFLAGS += -aggressive-conditions
 BSCFLAGS += -no-warn-action-shadowing
 BSCFLAGS += -suppress-warnings G0020
-# CHERI / Tag Controller conf and flags
-ifneq ($(filter bluesim,$(MAKECMDGOALS)),)
-# Memory is implicitly zero         => -D NO_TAGTABLE_ZEROING
-# We are in simulation              => -D BSIM
-# We have already set up RVFI in Include_RISCY_Config.mk
-BSCFLAGS += -D NO_TAGTABLE_ZEROING -D BSIM
-endif
-BSCFLAGS += -D USECAP
-BSCFLAGS += -D FABRIC64
-CAPSIZE = 128
-TAGS_STRUCT = 0 64
-TAGS_ALIGN = 32
 # CHERI BGAS flags
 BSCFLAGS += -D NB_CHERI_BGAS_SYSTEMS=$(NB_SYSTEMS)
 
@@ -125,7 +113,7 @@ BSCVERILOGFLAGS += -opt-undetermined-vals
 ifeq (,$(filter clean mrproper,$(MAKECMDGOALS)))
 include .depends.mk
 
-.depends.mk: TagTableStructure.bsv GenerateHPMVector.bsv StatCounters.bsv | $(BDIR)
+.depends.mk: GenerateHPMVector.bsv | $(BDIR)
 	if ! bluetcl -exec makedepend -elab $(BSCFLAGS) -o $@ $(TOPFILE); then rm -f $@ && false; fi
 endif
 
@@ -187,31 +175,11 @@ $(VDIR)/mkCHERI_BGAS_Top_Sig.v: $(TOPFILE) TagTableStructure.bsv GenerateHPMVect
 	mkdir -p $(VDIR)
 	$(BSC) $(BSCFLAGS) $(BSCVERILOGFLAGS) -verilog -g mkCHERI_BGAS_Top_Sig -u CHERI_BGAS_Top.bsv
 
-#.PHONY: TagTableStructure.bsv
-TagTableStructure.bsv: $(TAG_CONTROLLER_DIR)/tagsparams.py
-	@echo "INFO: Re-generating CHERI tag controller parameters"
-	$^ -v -c $(CAPSIZE) -s $(TAGS_STRUCT:"%"=%) -a $(TAGS_ALIGN) --data-store-base-addr 0x80000000 -b $@ 0xffff8000 0x17ffff000
-	@echo "INFO: Re-generated CHERI tag controller parameters"
-
-#.PHONY: GenerateHPMVector.bsv
-GenerateHPMVector.bsv: $(RISCV_HPM_EVENTS_DIR)/parse_counters.py
-	@echo "INFO: Re-generating GenerateHPMVector bluespec file"
-	$^ $(RISCV_HPM_EVENTS_DIR)/counters.yaml -m ProcTypes -b $@
-	@echo "INFO: Re-generated GenerateHPMVector bluespec file"
-
-#.PHONY: StatCounters.bsv
-StatCounters.bsv: $(RISCV_HPM_EVENTS_DIR)/parse_counters.py
-	@echo "INFO: Re-generating HPM events struct bluepsec file"
-	$^ $(RISCV_HPM_EVENTS_DIR)/counters.yaml -m ProcTypes -s $@
-	@echo "INFO: Re-generated HPM events struct bluespec file"
 
 .PHONY: clean mrproper
 
 clean:
 	rm -f .depends.mk
-	rm -f TagTableStructure.bsv
-	rm -f GenerateHPMVector.bsv
-	rm -f StatCounters.bsv
 	rm -f -r $(BUILDDIR)
 
 mrproper: clean
