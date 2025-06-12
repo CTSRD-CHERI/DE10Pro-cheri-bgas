@@ -582,9 +582,9 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
       x[3] = True;
     else if (inRange (soc_map.m_uart_0_addr_range, addr))
       x[2] = True;
-    //else if (  inRange (soc_map.m_global_bgas_addr_range, addr)
-    //        || inRange (soc_map.m_bgas_router_conf_addr_range, addr) )
-    //  x[1] = True;
+    else if (  inRange (soc_map.m_global_bgas_addr_range, addr)
+            || inRange (soc_map.m_bgas_router_conf_addr_range, addr) )
+      x[1] = True;
     else if (inRange (soc_map.m_f2h_addr_range, addr))
       x[0] = True;
     return x;
