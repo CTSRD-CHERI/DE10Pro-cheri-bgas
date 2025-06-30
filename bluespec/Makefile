@@ -190,7 +190,7 @@ $(VDIR)/mkCHERI_BGAS_Top_Sig.v: $(TOPFILE) TagTableStructure.bsv GenerateHPMVect
 #.PHONY: TagTableStructure.bsv
 TagTableStructure.bsv: $(TAG_CONTROLLER_DIR)/tagsparams.py
 	@echo "INFO: Re-generating CHERI tag controller parameters"
-	$^ -v -c $(CAPSIZE) -s $(TAGS_STRUCT:"%"=%) -a $(TAGS_ALIGN) --data-store-base-addr 0x80000000 -b $@ 0xffff8000 0x17ffff000
+	$^ -v -c $(CAPSIZE) -s $(TAGS_STRUCT:"%"=%) -a $(TAGS_ALIGN) --data-store-base-addr 0x80000000 -b $@ 0xf8000000 0x17ffff000
 	@echo "INFO: Re-generated CHERI tag controller parameters"
 
 #.PHONY: GenerateHPMVector.bsv
