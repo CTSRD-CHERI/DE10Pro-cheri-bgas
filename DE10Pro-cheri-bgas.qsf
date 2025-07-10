@@ -1915,10 +1915,6 @@ set_instance_assignment -name REGION_NAME mkBERT_Instance_a -to soc|seriallite3_
 set_instance_assignment -name REGION_NAME mkBERT_Instance_b -to soc|seriallite3_wrapper|mkbert_instance_b
 set_instance_assignment -name REGION_NAME mkBERT_Instance_c -to soc|seriallite3_wrapper|mkbert_instance_c
 set_instance_assignment -name REGION_NAME mkBERT_Instance_d -to soc|seriallite3_wrapper|mkbert_instance_d
-set_instance_assignment -name FLOATING_REGION AUTO -to soc|seriallite3_wrapper|mkbert_instance_a
-set_instance_assignment -name FLOATING_REGION AUTO -to soc|seriallite3_wrapper|mkbert_instance_b
-set_instance_assignment -name FLOATING_REGION AUTO -to soc|seriallite3_wrapper|mkbert_instance_c
-set_instance_assignment -name FLOATING_REGION AUTO -to soc|seriallite3_wrapper|mkbert_instance_d
 set_global_assignment -name FLOW_ENABLE_HYPER_RETIMER_FAST_FORWARD ON
 set_instance_assignment -name PARTITION mkSerialLite3_Instance_a -to soc|seriallite3_wrapper|mkseriallite3_instance_a -entity DE10Pro_cheri_bgas
 set_instance_assignment -name PARTITION_COLOUR 4294952301 -to soc|seriallite3_wrapper|mkseriallite3_instance_a -entity DE10Pro_cheri_bgas
@@ -1930,3 +1926,15 @@ set_instance_assignment -name PARTITION mkSerialLite3_Instance_d -to soc|seriall
 set_instance_assignment -name PARTITION_COLOUR 4282908490 -to soc|seriallite3_wrapper|mkseriallite3_instance_d -entity DE10Pro_cheri_bgas
 set_instance_assignment -name PARTITION mkStatusDevice_Instance_Status15_0 -to soc|seriallite3_wrapper|mkstatusdevice_instance_status15_0 -entity DE10Pro_cheri_bgas
 set_instance_assignment -name PARTITION_COLOUR 4283622143 -to soc|seriallite3_wrapper|mkstatusdevice_instance_status15_0 -entity DE10Pro_cheri_bgas
+set_instance_assignment -name PLACE_REGION "X0 Y333 X79 Y432" -to soc|seriallite3_wrapper|mkbert_instance_a
+set_instance_assignment -name RESERVE_PLACE_REGION OFF -to soc|seriallite3_wrapper|mkbert_instance_a
+set_instance_assignment -name CORE_ONLY_PLACE_REGION ON -to soc|seriallite3_wrapper|mkbert_instance_a
+set_instance_assignment -name PLACE_REGION "X0 Y100 X79 Y199" -to soc|seriallite3_wrapper|mkbert_instance_b
+set_instance_assignment -name RESERVE_PLACE_REGION OFF -to soc|seriallite3_wrapper|mkbert_instance_b
+set_instance_assignment -name CORE_ONLY_PLACE_REGION ON -to soc|seriallite3_wrapper|mkbert_instance_b
+set_instance_assignment -name PLACE_REGION "X215 Y100 X294 Y199" -to soc|seriallite3_wrapper|mkbert_instance_c
+set_instance_assignment -name RESERVE_PLACE_REGION OFF -to soc|seriallite3_wrapper|mkbert_instance_c
+set_instance_assignment -name CORE_ONLY_PLACE_REGION ON -to soc|seriallite3_wrapper|mkbert_instance_c
+set_instance_assignment -name PLACE_REGION "X215 Y333 X294 Y432" -to soc|seriallite3_wrapper|mkbert_instance_d
+set_instance_assignment -name RESERVE_PLACE_REGION OFF -to soc|seriallite3_wrapper|mkbert_instance_d
+set_instance_assignment -name CORE_ONLY_PLACE_REGION ON -to soc|seriallite3_wrapper|mkbert_instance_d
