@@ -7,12 +7,9 @@ import Vector :: *;
 import BlueBasics :: *;
 import LeftShift :: *;
 import IOCapAxi_ErrorUnit :: *;
+import IOCapAxi_Types :: *;
 
-// TODO maybe move some of these into IOCapAxi_Types?
 typedef UInt#(1) Epoch;
-typedef Bit#(128) Key;
-// 0x1000 bytes => 4096 bytes => 256 keys => 8 bit ID
-typedef Bit#(8) KeyId;
 
 typedef union tagged {
     void KeyValidWhileInvalidating;

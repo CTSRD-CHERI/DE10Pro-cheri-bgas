@@ -1,6 +1,10 @@
 import BlueAXI4 :: *;
 import Connectable :: *;
 
+typedef Bit#(128) Key;
+// 0x1000 bytes => 4096 bytes => 256 keys => 8 bit ID
+typedef Bit#(8) KeyId;
+
 typedef struct  {
     Bool start;
     UInt#(2) flitnum;

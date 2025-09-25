@@ -7,12 +7,7 @@ import Vector :: *;
 import BlueBasics :: *;
 import LeftShift :: *;
 import IOCapAxi_ErrorUnit :: *;
-
-// TODO maybe move some of these into IOCapAxi_Types?
-typedef UInt#(1) Epoch;
-typedef Bit#(128) Key;
-// 0x1000 bytes => 4096 bytes => 256 keys => 8 bit ID
-typedef Bit#(8) KeyId;
+import IOCapAxi_Types :: *;
 
 typedef union tagged {
     void KeyValidWhileInvalidating;
@@ -50,6 +45,7 @@ interface IOCap_KeyManager2#(numeric type t_data, numeric type n_checkers) provi
     // n_valves = n_checkers * 2
     Alias#(n_valves, TMul#(2, n_checkers))
 );
+    // TODO these need to be per-valve
     method Action bumpPerfCounterGoodWrite();
     method Action bumpPerfCounterBadWrite();
     method Action bumpPerfCounterGoodRead();
