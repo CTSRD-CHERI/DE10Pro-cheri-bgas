@@ -14,7 +14,7 @@ import IOCapAxi_KeyManager2_KeyDataPipe :: *;
 import IOCapAxi_KeyManager2_RefCountPipe :: *;
 import IOCapAxi_KeyManager2_MMIO :: *;
 
-interface IOCap_KeyManager2_CheckerIfc;
+interface IOCapAxi_KeyManager2_CheckerIfc;
     // Used by the checker to request keys from the KeyManager
     interface Sink#(KeyId) keyRequest;
     // Used by the checker to receive key data requested by keyRequest
@@ -26,15 +26,15 @@ interface IOCap_KeyManager2_CheckerIfc;
     interface RWire#(KeyId) killKeyMessage;
 endinterface
 
-interface IOCap_KeyManager2_ValveIfc;
-    interface IOCap_KeyManager2_RefCountPipe_ValveIfc refcount;
-    interface IOCap_KeyManager2_MMIO_PerfCounterIfc perf;
+interface IOCapAxi_KeyManager2_ValveIfc;
+    interface IOCapAxi_KeyManager2_RefCountPipe_ValveIfc refcount;
+    interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc perf;
 endinterface
 
-interface IOCap_KeyManager2#(numeric type t_data, numeric type n_checkers);
-    interface Vector#(n_checkers, IOCap_KeyManager2_CheckerIfc) checkerPorts;
-    interface Vector#(n_checkers, IOCap_KeyManager2_ValveIfc) readValvePorts;
-    interface Vector#(n_checkers, IOCap_KeyManager2_ValveIfc) writeValvePorts;
+interface IOCapAxi_KeyManager2#(numeric type t_data, numeric type n_checkers);
+    interface Vector#(n_checkers, IOCapAxi_KeyManager2_CheckerIfc) checkerPorts;
+    interface Vector#(n_checkers, IOCapAxi_KeyManager2_ValveIfc) readValvePorts;
+    interface Vector#(n_checkers, IOCapAxi_KeyManager2_ValveIfc) writeValvePorts;
 
     interface AXI4Lite_Slave#(TLog#('h2000), t_data, 0, 0, 0, 0, 0) hostFacingSlave;
 
@@ -102,28 +102,30 @@ endinterface
 // It's guaranteed to arrive after the key state was set to KeyInvalidPendingRevoke, so we can guarantee that the key will eventually be checked for revocation even if it never receives a Decrement message again.
 // Even if one or more events happen in-between, pushing the key state further through the cycle, CheckZero can only ever correctly transition a key to revoked after revocation was requested.
 
-module mkIOCap_KeyManager2_V1(IOCap_KeyManager2#(64, 1));
+module mkIOCapAxi_KeyManager2_V1(IOCapAxi_KeyManager2#(64, 1));
     KeyManager2ErrorUnit error <- mkErrorUnit;
 
-    let keyState <- mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg(error);
-    let keyData  <- mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker(keyState.keydata, error);
-    let refcount <- mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker(keyState.refcount, error);
+    IOCapAxi_KeyManager2_KeyStatePipe     keyState <- mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg(error);
+    IOCapAxi_KeyManager2_KeyDataPipe#(1)   keyData <- mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker(keyState.keydata, error);
+    IOCapAxi_KeyManager2_RefCountPipe#(1) refcount <- mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker(keyState.refcount, error);
 
-    let mmio <- mkIOCapAxi_KeyManager2_MMIO(keyState.mmio, keyData.mmio, error);
+    IOCapAxi_KeyManager2_MMIO#(64, 1)         mmio <- mkIOCapAxi_KeyManager2_MMIO(keyState.mmio, keyData.mmio, error);
 
-    function IOCap_KeyManager2_CheckerIfc makeCheckerPort(Integer idx) = interface IOCap_KeyManager2_CheckerIfc;
+    function IOCapAxi_KeyManager2_CheckerIfc makeCheckerPort(Integer idx) = interface IOCapAxi_KeyManager2_CheckerIfc;
         interface keyRequest = keyData.checkerKeyRequest[idx];
         interface keyResponse = keyData.checkerKeyResponse[idx];
         interface killKeyMessage = mmio.checkerKillKeyMessages[idx];
     endinterface;
 
-    function IOCap_KeyManager2_ValveIfc makeReadValvePort(Integer idx) = interface IOCap_KeyManager2_ValveIfc;
-        interface refcount = refcount.valvePorts[idx * 2];
+    function IOCapAxi_KeyManager2_ValveIfc makeReadValvePort(Integer idx) = interface IOCapAxi_KeyManager2_ValveIfc;
+        Integer valveIdx = idx * 2;
+        interface refcount = refcount.valvePorts[valveIdx];
         interface perf = mmio.valvePerfCounters.read[idx];
     endinterface;
 
-    function IOCap_KeyManager2_ValveIfc makeWriteValvePort(Integer idx) = interface IOCap_KeyManager2_ValveIfc;
-        interface refcount = refcount.valvePorts[(idx * 2) + 1];
+    function IOCapAxi_KeyManager2_ValveIfc makeWriteValvePort(Integer idx) = interface IOCapAxi_KeyManager2_ValveIfc;
+        Integer valveIdx = (idx * 2) + 1;
+        interface refcount = refcount.valvePorts[valveIdx];
         interface perf = mmio.valvePerfCounters.write[idx];
     endinterface;
 

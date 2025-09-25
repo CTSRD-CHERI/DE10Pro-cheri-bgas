@@ -20,8 +20,8 @@ interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc;
 endinterface
 
 interface IOCapAxi_KeyManager2_MMIO_PerfCounters#(numeric type n_checkers);
-    interface Vector#(n_checkers, IOCap_KeyManager2_MMIO_PerfCounterIfc) read; 
-    interface Vector#(n_checkers, IOCap_KeyManager2_MMIO_PerfCounterIfc) write; 
+    interface Vector#(n_checkers, IOCapAxi_KeyManager2_MMIO_PerfCounterIfc) read; 
+    interface Vector#(n_checkers, IOCapAxi_KeyManager2_MMIO_PerfCounterIfc) write; 
 endinterface
 
 // Memory map:
@@ -40,7 +40,7 @@ interface IOCapAxi_KeyManager2_MMIO#(type t_data, numeric type n_checkers);
     interface Vector#(n_checkers, RWire#(KeyId)) checkerKillKeyMessages;
 endinterface
 
-module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc keyState, IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc keyData, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_MMIO#(64, n_checkers))  provisos (
+module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc keyState, IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc keyData, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_MMIO#(t_data, n_checkers))  provisos (
     // // t_data must be divisible by 8
     // // i.e. (t_data/8) * 8 == t_data
     // Mul#(TDiv#(t_data, 8), 8, t_data),
@@ -50,7 +50,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
     // Add#(t_data, b__, 64),
     // // Same thing for t_data/8 - ugh, why can't this be proven implicitly
     // Add#(TDiv#(t_data, 8), c__, 16)
-    Alias#(t_data, 64)
+    Add#(t_data, 0, 64)
 );
     let axiShim <- mkAXI4LiteShimFF;
 
@@ -67,7 +67,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
 
     function UInt#(64) nPulsedWires(Vector#(n_checkers, PulseWire) wires);
         UInt#(64) n = 0;
-        for (int i = 0; i < n_checkers; i = i + 1)
+        for (Integer i = 0; i < valueOf(n_checkers); i = i + 1)
             if (wires[i]) begin
                 n = n + 1;
             end
@@ -108,7 +108,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
         if ((ar.araddr & 'h1000) == 0) begin
             KeyId k = ar.araddr[11:4]; // Memory map is byte-addressed, each secret key is 16 bytes = 4 address bits
 
-            response = tagged Valid (zeroExtend(pack(keyStatus.keyStatus(k))));
+            response = tagged Valid (zeroExtend(pack(keyState.keyStatus(k))));
         end else if (ar.araddr < 'h1020) begin
             // We're between [0x1000 and 0x1020)
             // Read a performance counter
@@ -192,22 +192,13 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
                 && (((w.wdata & beToMask(w.wstrb)) >> 8) == 0)
             ) begin
                 // We're either trying to write 0 (invalid) or 1 (valid)
-                case (tuple2(keyValid[k], w.wdata[0])) matches
-                    { 1, 1 } : noAction;
-                    { 0, 0 } : noAction;
-
-                    // Re-enable a key - go from False to True
-                    { 0, 1 } : begin
-                        validWrite <- keyStatus.tryEnableKey(k);
-                        // TODO error for this if it fails
-                    end
-
-                    // Disable a key - go from True to False
-                    { 1, 0 } : begin
-                        validWrite <- keyStatus.tryRevokeKey();
-                        // TODO error for this if it fails
-                    end
-                endcase
+                if (w.wdata[0] == 0) begin
+                    validWrite <- keyState.tryEnableKey(k);
+                    // TODO error for this if it fails
+                end else begin
+                    validWrite <- keyState.tryRevokeKey(k);
+                    // TODO error for this if it fails
+                end
             end else begin
                 error.assertError(tagged InvalidStatusWrite);
             end
@@ -221,9 +212,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
             if (
                 // Writes to key data can't overlap two keys
                 endByteWithinKey <= 16
-                // The given key must be invalid
-                && keyValid[k] == 0
-                // and we can't be in the middle of a revocation (already checked above)
+                // The given key must be invalid without being in a revocation (checked below)
             ) begin
                 // Move wstrb and wdata into the 128-bit space based on their offset within the key.
 
@@ -250,7 +239,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
                 // TODO error for this if it fails
 
                 // TODO improve display
-                $display("IOCap - BRAM write - writeen ", fshow(bramByteEnable), " - address ", fshow(k), " - datain ", fshow(w.wdata));
+                $display("IOCap - BRAM write - address ", fshow(k), " - datain ", fshow(w.wdata));
             end else begin
                 error.assertError(tagged InvalidDataWrite);
             end
@@ -272,13 +261,13 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
         axiShim.master.b.put(flit);
     endrule
 
-    // Helper functions for generating IOCap_KeyManager2_MMIO_PerfCounterIfc for different permutations of (read/write, index)
-    function IOCap_KeyManager2_MMIO_PerfCounterIfc makeReadPerfCounter(Integer idx) = interface IOCap_KeyManager2_MMIO_PerfCounterIfc;
+    // Helper functions for generating IOCapAxi_KeyManager2_MMIO_PerfCounterIfc for different permutations of (read/write, index)
+    function IOCapAxi_KeyManager2_MMIO_PerfCounterIfc makeReadPerfCounter(Integer idx) = interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc;
         method Action bumpPerfCounterGood() = reqGoodRead[idx].send();
         method Action bumpPerfCounterBad() = reqBadRead[idx].send();
     endinterface;
 
-    function IOCap_KeyManager2_MMIO_PerfCounterIfc makeWritePerfCounter(Integer idx) = interface IOCap_KeyManager2_MMIO_PerfCounterIfc;
+    function IOCapAxi_KeyManager2_MMIO_PerfCounterIfc makeWritePerfCounter(Integer idx) = interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc;
         method Action bumpPerfCounterGood() = reqGoodWrite[idx].send();
         method Action bumpPerfCounterBad() = reqBadWrite[idx].send();
     endinterface;
@@ -290,5 +279,5 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
         interface write = genWith(makeWritePerfCounter);
     endinterface;
 
-    interface checkerKillKeyMessages = replicateM(killKey);
+    interface checkerKillKeyMessages = replicate(killKey);
 endmodule

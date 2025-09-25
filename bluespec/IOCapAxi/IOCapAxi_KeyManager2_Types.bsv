@@ -6,7 +6,7 @@ typedef union tagged {
     void InvalidStatusWrite;
     void InvalidDataWrite;
     void PrematurelyCompletedEpoch;
-} KeyManager2Error deriving (Bits, FShow);
+} KeyManager2Error deriving (Bits, FShow, Eq);
 
 // There aren't 8 possible values, there are 5 - but KeyManagerError is encoded in 3 bits.
 typedef ErrorUnit#(KeyManager2Error, 8) KeyManager2ErrorUnit;
@@ -15,4 +15,4 @@ typedef enum {
     KeyInvalidRevoked,       // = 0
     KeyValid,                // = 1
     KeyInvalidPendingRevoke  // = 2
-} KeyStatus deriving (Bits, FShow);
+} KeyStatus deriving (Bits, FShow, Eq);

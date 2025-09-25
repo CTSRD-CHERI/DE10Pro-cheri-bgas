@@ -7,6 +7,7 @@ import Vector :: *;
 import VectorExtra :: *;
 import BlueBasics :: *;
 import LeftShift :: *;
+import MIMO :: *;
 import IOCapAxi_ErrorUnit :: *;
 import IOCapAxi_Types :: *;
 import IOCapAxi_KeyManager2_Types :: *;
@@ -19,12 +20,12 @@ interface IOCapAxi_KeyManager2_RefCountPipe_ValveIfc;
     interface Sink#(KeyId) keyDecrementRefcountRequest;
 endinterface
 
-interface IOCapAxi_KeyManager2_RefCountPipe#(numeric type n_checkers);
+interface IOCapAxi_KeyManager2_RefCountPipe#(numeric type n_valves);
     // Can't use RWire here because they don't block.
     // IOCap_KeyManager2_ValveIfc
     // interface Vector#(n_valves, RWire#(KeyId)) incrementPorts;
     // interface Vector#(n_valves, RWire#(KeyId)) decrementPorts;
-    interface Vector#(n_valves, IOCapAxi_KeyManager2_RefCountPipe_ValveIfc) valvePorts;
+    interface Vector#(TAdd#(n_valves, n_valves), IOCapAxi_KeyManager2_RefCountPipe_ValveIfc) valvePorts;
 endinterface
 
 
@@ -163,7 +164,7 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
     // Holds items of type UInt#(XXX)
     // 2 ports - one read, one write
     // TODO Make this generic on refcount size
-    BRAM2Port#(KeyId, Int#(64)) keyRefcountBram <- mkBRAM2ServerBE(keyRefcountMemConfig);
+    BRAM2Port#(KeyId, Int#(64)) keyRefcountBram <- mkBRAM2Server(keyRefcountMemConfig);
 
     Vector#(2, RWire#(KeyId)) incrementWires <- replicateM(mkRWire);
     Vector#(2, RWire#(KeyId)) decrementWires <- replicateM(mkRWire);
@@ -172,23 +173,24 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
         unguarded: False,
         bram_based: True
     };
-    MIMO#(/* inputs/cycle = 2inc + 2dec + 1chk = */ 5, /* outputs/cycle = */ 1, /* TODO depth = */ 15, IOCapAxi_KeyManager2_KeyCache_RefCountOp#(2)) mimo <- mkMIMOBRAM(mimoConfig);
+    // mkMimoBRAM is advertised in docs but not exported by the package - set bram_based: True to get it
+    MIMO#(/* inputs/cycle = 2inc + 2dec + 1chk = */ 5, /* outputs/cycle = */ 1, /* TODO depth = */ 15, IOCapAxi_KeyManager2_KeyCache_RefCountOp#(2)) mimo <- mkMIMO(mimoConfig);
 
-    let rcOpInProgress <- mkSizedFIFOF(5);
+    FIFOF#(IOCapAxi_KeyManager2_KeyCache_RefCountOp#(2)) rcOpInProgress <- mkSizedFIFOF(5);
     // IF YOU CHANGE THE LENGTH OF THIS KEEP mostRecentRefCount UP TO DATE
     // AND refcount_forward_progress_complete_op
     Reg#(Vector#(5, Tuple2#(Maybe#(KeyId), Int#(64)))) rcWriteForwarding <- mkReg(replicate(tuple2(tagged Invalid, ?)));
 
-    function Int#(64) mostRecentRefcount(KeyId key, Int#(64) justRead);
+    function Int#(64) mostRecentRefCount(KeyId key, Int#(64) justRead);
         let allForwarded = rcWriteForwarding;
         Maybe#(Int#(64)) forwardedForKey = tagged Invalid;
-        for (int i = 0; i < 5; i = i + 1)
+        for (Integer i = 0; i < 5; i = i + 1)
             if (tpl_1(allForwarded[i]) == tagged Valid key && forwardedForKey == tagged Invalid) begin
                 forwardedForKey = tagged Valid tpl_2(allForwarded[i]);
             end
         case (forwardedForKey) matches
-            tagged Valid { .*, .refcount } : return refcount;
-            tagged Invalid : return justRead;
+            tagged Valid .refcount : return refcount;
+            tagged Invalid         : return justRead;
         endcase
     endfunction
 
@@ -208,7 +210,8 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
     endfunction
 
     function UInt#(3) indexOfFirstTrue(Vector#(5, Bool) bits);
-        case (pack(bits)) matches
+        Tuple5#(Bool, Bool, Bool, Bool, Bool) tup = unpack(pack(bits));
+        case (tup) matches
             { True,    .*,    .*,    .*,    .* } : return 0;
             { False, True,    .*,    .*,    .* } : return 1;
             { False, False, True,    .*,    .* } : return 2;
@@ -219,7 +222,8 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
     endfunction
 
     function UInt#(3) indexOfSecondTrue(Vector#(5, Bool) bits);
-        case (pack(bits)) matches
+        Tuple5#(Bool, Bool, Bool, Bool, Bool) tup = unpack(pack(bits));
+        case (tup) matches
             { True, True,    .*,    .*,    .* } : return 1;
 
             { False, True, True,    .*,    .* } : return 2;
@@ -239,12 +243,13 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
     endfunction
 
     function UInt#(3) indexOfThirdTrue(Vector#(5, Bool) bits);
-        case (pack(bits)) matches
+        Tuple5#(Bool, Bool, Bool, Bool, Bool) tup = unpack(pack(bits));
+        case (tup) matches
             { True, True, True,    .*,    .* } : return 2;
 
-            { True, True, False, True,    .*,    .* } : return 3;
-            { True, False, True, True,    .*,    .* } : return 3;
-            { False, True, True, True,    .*,    .* } : return 3;
+            { True, True, False, True,    .* } : return 3;
+            { True, False, True, True,    .* } : return 3;
+            { False, True, True, True,    .* } : return 3;
 
             { True, True, False, False, True } : return 4;
             { True, False, True, False, True } : return 4;
@@ -258,7 +263,8 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
     endfunction
 
     function UInt#(3) indexOfFourthTrue(Vector#(5, Bool) bits);
-        case (pack(bits)) matches
+        Tuple5#(Bool, Bool, Bool, Bool, Bool) tup = unpack(pack(bits));
+        case (tup) matches
             { True, True, True, True,    .* } : return 3;
 
             { True, True, True, False, True } : return 4;
@@ -271,16 +277,17 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
     endfunction
 
     function UInt#(3) indexOfFifthTrue(Vector#(5, Bool) bits);
-        case (pack(bits)) matches
+        Tuple5#(Bool, Bool, Bool, Bool, Bool) tup = unpack(pack(bits));
+        case (tup) matches
             { True, True, True, True, True } : return 4;
             
             default : return 7;
         endcase
     endfunction
 
-    function Maybe#(IOCap_KeyManager2_KeyCache_RefCountOp#(64)) makeOp(Maybe#(KeyId) keyMaybe, Int#(64) change);
+    function Maybe#(IOCapAxi_KeyManager2_KeyCache_RefCountOp#(n)) makeOp(Maybe#(KeyId) keyMaybe, Int#(n) change);
         case (keyMaybe) matches
-            tagged Valid .key : return tagged Valid IOCap_KeyManager2_KeyCache_RefCountOp {
+            tagged Valid .key : return tagged Valid IOCapAxi_KeyManager2_KeyCache_RefCountOp {
                 key: key,
                 change: change
             };
@@ -302,13 +309,12 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
 
     (* no_implicit_conditions *)
     rule process_valve_ports;
-        Vector#(5, IOCap_KeyManager2_KeyCache_RefCountOp#(64)) packedVector = replicate(?);
-        if (mimo.enqReadyN(pack(5))) begin
+        Vector#(5, IOCapAxi_KeyManager2_KeyCache_RefCountOp#(2)) packedVector = replicate(?);
+        if (mimo.enqReadyN(5)) begin
             // We have enough space to process incrementWires, decrementWires, and we have space for the keyToStartRevoking.
             // TODO does order matter here? I think it does... make sure we don't prematurely count something as revoked if it's incremented on the same cycle that the request arrives...
             UInt#(3) count = 0;
-            // TODO this won't compile. Can't use [] indexing later down. Need to fix. Make this a Vector.
-            let items = vector(
+            Vector#(5, Maybe#(IOCapAxi_KeyManager2_KeyCache_RefCountOp#(2))) items = vector(
                 makeOp(incrementWires[0].wget(), 1),
                 makeOp(incrementWires[1].wget(), 1),
                 makeOp(decrementWires[0].wget(), -1),
@@ -381,7 +387,7 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
 
             mimo.enq(count, packedVector);
         end else begin
-            // assert mimo.enqReadyN(pack(1)) == True
+            // TODO assert mimo.enqReadyN(1) == True
             // We always have enough space to enqueue the keyToStartRevoking
             if (makeOp(keyState.keyToStartRevoking.wget(), 0) matches tagged Valid .op) begin
                 packedVector[0] = op;
@@ -392,8 +398,8 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
 
     (* fire_when_enabled *)
     rule refcount_forward_progress_start_op;
-        let opVec <- mimo.deq(1);
-        let op = opVec[0];
+        mimo.deq(1);
+        let op = mimo.first[0];
 
         keyRefcountBram.portA.request.put(BRAMRequest {
             write: False,
@@ -407,8 +413,9 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
 
     (* fire_when_enabled *)
     rule refcount_forward_progress_complete_op;
+        rcOpInProgress.deq();
         let readRc <- keyRefcountBram.portA.response.get();
-        let op <- rcOpInProgress.deq;
+        let op = rcOpInProgress.first;
 
         let actualRc = mostRecentRefCount(op.key, readRc);
         // Update the Rc if needed
@@ -424,7 +431,7 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
             });
 
             // Write forwarding
-            let forwarded <- rcWriteForwarding;
+            let forwarded = rcWriteForwarding;
             // Add a new forwarding record for this ref at the front so it has highest priority.
             // Assume the forwarding vector is big enough that whatever gets shifted out will definitely be inside the BRAM by this point.
             let newForwarding = rotateR(forwarded);
@@ -432,24 +439,24 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
         end
         
         if (actualRc == 0) begin
-            keyToTryConfirmingRevoke <= op.key;
+            keyState.tryConfirmingRevokeKey(op.key);
         end
     endrule
 
     // Remember, the valve ports cannot enqueue anything unless there's at least 5 elements in the FIFO.
-    function buildValveInterface(Integer valveIdx) = interface IOCapAxi_KeyManager2_RefCountPipe_ValveIfc;
+    function IOCapAxi_KeyManager2_RefCountPipe_ValveIfc buildValveInterface(Integer valveIdx) = interface IOCapAxi_KeyManager2_RefCountPipe_ValveIfc;
         // Used by the valve to report key ID transaction-starts to the KeyManager
         interface keyIncrementRefcountRequest = interface Sink;
-            method canPut = mimo.enqReadyN(pack(5));
+            method canPut = mimo.enqReadyN(5);
             method Action put(KeyId id);
-                incrementWires[valveIdx] <= id;
+                incrementWires[valveIdx].wset(id);
             endmethod
         endinterface;
         // Used by the valve to report key ID transaction-ends to the KeyManager
         interface keyDecrementRefcountRequest = interface Sink;
-            method canPut = mimo.enqReadyN(pack(5));
+            method canPut = mimo.enqReadyN(5);
             method Action put(KeyId id);
-                decrementWires[valveIdx] <= id;
+                decrementWires[valveIdx].wset(id);
             endmethod
         endinterface;
     endinterface;

@@ -1,15 +1,20 @@
 /// This module provides a mkMapFifo#(T)(depth, f :: T -> T) module, implemented as a vector of registers with a specific depth
 
-interface MapFIFO#(t)
+import SourceSink :: *;
+import Vector :: *;
+
+interface MapFIFO#(type t);
     interface Sink#(t) enq;
     interface Source#(t) deq;
 endinterface
 
-module mkSizedMapFIFO#(numeric type depth, function t mapItem(t item))(MapFifo#(t));
+module mkSizedMapFIFO#(Bit#(depth) dummy, function t mapItem(t item))(MapFIFO#(t)) provisos (
+    Bits#(t, __a)
+);
     Vector#(depth, Reg#(t)) regs <- replicateM(mkReg(?));
     // One-hot encoding of the first empty register. Bit #0 is set => regs[0] is empty.
     // If the top bit is high, the FIFO is empty.
-    Reg#(Bits#(TAdd#(depth, 1))) oneHotEnqPtr <- mkReg(zeroExtend(1'b1));
+    Reg#(Bit#(TAdd#(depth, 1))) oneHotEnqPtr <- mkReg(zeroExtend(1'b1));
 
     RWire#(t) enqWire <- mkRWire;
     PulseWire deqWire <- mkPulseWire;
@@ -18,24 +23,24 @@ module mkSizedMapFIFO#(numeric type depth, function t mapItem(t item))(MapFifo#(
 
     rule tickFifo;
         Vector#(depth, t) mappedItems = map(mapItemReg, regs);
-        let deq <- deqWire;
+        let deq = deqWire;
         let enq = enqWire.wget();
 
         // Compute the new oneHotEnqPtr
-        let oldOneHotEnqPtr <- oneHotEnqPtr;
+        let oldOneHotEnqPtr = oneHotEnqPtr;
         let newOneHotEnqPtr = oldOneHotEnqPtr;
         case (tuple2(enq, deq)) matches
             // no-push-no-pop and push-pop both don't move the pointer
-            (tagged Invalid,    False) : begin end
-            (tagged Valid .val, True)  : begin end
+            { tagged Invalid,    False } : begin end
+            { tagged Valid .val,  True } : begin end
 
             // Push, no pop
-            (tagged Valid .val, False) : begin
+            { tagged Valid .val, False } : begin
                 // assert oneHotEnqPtr[valueOf(depth)] == 1'b0;
                 newOneHotEnqPtr = oldOneHotEnqPtr << 1;
             end
             // Pop, no push
-            (tagged Invalid, True)     : begin
+            { tagged Invalid,     True } : begin
                 // assert oneHotEnqPtr[0] == 1'b0;
                 newOneHotEnqPtr = oldOneHotEnqPtr >> 1;
             end
@@ -55,9 +60,9 @@ module mkSizedMapFIFO#(numeric type depth, function t mapItem(t item))(MapFifo#(
         // else if deq => mappedItems[i + 1]
         // else mappedItems[i]
         
-        for (int i = 0; i < valueOf(depth); i = i + 1) begin
+        for (Integer i = 0; i < valueOf(depth); i = i + 1) begin
             t newItem = ?;
-            if (newOneHotEnqPtr[i + 1] == 1 && enq matches tagged Valid .toEnq) begin
+            if (enq matches tagged Valid .toEnq &&& newOneHotEnqPtr[i + 1] == 1) begin
                 newItem = mapItem(toEnq);
             end else if (deq) begin
                 if (i == valueOf(depth) - 1) begin
@@ -76,22 +81,16 @@ module mkSizedMapFIFO#(numeric type depth, function t mapItem(t item))(MapFifo#(
     endrule
 
     interface enq = interface Sink;
-        (* always_ready *)
         method canPut = (oneHotEnqPtr[valueOf(depth)] == 1'b0);
-        method put(t item) if (oneHotEnqPtr[valueOf(depth)] == 1'b0) = action
-            enqWire <= item;
+        method Action put(t item) if (oneHotEnqPtr[valueOf(depth)] == 1'b0) = action
+            enqWire.wset(item);
         endaction;
     endinterface;
 
-    interface deq = interface Source
-        (* always_ready *)
+    interface deq = interface Source;
         method canPeek = (oneHotEnqPtr[0] == 1'b0);
-        method peek if (oneHotEnqPtr[0] == 1'b0) = actionvalue
-            // TODO should we apply the map function here
-            return mapItem(regs[0]);
-        endactionvalue;
-        method deq if (oneHotEnqPtr[0] == 1'b0) = action
-            deqWire.send();
-        endaction;
+        // TODO should we apply the map function here
+        method peek if (oneHotEnqPtr[0] == 1'b0) = mapItem(regs[0]);
+        method drop if (oneHotEnqPtr[0] == 1'b0) = deqWire.send();
     endinterface;
 endmodule
