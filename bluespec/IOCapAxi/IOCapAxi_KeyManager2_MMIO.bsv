@@ -13,9 +13,9 @@ import IOCapAxi_KeyManager2_KeyStatePipe :: *;
 import IOCapAxi_KeyManager2_KeyDataPipe :: *;
 
 interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc;
-    (* always_enabled*)
+    (* always_enabled *)
     method Action bumpPerfCounterGood();
-    (* always_enabled*)
+    (* always_enabled *)
     method Action bumpPerfCounterBad();
 endinterface
 
@@ -50,7 +50,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
     // Add#(t_data, b__, 64),
     // // Same thing for t_data/8 - ugh, why can't this be proven implicitly
     // Add#(TDiv#(t_data, 8), c__, 16)
-    Alias#(t_data, 64),
+    Alias#(t_data, 64)
 );
     let axiShim <- mkAXI4LiteShimFF;
 
@@ -66,8 +66,8 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
     RWire#(KeyId) killKey <- mkRWire;
 
     function UInt#(64) nPulsedWires(Vector#(n_checkers, PulseWire) wires);
-        let n = 0;
-        for (int i = 0; i < n_checkers; i++)
+        UInt#(64) n = 0;
+        for (int i = 0; i < n_checkers; i = i + 1)
             if (wires[i]) begin
                 n = n + 1;
             end
@@ -274,16 +274,12 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
 
     // Helper functions for generating IOCap_KeyManager2_MMIO_PerfCounterIfc for different permutations of (read/write, index)
     function IOCap_KeyManager2_MMIO_PerfCounterIfc makeReadPerfCounter(Integer idx) = interface IOCap_KeyManager2_MMIO_PerfCounterIfc;
-        (* always_enabled*)
         method Action bumpPerfCounterGood() = reqGoodRead[idx].send();
-        (* always_enabled*)
         method Action bumpPerfCounterBad() = reqBadRead[idx].send();
     endinterface;
 
     function IOCap_KeyManager2_MMIO_PerfCounterIfc makeWritePerfCounter(Integer idx) = interface IOCap_KeyManager2_MMIO_PerfCounterIfc;
-        (* always_enabled*)
         method Action bumpPerfCounterGood() = reqGoodWrite[idx].send();
-        (* always_enabled*)
         method Action bumpPerfCounterBad() = reqBadWrite[idx].send();
     endinterface;
 
@@ -295,4 +291,4 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
     endinterface;
 
     interface checkerKillKeyMessages = replicateM(killKey);
-endmodule;
+endmodule

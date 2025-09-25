@@ -50,7 +50,7 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker#(IOCapAxi_KeyMan
     rule handle_write_key_word;
         let reqWrite <- pendingKeyWrite;
         case (reqWrite) matches
-            (.id, .data, 0): begin
+            { .id, .data, 0 }: begin
                 let req = BRAMRequestBE {
                     writeen: 16'h00FF,
                     responseOnWrite: False,
@@ -58,9 +58,9 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker#(IOCapAxi_KeyMan
                     datain: { 0, data }
                 };
                 keys.portA.request.put(req);
-                keyToEnqueueWriteFor <- tuple2(id, 2'b01)
+                keyToEnqueueWriteFor <= tuple2(id, 2'b01);
             end
-            (.id, .data, 1): begin
+            { .id, .data, 1 }: begin
                 let req = BRAMRequestBE {
                     writeen: 16'hFF00,
                     responseOnWrite: False,
@@ -68,7 +68,7 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker#(IOCapAxi_KeyMan
                     datain: { data, 0 }
                 };
                 keys.portA.request.put(req);
-                keyToEnqueueWriteFor <- tuple2(id, 2'b10)
+                keyToEnqueueWriteFor <= tuple2(id, 2'b10);
             end
         endcase
     endrule
@@ -82,11 +82,12 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker#(IOCapAxi_KeyMan
     // to ensure that we don't read data that gets invalidated and replaced with new valid data before we return the stale result.
     // The latency of the BRAM is 4, so the pending-key FIFO should also be 4 - as long as we're constantly pulling out of the key responses we'll have 1/cycle throughput
     function Tuple2#(KeyId, Bool) checkKeyReadAgainstKeyToStartRevoking(Tuple2#(KeyId, Bool) item);
-        if (keyToStartRevoking.wget() matches tagged Valid .toRevoke &&& toRevoke == tpl_1(item)) begin
+        if (keyToStartRevoking.wget() matches tagged Valid .toRevoke &&& toRevoke == item.tpl_1) begin
             // The key for this read is being revoked, invalidate the read request
-            return tuple2(tpl_1(item), False);
+            return tuple2(toRevoke, False);
+        end else begin
+            return item;
         end
-        return item;
     endfunction
     // TODO this depth might need to be 5 to ensure availability
     let pendingKeyIdFF <- mkSizedMapFIFO(4, checkKeyReadAgainstKeyToStartRevoking);
@@ -134,13 +135,12 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker#(IOCapAxi_KeyMan
 
     interface mmio = interface IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc;
         // This will never cause backpressure, because it's dual-port - there's no reason to be delayed.
-        (* always_enabled*)
-        method ActionValue#(Bool) tryWriteKeyWord(KeyId id, Bits#(64) data, Bit#(1) word)
+        method ActionValue#(Bool) tryWriteKeyWord(KeyId id, Bits#(64) data, Bit#(1) word);
             if (keyStatus.keyStatus(id) != KeyInvalidRevoked) begin
                 return False;
             end else begin
                 keyStatus.tryWriteKeyWord(id, word);
-                pendingKeyWrite <- tuple3(id, data, word);
+                pendingKeyWrite <= tuple3(id, data, word);
                 return True;
             end
         endmethod
@@ -148,4 +148,4 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker#(IOCapAxi_KeyMan
 
     interface checkerKeyRequest = cons(keyReqSink, nil);
     interface checkerKeyResponse = cons(keyRespSrc, nil);
-endmodule;
+endmodule

@@ -4,6 +4,7 @@ import BlueAXI4 :: *;
 import SourceSink :: *;
 import BRAM :: *;
 import Vector :: *;
+import VectorExtra :: *;
 import BlueBasics :: *;
 import LeftShift :: *;
 import IOCapAxi_ErrorUnit :: *;
@@ -93,7 +94,7 @@ endinterface
 //     endfunction
 
 //     interface enq = interface Sink;
-//         (* always_enabled*)
+//         (* always_enabled *)
 //         method canPut = toSink(fifo).canPut;
 //         method Action put(IOCap_KeyManager2_KeyCache_CombinedRefCountOps#(n) in);
 //             // TODO merge increment/decrements for the same key
@@ -161,6 +162,7 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
     // Addressed by KeyId
     // Holds items of type UInt#(XXX)
     // 2 ports - one read, one write
+    // TODO Make this generic on refcount size
     BRAM2Port#(KeyId, Int#(64)) keyRefcountBram <- mkBRAM2ServerBE(keyRefcountMemConfig);
 
     Vector#(2, RWire#(KeyId)) incrementWires <- replicateM(mkRWire);
@@ -168,8 +170,8 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
 
     let mimoConfig = MIMOConfiguration {
         unguarded: False,
-        bram_based: True,
-    }
+        bram_based: True
+    };
     MIMO#(/* inputs/cycle = 2inc + 2dec + 1chk = */ 5, /* outputs/cycle = */ 1, /* TODO depth = */ 15, IOCapAxi_KeyManager2_KeyCache_RefCountOp#(2)) mimo <- mkMIMOBRAM(mimoConfig);
 
     let rcOpInProgress <- mkSizedFIFOF(5);
@@ -178,35 +180,39 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
     Reg#(Vector#(5, Tuple2#(Maybe#(KeyId), Int#(64)))) rcWriteForwarding <- mkReg(replicate(tuple2(tagged Invalid, ?)));
 
     function Int#(64) mostRecentRefcount(KeyId key, Int#(64) justRead);
-        let forwarded <- rcWriteForwarding;
+        let allForwarded = rcWriteForwarding;
+        Maybe#(Int#(64)) forwardedForKey = tagged Invalid;
         for (int i = 0; i < 5; i = i + 1)
-            if (tpl_1(forwarded[i]) == tagged Valid key) begin
-                return tpl_2(forwarded[i]);
+            if (tpl_1(allForwarded[i]) == tagged Valid key && forwardedForKey == tagged Invalid) begin
+                forwardedForKey = tagged Valid tpl_2(allForwarded[i]);
             end
-        return justRead;
-    endfunction;
+        case (forwardedForKey) matches
+            tagged Valid { .*, .refcount } : return refcount;
+            tagged Invalid : return justRead;
+        endcase
+    endfunction
 
-    function Tuple2#(Maybe#(t), Tuple5#(Maybe#(t),Maybe#(t),Maybe#(t),Maybe#(t),Maybe#(t))) firstValidOf(Tuple5#(Maybe#(t),Maybe#(t),Maybe#(t),Maybe#(t),Maybe#(t)) vals)
+    function Tuple2#(Maybe#(t), Tuple5#(Maybe#(t),Maybe#(t),Maybe#(t),Maybe#(t),Maybe#(t))) firstValidOf(Tuple5#(Maybe#(t),Maybe#(t),Maybe#(t),Maybe#(t),Maybe#(t)) vals);
         case (vals) matches
-            (tagged Valid .val, .b, .c, .d, .e) :
-                return tuple2(tagged Valid .val, tuple5(tagged Invalid, b, c, d, e));
-            (tagged Invalid, tagged Valid .val, .c, .d, .e) :
-                return tuple2(tagged Valid .val, tuple5(tagged Invalid, tagged Invalid, c, d, e));
-            (tagged Invalid, tagged Invalid, tagged Valid .val, .d, .e) :
-                return tuple2(tagged Valid .val, tuple5(tagged Invalid, tagged Invalid, tagged Invalid, d, e));
-            (tagged Invalid, tagged Invalid, tagged Invalid, tagged Valid .val, .e) :
-                return tuple2(tagged Valid .val, tuple5(tagged Invalid, tagged Invalid, tagged Invalid, tagged Invalid, e));
-            (tagged Invalid, tagged Invalid, tagged Invalid, tagged Invalid, .e) :
+            { tagged Valid .val, .b, .c, .d, .e } :
+                return tuple2(tagged Valid val, tuple5(tagged Invalid, b, c, d, e));
+            { tagged Invalid, tagged Valid .val, .c, .d, .e } :
+                return tuple2(tagged Valid val, tuple5(tagged Invalid, tagged Invalid, c, d, e));
+            { tagged Invalid, tagged Invalid, tagged Valid .val, .d, .e } :
+                return tuple2(tagged Valid val, tuple5(tagged Invalid, tagged Invalid, tagged Invalid, d, e));
+            { tagged Invalid, tagged Invalid, tagged Invalid, tagged Valid .val, .e } :
+                return tuple2(tagged Valid val, tuple5(tagged Invalid, tagged Invalid, tagged Invalid, tagged Invalid, e));
+            { tagged Invalid, tagged Invalid, tagged Invalid, tagged Invalid, .e } :
                 return tuple2(e, vals);
         endcase
     endfunction
 
     function UInt#(3) indexOfFirstTrue(Vector#(5, Bool) bits);
         case (pack(bits)) matches
-            { True, ? } : return 0;
-            { False, True, ? } : return 1;
-            { False, False, True, ? } : return 2;
-            { False, False, False, True, ? } : return 3;
+            { True,    .*,    .*,    .*,    .* } : return 0;
+            { False, True,    .*,    .*,    .* } : return 1;
+            { False, False, True,    .*,    .* } : return 2;
+            { False, False, False, True,    .* } : return 3;
             { False, False, False, False, True } : return 4;
             default : return 7;
         endcase
@@ -214,14 +220,14 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
 
     function UInt#(3) indexOfSecondTrue(Vector#(5, Bool) bits);
         case (pack(bits)) matches
-            { True, True, ? } : return 1;
+            { True, True,    .*,    .*,    .* } : return 1;
 
-            { False, True, True, ? } : return 2;
-            { True, False, True, ? } : return 2;
+            { False, True, True,    .*,    .* } : return 2;
+            { True, False, True,    .*,    .* } : return 2;
             
-            { False, False, True, True, ? } : return 3;
-            { False, True, False, True, ? } : return 3;
-            { True, False, False, True, ? } : return 3;
+            { False, False, True, True,    .* } : return 3;
+            { False, True, False, True,    .* } : return 3;
+            { True, False, False, True,    .* } : return 3;
 
             { True, False, False, False, True } : return 4;
             { False, True, False, False, True } : return 4;
@@ -234,11 +240,11 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
 
     function UInt#(3) indexOfThirdTrue(Vector#(5, Bool) bits);
         case (pack(bits)) matches
-            { True, True, True, ? } : return 2;
+            { True, True, True,    .*,    .* } : return 2;
 
-            { True, True, False, True, ? } : return 3;
-            { True, False, True, True, ? } : return 3;
-            { False, True, True, True, ? } : return 3;
+            { True, True, False, True,    .*,    .* } : return 3;
+            { True, False, True, True,    .*,    .* } : return 3;
+            { False, True, True, True,    .*,    .* } : return 3;
 
             { True, True, False, False, True } : return 4;
             { True, False, True, False, True } : return 4;
@@ -253,7 +259,7 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
 
     function UInt#(3) indexOfFourthTrue(Vector#(5, Bool) bits);
         case (pack(bits)) matches
-            { True, True, True, True, ? } : return 3;
+            { True, True, True, True,    .* } : return 3;
 
             { True, True, True, False, True } : return 4;
             { True, True, False, True, True } : return 4;
@@ -276,7 +282,7 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
         case (keyMaybe) matches
             tagged Valid .key : return tagged Valid IOCap_KeyManager2_KeyCache_RefCountOp {
                 key: key,
-                change: change,
+                change: change
             };
             tagged Invalid : return tagged Invalid;
         endcase
@@ -294,7 +300,7 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
     //      there will be exactly 5 entries in the queue on cycle #n+1 and we know there are more than 5 entries. 
     // => enqueueing 5 values in one cycle will never prevent something from being enqueued on the next cycle.
 
-    (* always_enabled *)
+    (* no_implicit_conditions *)
     rule process_valve_ports;
         Vector#(5, IOCap_KeyManager2_KeyCache_RefCountOp#(64)) packedVector = replicate(?);
         if (mimo.enqReadyN(pack(5))) begin
@@ -302,12 +308,12 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
             // TODO does order matter here? I think it does... make sure we don't prematurely count something as revoked if it's incremented on the same cycle that the request arrives...
             UInt#(3) count = 0;
             // TODO this won't compile. Can't use [] indexing later down. Need to fix. Make this a Vector.
-            let items = tuple5(
+            let items = vector(
                 makeOp(incrementWires[0].wget(), 1),
                 makeOp(incrementWires[1].wget(), 1),
                 makeOp(decrementWires[0].wget(), -1),
                 makeOp(decrementWires[1].wget(), -1),
-                makeOp(keyState.keyToStartRevoking.wget(), 0),
+                makeOp(keyState.keyToStartRevoking.wget(), 0)
             );
 
             /*
@@ -338,42 +344,42 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
                         end
                     end
                 end
-                */
-
-                let itemValidity = map(isValid, items);
-
-                // Single cycle 5->5 ordering scheduler thingy.
-                // Take 5 things which may be Valid or Invalid, sort Valid in front and put them in the Vector, then enqueue only those valid ones.
-                // Expressed as efficient parallel LUTs and lookups. The indexing should be reduced to onehots.
-                // Each indexOfXYZthTrue is a simple LUT.
-                let idx0 = indexOfFirstTrue(itemValidity);
-                if (idx0 != 7) begin
-                    packedVector[0] = fromMaybe(?, items[idx0]);
-                    count = 1;
-                end
-                let idx1 = indexOfSecondTrue(itemValidity);
-                if (idx1 != 7) begin
-                    packedVector[1] = fromMaybe(?, items[idx1]);
-                    count = 2;
-                end
-                let idx2 = indexOfThirdTrue(itemValidity);
-                if (idx2 != 7) begin
-                    packedVector[2] = fromMaybe(?, items[idx2]);
-                    count = 3;
-                end
-                let idx3 = indexOfFourthTrue(itemValidity);
-                if (idx3 != 7) begin
-                    packedVector[3] = fromMaybe(?, items[idx3]);
-                    count = 4;
-                end
-                let idx4 = indexOfFifthTrue(itemValidity);
-                if (idx4 != 7) begin
-                    packedVector[4] = fromMaybe(?, items[idx4]);
-                    count = 5;
-                end
-
-                mimo.enq(count, packedVector);
             end
+            */
+
+            let itemValidity = map(isValid, items);
+
+            // Single cycle 5->5 ordering scheduler thingy.
+            // Take 5 things which may be Valid or Invalid, sort Valid in front and put them in the Vector, then enqueue only those valid ones.
+            // Expressed as efficient parallel LUTs and lookups. The indexing should be reduced to onehots.
+            // Each indexOfXYZthTrue is a simple LUT.
+            let idx0 = indexOfFirstTrue(itemValidity);
+            if (idx0 != 7) begin
+                packedVector[0] = fromMaybe(?, items[idx0]);
+                count = 1;
+            end
+            let idx1 = indexOfSecondTrue(itemValidity);
+            if (idx1 != 7) begin
+                packedVector[1] = fromMaybe(?, items[idx1]);
+                count = 2;
+            end
+            let idx2 = indexOfThirdTrue(itemValidity);
+            if (idx2 != 7) begin
+                packedVector[2] = fromMaybe(?, items[idx2]);
+                count = 3;
+            end
+            let idx3 = indexOfFourthTrue(itemValidity);
+            if (idx3 != 7) begin
+                packedVector[3] = fromMaybe(?, items[idx3]);
+                count = 4;
+            end
+            let idx4 = indexOfFifthTrue(itemValidity);
+            if (idx4 != 7) begin
+                packedVector[4] = fromMaybe(?, items[idx4]);
+                count = 5;
+            end
+
+            mimo.enq(count, packedVector);
         end else begin
             // assert mimo.enqReadyN(pack(1)) == True
             // We always have enough space to enqueue the keyToStartRevoking
@@ -384,7 +390,7 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
         end
     endrule
 
-    (* always_enabled*)
+    (* fire_when_enabled *)
     rule refcount_forward_progress_start_op;
         let opVec <- mimo.deq(1);
         let op = opVec[0];
@@ -399,7 +405,7 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
         rcOpInProgress.enq(op);
     endrule
 
-    (* always_enabled*)
+    (* fire_when_enabled *)
     rule refcount_forward_progress_complete_op;
         let readRc <- keyRefcountBram.portA.response.get();
         let op <- rcOpInProgress.deq;
@@ -436,14 +442,14 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_K
         interface keyIncrementRefcountRequest = interface Sink;
             method canPut = mimo.enqReadyN(pack(5));
             method Action put(KeyId id);
-                incrementWires[valveIdx] <- id;
+                incrementWires[valveIdx] <= id;
             endmethod
         endinterface;
         // Used by the valve to report key ID transaction-ends to the KeyManager
         interface keyDecrementRefcountRequest = interface Sink;
             method canPut = mimo.enqReadyN(pack(5));
             method Action put(KeyId id);
-                decrementWires[valveIdx] <- id;
+                decrementWires[valveIdx] <= id;
             endmethod
         endinterface;
     endinterface;

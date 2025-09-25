@@ -1,3 +1,5 @@
+import IOCapAxi_ErrorUnit :: *;
+
 typedef union tagged {
     void KeyValidWhileInvalidating;
     void InvalidRead;
