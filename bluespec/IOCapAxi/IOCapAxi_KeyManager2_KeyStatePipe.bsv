@@ -34,18 +34,15 @@ interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc;
 endinterface
 
 interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc;
-    (* always_enabled *)
-    method Tuple2#(KeyStatus, Bit#(2)) keyState(KeyId key);
-
-    (* always_enabled *)
-    method KeyStatus keyStatus(KeyId key);
-
     // This methon returns True if it has initiated an event that will be successful, otherwise False if the event would not be successful and has not been initiated.
     // It never causes backpressure
     method ActionValue#(Bool) tryWriteKeyWord(KeyId id, Bit#(1) word);
 
     // The keydata pipeline must read this value on *every* cycle and invalidate any in-progress key reads if it is set.
     interface RWire#(KeyId) keyToStartRevoking;
+
+    (* always_enabled *)
+    method KeyStatus keyStatus(KeyId key);
 endinterface
 
 interface IOCapAxi_KeyManager2_KeyStatePipe;
@@ -116,10 +113,6 @@ module mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg#(KeyManager2ErrorUnit error
     endinterface;
 
     interface keydata = interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc;
-        method Tuple2#(KeyStatus, Bit#(2)) keyState(KeyId key) = keyStates[key];
-
-        method KeyStatus keyStatus(KeyId key) = tpl_1(keyStates[key]);
-
         method ActionValue#(Bool) tryWriteKeyWord(KeyId id, Bit#(1) word);
             if (tpl_1(keyStates[id]) != KeyInvalidRevoked) begin
                 return False;
@@ -133,6 +126,8 @@ module mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg#(KeyManager2ErrorUnit error
         endmethod
         
         interface keyToStartRevoking = keyToStartRevoking;
+        
+        method KeyStatus keyStatus(KeyId key) = tpl_1(keyStates[key]);
     endinterface;
 
     interface refcount = interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc;

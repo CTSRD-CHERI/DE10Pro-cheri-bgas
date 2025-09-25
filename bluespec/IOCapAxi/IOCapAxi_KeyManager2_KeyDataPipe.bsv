@@ -45,6 +45,22 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker#(IOCapAxi_KeyMan
     // Addressed by KeyId
     // Holds items of type Key
     // 16 byte-enable wires
+    // TODO
+    /*
+    Warning: "BRAMCore.bsv", line 658, column 51: (S0015)
+    Bluespec evaluation-time warning: XST will not infer a BRAM with fewer than
+    1 write enable or more than 4 write enables.
+    During elaboration of `memory' at "BRAM.bsv", line 719, column 40.
+    During elaboration of `keyDataPort' at
+    "IOCapAxi_KeyManager2_KeyDataPipe.bsv", line 48, column 34.
+    During elaboration of `impl' at
+    "testbenches/mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker_Tb.bsv",
+    line 45, column 9.
+    During elaboration of
+    `mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker_Tb' at
+    "testbenches/mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker_Tb.bsv",
+    line 22, column 8.
+    */
     BRAM2PortBE#(KeyId, Key, 16) keyDataPort <- mkBRAM2ServerBE(keyDataMemConfig);
 
     // Queue of incoming requests for keys
@@ -69,7 +85,6 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker#(IOCapAxi_KeyMan
     // Queue of outgoing responses to the Exposer with (KeyId, Key) pairs.
     let keyRespFF <- mkFIFOF;
 
-    (* conflict_free = "handle_write_key_word, start_retrieve_key" *)
     rule start_retrieve_key;
         keyReqFF.deq();
         let keyId = keyReqFF.first(); 

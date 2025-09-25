@@ -29,3 +29,7 @@ test-decoder-comb-11: (sim-v "mkCap2024_11_Decode_Comb_Tb")
 test-decoder-comb-02: (sim-v "mkCap2024_02_Decode_Comb_Tb")
 test-decoder-fsm-11: (sim-v "mkCap2024_11_Decode_FastFSM_Tb")
 test-decoder-fsm-02: (sim-v "mkCap2024_02_Decode_FastFSM_Tb")
+
+test-keymgr2-all: test-keymgr2-keydata-dualportsingle
+
+test-keymgr2-keydata-dualportsingle: (sim-v "mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker_Tb")
