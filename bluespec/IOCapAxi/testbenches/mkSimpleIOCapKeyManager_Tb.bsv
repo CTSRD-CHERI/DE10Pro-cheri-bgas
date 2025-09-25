@@ -1,5 +1,4 @@
 import IOCapAxi_KeyManagers :: *;
-import IOCapAxi_KeyManager2s :: *;
 
 interface SimpleIOCapKeyManagerTb;
     interface IOCap_KeyManager#(32) keyMgr32;
