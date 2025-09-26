@@ -146,7 +146,7 @@ endinterface
 // TODO mkIOCap_KeyManager2_KeyCache_Scheduler_FourToOne#(IOCap_KeyManager2_KeyCache_Scheduler#(4, 1))
 
 
-module mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker#(IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc keyState, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_RefCountPipe#(1));
+module mkIOCapAxi_KeyManager2_RefCountPipe_SingleCheckerPort#(IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc keyState, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_RefCountPipe#(1));
     // ===============================================
     // KEY REFCOUNT PIPELINE
     // ===============================================

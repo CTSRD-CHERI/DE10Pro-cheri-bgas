@@ -14,10 +14,10 @@ interface IOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker_Tb;
 endinterface
 
 (* synthesize *)
-module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker_Tb(IOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker_Tb);
+module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_Tb(IOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker_Tb);
     let errorImpl <- mkErrorUnit;
     let keyStatusShimImpl <- mkIOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc_Shim;
-    let dutImpl <- mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker(keyStatusShimImpl.keyDataFacing, errorImpl);
+    let dutImpl <- mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort(keyStatusShimImpl.keyDataFacing, errorImpl);
 
     interface dut = dutImpl;
     interface keyStatusShim = keyStatusShimImpl;

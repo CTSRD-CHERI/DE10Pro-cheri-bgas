@@ -19,16 +19,16 @@ interface IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc;
     method ActionValue#(Bool) tryWriteKeyWord(KeyId id, Bit#(64) data, Bit#(1) word);
 endinterface
 
-interface IOCapAxi_KeyManager2_KeyDataPipe#(numeric type n_checkers);
+interface IOCapAxi_KeyManager2_KeyDataPipe#(numeric type n_lanes);
     interface IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc mmio;
 
-    // Used by the checkers to request key data
-    interface Vector#(n_checkers, Sink#(KeyId)) checkerKeyRequest;
-    // Used by the checkers to receive key data
-    interface Vector#(n_checkers, Source#(Tuple2#(KeyId, Maybe#(Key)))) checkerKeyResponse;
+    // Used by the lane checkers to request key data
+    interface Vector#(n_lanes, Sink#(KeyId)) checkerKeyRequest;
+    // Used by the lane checkers to receive key data
+    interface Vector#(n_lanes, Source#(Tuple2#(KeyId, Maybe#(Key)))) checkerKeyResponse;
 endinterface
 
-module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker#(IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc keyState, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_KeyDataPipe#(1));
+module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort#(IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc keyState, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_KeyDataPipe#(1));
     // ===============================================
     // KEY DATA PIPELINE
     // ===============================================

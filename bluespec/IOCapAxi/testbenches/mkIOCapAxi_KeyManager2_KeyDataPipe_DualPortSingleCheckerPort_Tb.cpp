@@ -1,5 +1,5 @@
 #include <verilated.h>
-#include "VmkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker_Tb.h"
+#include "VmkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_Tb.h"
 
 #include "key_manager.h"
 #include "tb.h"
@@ -445,11 +445,11 @@ struct PerformanceCounting : public CycleTest<DUT, KeyManagerInput, KeyManagerOu
 int main(int argc, char** argv) {
     return tb_main(
         {
-            new WriteAndEnableKeyTest<VmkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker_Tb>(),
-            new WriteAndEnableKeyTest_EventBased<VmkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker_Tb>(),
-            new InvalidationEpochs<VmkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker_Tb>(),
-            new OneKeyRequestPerCycle<VmkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker_Tb>(),
-            new PerformanceCounting<VmkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker_Tb>(),
+            new WriteAndEnableKeyTest<VmkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_Tb>(),
+            new WriteAndEnableKeyTest_EventBased<VmkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_Tb>(),
+            new InvalidationEpochs<VmkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_Tb>(),
+            new OneKeyRequestPerCycle<VmkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_Tb>(),
+            new PerformanceCounting<VmkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_Tb>(),
         },
         argc, argv
     );

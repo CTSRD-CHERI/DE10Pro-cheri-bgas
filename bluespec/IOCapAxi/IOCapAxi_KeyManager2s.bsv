@@ -31,10 +31,11 @@ interface IOCapAxi_KeyManager2_ValveIfc;
     interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc perf;
 endinterface
 
-interface IOCapAxi_KeyManager2#(numeric type t_data, numeric type n_checkers);
-    interface Vector#(n_checkers, IOCapAxi_KeyManager2_CheckerIfc) checkerPorts;
-    interface Vector#(n_checkers, IOCapAxi_KeyManager2_ValveIfc) readValvePorts;
-    interface Vector#(n_checkers, IOCapAxi_KeyManager2_ValveIfc) writeValvePorts;
+// This interface implicitly assumes one checker port is shared between two checkers (one per read/write).
+interface IOCapAxi_KeyManager2#(numeric type t_data, numeric type n_lanes);
+    interface Vector#(n_lanes, IOCapAxi_KeyManager2_CheckerIfc) checkerPorts;
+    interface Vector#(n_lanes, IOCapAxi_KeyManager2_ValveIfc) readValvePorts;
+    interface Vector#(n_lanes, IOCapAxi_KeyManager2_ValveIfc) writeValvePorts;
 
     interface AXI4Lite_Slave#(TLog#('h2000), t_data, 0, 0, 0, 0, 0) hostFacingSlave;
 
@@ -106,8 +107,8 @@ module mkIOCapAxi_KeyManager2_V1(IOCapAxi_KeyManager2#(64, 1));
     KeyManager2ErrorUnit error <- mkErrorUnit;
 
     IOCapAxi_KeyManager2_KeyStatePipe     keyState <- mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg(error);
-    IOCapAxi_KeyManager2_KeyDataPipe#(1)   keyData <- mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker(keyState.keydata, error);
-    IOCapAxi_KeyManager2_RefCountPipe#(1) refcount <- mkIOCapAxi_KeyManager2_RefCountPipe_SingleChecker(keyState.refcount, error);
+    IOCapAxi_KeyManager2_KeyDataPipe#(1)   keyData <- mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort(keyState.keydata, error);
+    IOCapAxi_KeyManager2_RefCountPipe#(1) refcount <- mkIOCapAxi_KeyManager2_RefCountPipe_SingleCheckerPort(keyState.refcount, error);
 
     IOCapAxi_KeyManager2_MMIO#(64, 1)         mmio <- mkIOCapAxi_KeyManager2_MMIO(keyState.mmio, keyData.mmio, error);
 
