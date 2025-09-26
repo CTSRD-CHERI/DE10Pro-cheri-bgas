@@ -609,6 +609,36 @@ namespace key_manager {
 	
 }
 
+namespace key_manager2::refcountpipe {
+	struct MaybeKeyId {
+		/** 8-bit field */
+		uint8_t keyId;
+		/** 1-bit field */
+		uint8_t keyIdValid;
+	
+		static MaybeKeyId unpack(const uint16_t& backing) {
+			MaybeKeyId value{};
+			value.keyId = (
+				uint8_t((backing >> 0u) & uint16_t(0xfful))
+			);
+			value.keyIdValid = (
+				uint8_t((backing >> 8u) & uint16_t(0x1ul))
+			);
+			return value;
+		}
+		uint16_t pack() const {
+			uint16_t backing{};
+			backing = (
+				(uint16_t((keyId >> 0u) & uint8_t(0xfful)) << 0) | 
+				(uint16_t((keyIdValid >> 0u) & uint8_t(0x1ul)) << 8)
+			);
+			return backing;
+		}
+		bool operator==(const MaybeKeyId&) const = default;
+	};
+	
+}
+
 namespace decoder {
 	struct CapCheckResult_Tuple2_CapPerms_CapRange {
 		/** 64-bit field */
@@ -768,6 +798,15 @@ template <> class fmt::formatter<key_manager::Tuple2_KeyId_MaybeKey> {
 	template <typename Context>
 	constexpr auto format (key_manager::Tuple2_KeyId_MaybeKey const& s, Context& ctx) const {
 		return format_to(ctx.out(), "Tuple2_KeyId_MaybeKey {{ .keyBot = 0x{:016x}, .keyTop = 0x{:016x}, .keyValid = 0x{:01x}, .keyId = 0x{:02x} }}", s.keyBot, s.keyTop, s.keyValid, s.keyId);
+	}
+};
+template <> class fmt::formatter<key_manager2::refcountpipe::MaybeKeyId> {
+	public:
+	// Ignore parse formats - only {} is supported for this type
+	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+	template <typename Context>
+	constexpr auto format (key_manager2::refcountpipe::MaybeKeyId const& s, Context& ctx) const {
+		return format_to(ctx.out(), "MaybeKeyId {{ .keyId = 0x{:02x}, .keyIdValid = 0x{:01x} }}", s.keyId, s.keyIdValid);
 	}
 };
 template <> class fmt::formatter<decoder::CapCheckResult_Tuple2_CapPerms_CapRange> {

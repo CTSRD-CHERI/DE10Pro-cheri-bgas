@@ -34,3 +34,17 @@ test-keymgr2-all: test-keymgr2-keydata-dualportsingle
 
 test-keymgr2-keydata-dualportsingle: (sim-v "mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_Tb")
 test-keymgr2-refcount-twovalve: (sim-v "mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve_Tb")
+
+
+build-all: \
+    (build-sim-v "mkSimpleIOCapKeyManager_Tb") \
+    (build-sim-v "mkSimpleIOCapExposerV1_Tb") \
+    (build-sim-v "mkSimpleIOCapExposerV2_Tb") \
+    (build-sim-v "mkSimpleIOCapExposerV3_Tb") \
+    (build-sim-v "mkSimpleIOCapExposerV4_noblock_Tb") \
+    (build-sim-v "mkCap2024_11_Decode_Comb_Tb") \
+    (build-sim-v "mkCap2024_02_Decode_Comb_Tb") \
+    (build-sim-v "mkCap2024_11_Decode_FastFSM_Tb") \
+    (build-sim-v "mkCap2024_02_Decode_FastFSM_Tb") \
+    (build-sim-v "mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_Tb") \
+    (build-sim-v "mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve_Tb")

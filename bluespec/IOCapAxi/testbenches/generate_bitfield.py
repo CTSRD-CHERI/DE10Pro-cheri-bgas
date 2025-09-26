@@ -481,6 +481,20 @@ BLUESPEC_SANITIZEDAXI_STRUCTS = [
     ),
 ]
 
+BLUESPEC_MAYBE_KEYID = [
+    Struct(
+        "MaybeKeyId",
+        U16,
+        # Maybe#(Key) = tagged Invalid | tagged Valid KeyId;
+        # The tag is the most significant bit, so it's packed like
+        # |-- ValidTag --|-- KeyId --|
+        [
+            Field("keyId", 8),
+            Field("keyIdValid", 1),
+        ]
+    )
+]
+
 BLUESPEC_TUPLE2_KEYID_MAYBE_KEY = [
     Struct(
         "Tuple2_KeyId_MaybeKey",
@@ -541,6 +555,9 @@ for struct in BLUESPEC_SANITIZEDAXI_STRUCTS:
 
 for struct in BLUESPEC_TUPLE2_KEYID_MAYBE_KEY:
     gen.add_struct(struct, namespace="key_manager")
+
+for struct in BLUESPEC_MAYBE_KEYID:
+    gen.add_struct(struct, namespace="key_manager2::refcountpipe")
 
 for struct in BLUESPEC_CAPCHECKRESULT_TUPLE2_CAPPERMS_CAPRANGE:
     gen.add_struct(struct, namespace="decoder") 

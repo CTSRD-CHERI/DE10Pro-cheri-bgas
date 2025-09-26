@@ -16,10 +16,10 @@ endinterface
 (* synthesize *)
 module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve_Tb(IOCapAxi_KeyManager2_RefCountPipe_TwoValve_Tb);
     let errorImpl <- mkErrorUnit;
-    let keyStatusShimImpl <- mkIOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_Shim;
-    let dutImpl <- mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve(keyStatusShimImpl.refCountFacing, errorImpl);
+    let keyStatus <- mkIOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_ShimAndInternal;
+    let dutImpl <- mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve(keyStatus.refCountFacing, errorImpl);
 
     interface dut = dutImpl;
-    interface keyStatusShim = keyStatusShimImpl;
+    interface keyStatusShim = keyStatus.shim;
     interface error = errorImpl;
 endmodule

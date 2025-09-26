@@ -127,21 +127,27 @@ endmodule
 interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_Shim;
     interface ReadOnly#(Maybe#(KeyId)) tryConfirmingRevokeKey;
     interface WriteOnly#(KeyId) keyToStartRevoking;
+endinterface
 
+interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_ShimAndInternal;
+    interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_Shim shim;
+    
     // Internal interface
     // This pattern produces a warning because it technically exposes the RWire for tryConfirmingRevokeKey
     // as writable, even if the testbench doesn't try to write to it
     interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc refCountFacing;
 endinterface
 
-module mkIOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_Shim(IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_Shim);
+module mkIOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_ShimAndInternal(IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_ShimAndInternal);
     RWire#(KeyId) tryConfirmingRevokeKeyRWire <- mkRWire;
     let tryConfirmingRevokeKeyReadOnly <- mkRwireToReadOnlyViaReg(tryConfirmingRevokeKeyRWire);
     RWire#(KeyId) keyToStartRevokingRWire <- mkRWire;
 
-    // After cycle #n, this will be tagged Valid if it was written to during cycle #n
-    interface tryConfirmingRevokeKey = tryConfirmingRevokeKeyReadOnly;
-    interface keyToStartRevoking = rwireToWriteOnly(keyToStartRevokingRWire);
+    interface shim = interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_Shim;
+        // After cycle #n, this will be tagged Valid if it was written to during cycle #n
+        interface tryConfirmingRevokeKey = tryConfirmingRevokeKeyReadOnly;
+        interface keyToStartRevoking = rwireToWriteOnly(keyToStartRevokingRWire);
+    endinterface;
 
     interface refCountFacing = interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc;
         method Action tryConfirmingRevokeKey(KeyId id);
