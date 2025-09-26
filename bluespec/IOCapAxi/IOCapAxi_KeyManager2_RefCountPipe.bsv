@@ -25,7 +25,7 @@ interface IOCapAxi_KeyManager2_RefCountPipe#(numeric type n_valves);
     // IOCap_KeyManager2_ValveIfc
     // interface Vector#(n_valves, RWire#(KeyId)) incrementPorts;
     // interface Vector#(n_valves, RWire#(KeyId)) decrementPorts;
-    interface Vector#(TAdd#(n_valves, n_valves), IOCapAxi_KeyManager2_RefCountPipe_ValveIfc) valvePorts;
+    interface Vector#(n_valves, IOCapAxi_KeyManager2_RefCountPipe_ValveIfc) valvePorts;
 endinterface
 
 
@@ -146,7 +146,7 @@ endinterface
 // TODO mkIOCap_KeyManager2_KeyCache_Scheduler_FourToOne#(IOCap_KeyManager2_KeyCache_Scheduler#(4, 1))
 
 
-module mkIOCapAxi_KeyManager2_RefCountPipe_SingleCheckerPort#(IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc keyState, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_RefCountPipe#(1));
+module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc keyState, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_RefCountPipe#(2));
     // ===============================================
     // KEY REFCOUNT PIPELINE
     // ===============================================

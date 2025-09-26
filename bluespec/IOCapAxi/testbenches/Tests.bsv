@@ -122,3 +122,31 @@ module mkIOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc_Shim(IOCapAxi_KeyManag
         method keyStatus(key) = keyStatusReg[key];
     endinterface;
 endmodule
+
+// Generic interface for a RefCountPipe testbench that provides C++ with the ability to control the KeyStatus pipeline interface
+interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_Shim;
+    interface ReadOnly#(Maybe#(KeyId)) tryConfirmingRevokeKey;
+    interface WriteOnly#(KeyId) keyToStartRevoking;
+
+    // Internal interface
+    interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc refCountFacing;
+endinterface
+
+
+module mkIOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_Shim(IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_Shim);
+    RWire#(KeyId) tryConfirmingRevokeKeyRWire <- mkRWire;
+    let tryConfirmingRevokeKeyReadOnly <- mkRwireToReadOnlyViaReg(tryConfirmingRevokeKeyRWire);
+    RWire#(KeyId) keyToStartRevokingRWire <- mkRWire;
+
+    // After cycle #n, this will be tagged Valid if it was written to during cycle #n
+    interface tryConfirmingRevokeKey = tryConfirmingRevokeKeyReadOnly;
+    interface keyToStartRevoking = rwireToWriteOnly(keyToStartRevokingRWire);
+
+    interface refCountFacing = interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc;
+        method Action tryConfirmingRevokeKey(KeyId id);
+            tryConfirmingRevokeKeyRWire.wset(id);
+        endmethod
+
+        interface keyToStartRevoking = keyToStartRevokingRWire;
+    endinterface;
+endmodule
