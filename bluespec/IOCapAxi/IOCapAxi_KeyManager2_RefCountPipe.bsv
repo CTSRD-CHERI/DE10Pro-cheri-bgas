@@ -307,7 +307,6 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
     //      there will be exactly 5 entries in the queue on cycle #n+1 and we know there are more than 5 entries. 
     // => enqueueing 5 values in one cycle will never prevent something from being enqueued on the next cycle.
 
-    (* no_implicit_conditions *)
     rule process_valve_ports;
         Vector#(5, IOCapAxi_KeyManager2_KeyCache_RefCountOp#(2)) packedVector = replicate(?);
         if (mimo.enqReadyN(5)) begin
@@ -387,7 +386,7 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
 
             mimo.enq(count, packedVector);
         end else begin
-            // TODO assert mimo.enqReadyN(1) == True
+            // sanity_check_backpressure asserts that this will *always* be possible
             // We always have enough space to enqueue the keyToStartRevoking
             if (makeOp(keyState.keyToStartRevoking.wget(), 0) matches tagged Valid .op) begin
                 packedVector[0] = op;
@@ -396,7 +395,17 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
         end
     endrule
 
-    (* fire_when_enabled *)
+    rule sanity_check_backpressure;
+        if (
+            !mimo.enqReadyN(1) ||
+            !rcOpInProgress.notFull
+            // I wish I could assert that portA.request is always open, but there isn't a direct interface for that AFAIK.
+            // It may be fine in practice.
+        ) begin
+            error.assertError(tagged RefCountPipeStalled);
+        end
+    endrule
+
     rule refcount_forward_progress_start_op;
         mimo.deq(1);
         let op = mimo.first[0];
@@ -411,11 +420,12 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
         rcOpInProgress.enq(op);
     endrule
 
-    (* fire_when_enabled *)
     rule refcount_forward_progress_complete_op;
         rcOpInProgress.deq();
         let readRc <- keyRefcountBram.portA.response.get();
         let op = rcOpInProgress.first;
+
+        // TODO it could be useful to throw an error if we can read from BRAM but don't have rcOpInProgress
 
         let actualRc = mostRecentRefCount(op.key, readRc);
         // Update the Rc if needed

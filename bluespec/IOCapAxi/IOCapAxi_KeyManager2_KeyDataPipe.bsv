@@ -65,7 +65,7 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort#(IOCapAxi_Ke
 
     // Queue of incoming requests for keys
     let keyReqFF <- mkFIFOF;
-    // TODO under multiple checkers this should carry the checker ID
+    // TODO under multiple checker ports this should carry the checker port ID
     // Queue of (KeyId, keyStatus[KeyId] == KeyValid)s requested from BRAM - should match 1:1 with responses from BRAM.
     // Carries the keyValid signal because carrying things through in order is convenient, and we do need to ensure that it isn't initially invalid (see reasoning in comment on IOCap_KeyManager2_KeyCache).
     // Under multiple port BRAM we have to continually check every pending transaction against keyToStartRevoking,

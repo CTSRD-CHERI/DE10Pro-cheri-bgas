@@ -5,7 +5,10 @@ typedef union tagged {
     void InvalidRead;
     void InvalidStatusWrite;
     void InvalidDataWrite;
-    void PrematurelyCompletedEpoch;
+    // The refcount pipeline needs to always be able to respond to
+    // new revocations, so it's a hard error if it ever stalls out
+    // or induces backpressure
+    void RefCountPipeStalled;
 } KeyManager2Error deriving (Bits, FShow, Eq);
 
 // There aren't 8 possible values, there are 5 - but KeyManagerError is encoded in 3 bits.

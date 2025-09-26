@@ -129,9 +129,10 @@ interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_Shim;
     interface WriteOnly#(KeyId) keyToStartRevoking;
 
     // Internal interface
+    // This pattern produces a warning because it technically exposes the RWire for tryConfirmingRevokeKey
+    // as writable, even if the testbench doesn't try to write to it
     interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc refCountFacing;
 endinterface
-
 
 module mkIOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_Shim(IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_Shim);
     RWire#(KeyId) tryConfirmingRevokeKeyRWire <- mkRWire;
