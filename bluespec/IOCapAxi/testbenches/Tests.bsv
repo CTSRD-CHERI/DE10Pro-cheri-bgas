@@ -2,10 +2,16 @@ import Cap2024 :: *;
 import BlueAXI4 :: *;
 import FIFOF :: *;
 import SourceSink :: *;
+import SamUtil :: *;
+import Vector :: *;
 
 import IOCapAxi_Types :: *;
 import IOCapAxi_Exposers :: *;
 import IOCapAxi_KeyManagers :: *;
+import IOCapAxi_KeyManager2_Types :: *;
+import IOCapAxi_KeyManager2_KeyStatePipe :: *;
+import IOCapAxi_KeyManager2_KeyDataPipe :: *;
+import IOCapAxi_ErrorUnit :: *;
 
 // An inversion of the KeyManager interface which the C++ can use to provide stimulus to the Exposer.
 interface KeyStoreShim;
@@ -60,6 +66,8 @@ module mkKeyStoreShim(Tuple2#(KeyStoreShim, IOCap_KeyManager#(32)));
         interface finishedEpochs = toSink(epochCompleteResponse);
 
         interface hostFacingSlave = culDeSac;
+        
+        // TODO errorUnit
     endinterface;
 
     return tuple2(keyStoreShim, keyManager);
@@ -75,3 +83,42 @@ interface CapDecodeTb#(type tcap);
     interface Sink#(tcap) stimulusIn;
     interface Source#(CapCheckResult#(Tuple2#(CapPerms, CapRange))) stimulusOut;
 endinterface
+
+
+// Generic interface for a KeyDataPipe testbench that provides C++ with the ability to control the KeyStatus pipeline interface
+interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc_Shim;
+    interface ReadOnly#(Maybe#(Tuple2#(KeyId, Bit#(1)))) tryWriteKeyWord;
+    interface WriteOnly#(KeyId) keyToStartRevoking;
+    interface WriteOnly#(Vector#(256, KeyStatus)) keyStatus;
+
+    // Internal interface
+    interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc keyDataFacing;
+endinterface
+
+
+module mkIOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc_Shim(IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc_Shim);
+    RWire#(Tuple2#(KeyId, Bit#(1))) triedWriteKeyWordRwire <- mkRWire;
+    let triedWriteKeyWordReadOnly <- mkRwireToReadOnlyViaReg(triedWriteKeyWordRwire);
+    RWire#(KeyId) keyToStartRevokingRwire <- mkRWire;
+    Reg#(Vector#(256, KeyStatus)) keyStatusReg <- mkReg(replicate(KeyInvalidRevoked));
+
+    // After cycle #n, this will be tagged Valid if it was written to during cycle #n
+    interface tryWriteKeyWord = triedWriteKeyWordReadOnly;
+    interface keyToStartRevoking = rwireToWriteOnly(keyToStartRevokingRwire);
+    interface keyStatus = regToWriteOnly(keyStatusReg);
+
+    interface keyDataFacing = interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc;
+        method ActionValue#(Bool) tryWriteKeyWord(KeyId id, Bit#(1) word);
+            if (keyStatusReg[id] != KeyInvalidRevoked) begin
+                return False;
+            end else begin
+                triedWriteKeyWordRwire.wset(tuple2(id, word));
+                return True;
+            end
+        endmethod
+
+        interface keyToStartRevoking = keyToStartRevokingRwire;
+
+        method keyStatus(key) = keyStatusReg[key];
+    endinterface;
+endmodule
