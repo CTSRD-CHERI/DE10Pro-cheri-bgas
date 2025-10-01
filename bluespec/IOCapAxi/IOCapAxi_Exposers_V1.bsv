@@ -198,7 +198,7 @@ module mkSimpleIOCapExposerV1#(IOCap_KeyManager#(t_keystore_data) keyStore)(IOCa
 
             if (keyIdForFlit(awPreCheckBuffer.first) == keyId) begin
                 awPreCheckBuffer.deq();
-                awChecker.checkRequest.put(tuple2(awPreCheckBuffer.first, key));
+                awChecker.checkRequest.put(tuple3(awPreCheckBuffer.first, keyId, key));
                 keyMatchedAw.send();
                 usedPeekedKeyForAw.send();
                 $display("IOCap - start_aw_with_key awChecker.checkRequest.put ", fshow(awPreCheckBuffer.first));
@@ -224,7 +224,7 @@ module mkSimpleIOCapExposerV1#(IOCap_KeyManager#(t_keystore_data) keyStore)(IOCa
 
             if (keyIdForFlit(arPreCheckBuffer.first) == keyId) begin
                 arPreCheckBuffer.deq();
-                arChecker.checkRequest.put(tuple2(arPreCheckBuffer.first, key));
+                arChecker.checkRequest.put(tuple3(arPreCheckBuffer.first, keyId, key));
                 keyMatchedAr.send();
                 usedPeekedKeyForAr.send();
                 $display("IOCap - start_ar_with_key arChecker.checkRequest.put ", fshow(arPreCheckBuffer.first));
@@ -261,7 +261,7 @@ module mkSimpleIOCapExposerV1#(IOCap_KeyManager#(t_keystore_data) keyStore)(IOCa
         // If invalid, also pass on and increment send credits
         //      TODO flip the switch to block these transactions and send a failure response, and to not actually dequeue but wait for wSendCredits == 0 so we can set wDropCredited
         case (awResp) matches
-            { .flit, .allowed } : begin
+            { .flit, .keyId, .allowed } : begin
                 awOut.enq(flit);
                 if (allowed)
                     keyStore.bumpPerfCounterGoodWrite();
@@ -282,7 +282,7 @@ module mkSimpleIOCapExposerV1#(IOCap_KeyManager#(t_keystore_data) keyStore)(IOCa
         // If valid, pass on
         // If invalid, also pass on TODO flip the switch to block these transactions and send a failure response
         case (arResp) matches
-            { .flit, .allowed } : begin
+            { .flit, .keyId, .allowed } : begin
                 arOut.enq(flit);
                 if (allowed)
                     keyStore.bumpPerfCounterGoodRead();

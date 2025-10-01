@@ -226,7 +226,7 @@ module mkSimpleIOCapExposerV2#(IOCap_KeyManager#(t_keystore_data) keyStore)(IOCa
 
             if (keyIdForFlit(awPreCheckBuffer.first) == keyId) begin
                 awPreCheckBuffer.deq();
-                awChecker.checkRequest.put(tuple2(awPreCheckBuffer.first, key));
+                awChecker.checkRequest.put(tuple3(awPreCheckBuffer.first, keyId, key));
                 keyMatchedAw.send();
                 usedPeekedKeyForAw.send();
                 $display("IOCap - start_aw_with_key awChecker.checkRequest.put ", fshow(awPreCheckBuffer.first));
@@ -252,7 +252,7 @@ module mkSimpleIOCapExposerV2#(IOCap_KeyManager#(t_keystore_data) keyStore)(IOCa
 
             if (keyIdForFlit(arPreCheckBuffer.first) == keyId) begin
                 arPreCheckBuffer.deq();
-                arChecker.checkRequest.put(tuple2(arPreCheckBuffer.first, key));
+                arChecker.checkRequest.put(tuple3(arPreCheckBuffer.first, keyId, key));
                 keyMatchedAr.send();
                 usedPeekedKeyForAr.send();
                 $display("IOCap - start_ar_with_key arChecker.checkRequest.put ", fshow(arPreCheckBuffer.first));
@@ -282,7 +282,7 @@ module mkSimpleIOCapExposerV2#(IOCap_KeyManager#(t_keystore_data) keyStore)(IOCa
     endrule
 
     rule check_aw if (awChecker.checkResponse.canPeek && (
-        (tpl_2(awChecker.checkResponse.peek) == True && wValve.canUpdateCredits(Pass)) || (tpl_2(awChecker.checkResponse.peek) == False && wValve.canUpdateCredits(Drop))
+        (tpl_3(awChecker.checkResponse.peek) == True && wValve.canUpdateCredits(Pass)) || (tpl_3(awChecker.checkResponse.peek) == False && wValve.canUpdateCredits(Drop))
     ));
         // Pull the AW check result out of the awChecker
         let awResp <- get(awChecker.checkResponse);
@@ -291,7 +291,7 @@ module mkSimpleIOCapExposerV2#(IOCap_KeyManager#(t_keystore_data) keyStore)(IOCa
         // If invalid, drop the AW flit and increment drop credits
         
         case (awResp) matches
-            { .flit, .allowed } : begin
+            { .flit, .keyId, .allowed } : begin
                 Bit#(8) awlen = flit.awlen;
                 Bit#(9) nCredits = zeroExtend(awlen) + 1;
                 if (allowed) begin
@@ -321,7 +321,7 @@ module mkSimpleIOCapExposerV2#(IOCap_KeyManager#(t_keystore_data) keyStore)(IOCa
         // If valid, pass on
         // If invalid, send a failure response
         case (arResp) matches
-            { .flit, .allowed } : begin
+            { .flit, .keyId, .allowed } : begin
                 if (allowed) begin
                     keyStore.bumpPerfCounterGoodRead();
                     arOut.enq(flit);

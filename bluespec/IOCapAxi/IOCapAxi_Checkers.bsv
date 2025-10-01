@@ -41,20 +41,25 @@ instance AxiCtrlFlit64#(AXI4_ARFlit#(t_id, 64, t_data));
 endinstance
 
 interface IOCapAxiChecker#(type no_iocap_flit, type tcap);
-    interface Sink#(Tuple2#(AuthenticatedFlit#(no_iocap_flit, tcap), Maybe#(Key))) checkRequest;
-    interface Source#(Tuple2#(no_iocap_flit, Bool)) checkResponse;
+    interface Sink#(Tuple3#(AuthenticatedFlit#(no_iocap_flit, tcap), KeyId, Maybe#(Key))) checkRequest;
+    interface Source#(Tuple3#(no_iocap_flit, KeyId, Bool)) checkResponse;
 endinterface
 
 typedef union tagged {
-    no_iocap_flit WaitingForBoundsAndDecodeAndSig;
     struct {
         no_iocap_flit flit;
+        KeyId keyId;
+    } WaitingForBoundsAndDecodeAndSig;
+    struct {
+        no_iocap_flit flit;
+        KeyId keyId;
         Bit#(64) min_addr;
         Bit#(65) max_addr;
         Bool bounds_failed;
     } WaitingForDecodeAndSig;
     struct {
         no_iocap_flit flit;
+        KeyId keyId;
         Bool bounds_or_decode_failed;
     } WaitingForSig;
 } IOCapFlitInProgress#(type no_iocap_flit) deriving (Bits, FShow);
@@ -73,9 +78,9 @@ typedef union tagged {
 // Capabilities are decoded and signature-checked in parallel, and we can assume the decoder latency is always less than the signature check.
 // We add ~3 cycles of latency on top of the signature check with the various FIFO stages, so the maximum latency should be ~21 cycles.
 module mkSimpleIOCapAxiChecker#(function module#(Empty) makeDecoder(Get#(tcap) ins, Put#(CapCheckResult#(Tuple2#(CapPerms, CapRange))) outs))(IOCapAxiChecker#(no_iocap_flit, tcap)) provisos (Bits#(AuthenticatedFlit#(no_iocap_flit, tcap), a__), AxiCtrlFlit64#(no_iocap_flit), FShow#(no_iocap_flit), Cap#(tcap));
-    FIFOF#(Tuple2#(AuthenticatedFlit#(no_iocap_flit, tcap), Maybe#(Key))) reqs <- mkFIFOF;
+    FIFOF#(Tuple3#(AuthenticatedFlit#(no_iocap_flit, tcap), KeyId, Maybe#(Key))) reqs <- mkFIFOF;
     // TODO this could be a bypass fifof...
-    FIFOF#(Tuple2#(no_iocap_flit, Bool)) resps <- mkFIFOF;
+    FIFOF#(Tuple3#(no_iocap_flit, KeyId, Bool)) resps <- mkFIFOF;
 
     Reg#(Maybe#(IOCapFlitInProgress#(no_iocap_flit))) flitInProgress <- mkReg(tagged Invalid);
 
@@ -91,10 +96,10 @@ module mkSimpleIOCapAxiChecker#(function module#(Empty) makeDecoder(Get#(tcap) i
         reqs.deq();
 
         case (reqs.first) matches
-            { .authFlit, tagged Invalid } : begin
+            { .authFlit, .keyId, tagged Invalid } : begin
                 // Got a request to use an invalid key
                 // Just pass it through to the output, 1 cycle latency
-                resps.enq(tuple2(authFlit.flit, False));
+                resps.enq(tuple3(authFlit.flit, keyId, False));
 
                 // // TEST - actually put everything through the checking system
                 // flitInProgress <= tagged Valid (tagged WaitingForBoundsAndDecodeAndSig (authFlit.flit));
@@ -107,8 +112,11 @@ module mkSimpleIOCapAxiChecker#(function module#(Empty) makeDecoder(Get#(tcap) i
                 // // Will take ~7 cycles at most - always shorter than sigCheckIn
                 // decodeIn.enq(authFlit.cap);
             end
-            { .authFlit, tagged Valid .key } : begin                
-                flitInProgress <= tagged Valid (tagged WaitingForBoundsAndDecodeAndSig (authFlit.flit));
+            { .authFlit, .keyId, tagged Valid .key } : begin                
+                flitInProgress <= tagged Valid (tagged WaitingForBoundsAndDecodeAndSig {
+                    flit: authFlit.flit,
+                    keyId: keyId
+                });
                 $display("IOCap - starting check on flit with secret ", fshow(key), " - cap ", fshow(pack(authFlit.cap)), " - expectedSig ", fshow(authFlit.sig));
                 // Will take ~18 cycles at most
                 sigCheckIn.enq(CapSigCheckIn {
@@ -122,17 +130,17 @@ module mkSimpleIOCapAxiChecker#(function module#(Empty) makeDecoder(Get#(tcap) i
         endcase
     endrule
 
-    rule bounds(flitInProgress matches tagged Valid (tagged WaitingForBoundsAndDecodeAndSig .flit));
+    rule bounds(flitInProgress matches tagged Valid (tagged WaitingForBoundsAndDecodeAndSig .flitAndKeyId));
         let bounds_failed = False;
         Bit#(64) min_addr = 0;
         Bit#(65) max_addr = 0;
-        case (burstKind(flit)) matches
+        case (burstKind(flitAndKeyId.flit)) matches
             FIXED: begin
                 // Each beat of a burst starts at the same address
                 // The max address = min address + the number of bytes per beat
                 // number of bytes per beat = 1 << burstSize, up to 128 => length = 7
-                min_addr = burstAddr(flit);
-                Bit#(7) beatSize = 7'b1 << burstSize(flit).val;
+                min_addr = burstAddr(flitAndKeyId.flit);
+                Bit#(7) beatSize = 7'b1 << burstSize(flitAndKeyId.flit).val;
                 max_addr = zeroExtend(min_addr) + zeroExtend(beatSize);
             end
             INCR: begin
@@ -142,9 +150,9 @@ module mkSimpleIOCapAxiChecker#(function module#(Empty) makeDecoder(Get#(tcap) i
                 // beats/burst = burstLen [0..=255] + 1, [1..=256]
                 // bytes/beat  = 1 << burstSize, up to 128
                 // multiplied together the max is 32640, up to 15 bits
-                min_addr = burstAddr(flit);
-                Bit#(9) beatsPerBurst = zeroExtend(burstLen(flit)) + 1;
-                Bit#(15) totalBurstBytes = zeroExtend(beatsPerBurst) << burstSize(flit).val;
+                min_addr = burstAddr(flitAndKeyId.flit);
+                Bit#(9) beatsPerBurst = zeroExtend(burstLen(flitAndKeyId.flit)) + 1;
+                Bit#(15) totalBurstBytes = zeroExtend(beatsPerBurst) << burstSize(flitAndKeyId.flit).val;
                 max_addr = zeroExtend(min_addr) + zeroExtend(totalBurstBytes);
             end
             WRAP: begin
@@ -164,11 +172,12 @@ module mkSimpleIOCapAxiChecker#(function module#(Empty) makeDecoder(Get#(tcap) i
         end
 
         if (bounds_failed) begin
-            $display("IOCap - flit failed Bounds ", fshow(flit));
+            $display("IOCap - flit failed Bounds ", fshow(flitAndKeyId.flit));
         end
 
         flitInProgress <= tagged Valid (tagged WaitingForDecodeAndSig {
-            flit: flit,
+            flit: flitAndKeyId.flit,
+            keyId: flitAndKeyId.keyId,
             min_addr: min_addr,
             max_addr: max_addr,
             bounds_failed: bounds_failed
@@ -208,6 +217,7 @@ module mkSimpleIOCapAxiChecker#(function module#(Empty) makeDecoder(Get#(tcap) i
 
         flitInProgress <= tagged Valid (tagged WaitingForSig {
             flit: flitWithBounds.flit,
+            keyId: flitWithBounds.keyId,
             bounds_or_decode_failed: fail
         });
     endrule
@@ -223,7 +233,7 @@ module mkSimpleIOCapAxiChecker#(function module#(Empty) makeDecoder(Get#(tcap) i
         end else if (decodedFlit.bounds_or_decode_failed) begin
             allow = False;
         end
-        resps.enq(tuple2(decodedFlit.flit, allow));
+        resps.enq(tuple3(decodedFlit.flit, decodedFlit.keyId, allow));
         flitInProgress <= tagged Invalid;
     endrule
 
@@ -271,20 +281,20 @@ module mkInOrderIOCapAxiCheckerPool#(NumProxy#(n) n_proxy, module#(IOCapAxiCheck
         end
     endrule
 
-    interface checkRequest = interface Sink#(Tuple2#(AuthenticatedFlit#(no_iocap_flit, tcap), Maybe#(Key)));
+    interface checkRequest = interface Sink;
         method Bool canPut;
             return checkers[insertPointer].checkRequest.canPut();
         endmethod
-        method Action put (Tuple2#(AuthenticatedFlit#(no_iocap_flit, tcap), Maybe#(Key)) val);
+        method Action put (Tuple3#(AuthenticatedFlit#(no_iocap_flit, tcap), KeyId, Maybe#(Key)) val);
             checkers[insertPointer].checkRequest.put(val);
             incrementInsert.send();
         endmethod
     endinterface;
-    interface checkResponse = interface Source#(Tuple2#(no_iocap_flit, Bool));
+    interface checkResponse = interface Source;
         method Bool canPeek;
             return checkers[retrievePointer].checkResponse.canPeek();
         endmethod
-        method Tuple2#(no_iocap_flit, Bool) peek;
+        method Tuple3#(no_iocap_flit, KeyId, Bool) peek;
             return checkers[retrievePointer].checkResponse.peek();
         endmethod
         method Action drop;
