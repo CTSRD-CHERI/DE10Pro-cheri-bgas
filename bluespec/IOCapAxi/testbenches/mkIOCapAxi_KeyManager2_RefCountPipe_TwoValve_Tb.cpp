@@ -23,22 +23,25 @@ struct IncDecRefcountTest : public RefCountPipe2ValveCycleTest<DUT> {
         RefCountPipe_2Valve_InputsMaker inputs;
         RefCountPipe_OutputsMaker outputs;
 
+        // It should take 128 cycles to zero-init the BRAM.
+        constexpr size_t START = 150 * 10;
+
         // increment 5x
-        inputs[100 + 00].valve0.keyIncrementRefcountRequest = 1;
-        inputs[100 + 10].valve0.keyIncrementRefcountRequest = 1;
-        inputs[100 + 20].valve0.keyIncrementRefcountRequest = 1;
-        inputs[100 + 30].valve0.keyIncrementRefcountRequest = 1;
-        inputs[100 + 40].valve0.keyIncrementRefcountRequest = 1;
+        inputs[START + 00].valve0.keyIncrementRefcountRequest = 1;
+        inputs[START + 10].valve0.keyIncrementRefcountRequest = 1;
+        inputs[START + 20].valve0.keyIncrementRefcountRequest = 1;
+        inputs[START + 30].valve0.keyIncrementRefcountRequest = 1;
+        inputs[START + 40].valve0.keyIncrementRefcountRequest = 1;
         
         // decrement 5x, overlapping with increment
-        inputs[100 + 20].valve0.keyDecrementRefcountRequest = 1;
-        inputs[100 + 30].valve0.keyDecrementRefcountRequest = 1;
-        inputs[100 + 40].valve0.keyDecrementRefcountRequest = 1;
-        inputs[100 + 50].valve0.keyDecrementRefcountRequest = 1;
-        inputs[100 + 60].valve0.keyDecrementRefcountRequest = 1;
+        inputs[START + 20].valve0.keyDecrementRefcountRequest = 1;
+        inputs[START + 30].valve0.keyDecrementRefcountRequest = 1;
+        inputs[START + 40].valve0.keyDecrementRefcountRequest = 1;
+        inputs[START + 50].valve0.keyDecrementRefcountRequest = 1;
+        inputs[START + 60].valve0.keyDecrementRefcountRequest = 1;
 
         // get notified it has died
-        outputs[100 + 2000].keyStatus.tryConfirmingRevokeKey = 1;
+        outputs[START + 120].keyStatus.tryConfirmingRevokeKey = 1;
         
         return {inputs.asVec(), outputs.asVec()};
     }

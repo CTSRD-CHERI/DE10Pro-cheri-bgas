@@ -151,6 +151,8 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
     // KEY REFCOUNT PIPELINE
     // ===============================================
 
+    Reg#(Bool) hasClearedBram <- mkReg(False);
+    Reg#(KeyId) nextKeyIdToClear <- mkReg(0);
     BRAM_Configure keyRefcountMemConfig = BRAM_Configure {
         memorySize: 0, // Number of words is inferred from the KeyId parameter to BRAM2Port below.
         // Size of each word is determined by the other parameter to BRAM2Port below.
@@ -165,6 +167,26 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
     // 2 ports - one read, one write
     // TODO Make this generic on refcount size
     BRAM2Port#(KeyId, Int#(64)) keyRefcountBram <- mkBRAM2Server(keyRefcountMemConfig);
+
+    rule clear_bram(!hasClearedBram);
+        KeyId newNextKeyIdToClear = nextKeyIdToClear + 2;
+        if (newNextKeyIdToClear == 0) // has overflowed
+            hasClearedBram <= True;
+        nextKeyIdToClear <= newNextKeyIdToClear;
+
+        keyRefcountBram.portA.request.put(BRAMRequest {
+            write: True,
+            responseOnWrite: False,
+            address: nextKeyIdToClear + 0,
+            datain: 0
+        });
+        keyRefcountBram.portB.request.put(BRAMRequest {
+            write: True,
+            responseOnWrite: False,
+            address: nextKeyIdToClear + 1,
+            datain: 0
+        });
+    endrule
 
     Vector#(2, RWire#(KeyId)) incrementWires <- replicateM(mkRWire);
     Vector#(2, RWire#(KeyId)) decrementWires <- replicateM(mkRWire);
@@ -307,7 +329,7 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
     //      there will be exactly 5 entries in the queue on cycle #n+1 and we know there are more than 5 entries. 
     // => enqueueing 5 values in one cycle will never prevent something from being enqueued on the next cycle.
 
-    rule process_valve_ports;
+    rule process_valve_ports(hasClearedBram);
         Vector#(5, IOCapAxi_KeyManager2_KeyCache_RefCountOp#(2)) packedVector = replicate(?);
         if (mimo.enqReadyN(5)) begin
             // We have enough space to process incrementWires, decrementWires, and we have space for the keyToStartRevoking.
@@ -399,7 +421,7 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
         end
     endrule
 
-    rule sanity_check_backpressure;
+    rule sanity_check_backpressure(hasClearedBram);
         if (
             !mimo.enqReadyN(1) ||
             !rcOpInProgress.notFull
@@ -410,7 +432,7 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
         end
     endrule
 
-    rule refcount_forward_progress_start_op;
+    rule refcount_forward_progress_start_op(hasClearedBram);
         mimo.deq(1);
         let op = mimo.first[0];
 
@@ -424,7 +446,7 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
         rcOpInProgress.enq(op);
     endrule
 
-    rule refcount_forward_progress_complete_op;
+    rule refcount_forward_progress_complete_op(hasClearedBram);
         rcOpInProgress.deq();
         let readRc <- keyRefcountBram.portA.response.get();
         let op = rcOpInProgress.first;
@@ -432,7 +454,7 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
         // TODO it could be useful to throw an error if we can read from BRAM but don't have rcOpInProgress
 
         let actualRc = mostRecentRefCount(op.key, readRc);
-        $display("REFCOUNT ID ", fshow(op.key), " RC ", fshow(actualRc), " DELTA ", fshow(op.change));
+        // $display("REFCOUNT ID ", fshow(op.key), " RC ", fshow(actualRc), " DELTA ", fshow(op.change));
         // Update the Rc if needed
         if (op.change != 0) begin
             actualRc = actualRc + signExtend(op.change);
@@ -455,7 +477,6 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
         end
         
         if (actualRc == 0) begin
-            $display("tryConfirmingRevokeKey");
             keyState.tryConfirmingRevokeKey(op.key);
         end
     endrule
@@ -464,14 +485,14 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
     function IOCapAxi_KeyManager2_RefCountPipe_ValveIfc buildValveInterface(Integer valveIdx) = interface IOCapAxi_KeyManager2_RefCountPipe_ValveIfc;
         // Used by the valve to report key ID transaction-starts to the KeyManager
         interface keyIncrementRefcountRequest = interface Sink;
-            method canPut = mimo.enqReadyN(5);
+            method canPut = hasClearedBram && mimo.enqReadyN(5);
             method Action put(KeyId id);
                 incrementWires[valveIdx].wset(id);
             endmethod
         endinterface;
         // Used by the valve to report key ID transaction-ends to the KeyManager
         interface keyDecrementRefcountRequest = interface Sink;
-            method canPut = mimo.enqReadyN(5);
+            method canPut = hasClearedBram && mimo.enqReadyN(5);
             method Action put(KeyId id);
                 decrementWires[valveIdx].wset(id);
             endmethod
