@@ -464,7 +464,7 @@ template <typename T> class fmt::formatter<LatencyTrackedWithAuthCorrectness<T>>
  * Does not do anything to handle revocation, but revocation can be simulated by modifying the KeyID -> Key map `secrets` the scoreboard uses
  * to determine if incoming requests will be valid or not.
  */
-template<class DUT, CapType ctype>
+template<class DUT, CapType ctype, class KMShimInput, class KMShimOutput>
 class ExposerScoreboard : public Scoreboard<DUT> {
     std::unordered_map<key_manager::KeyId, U128>& secrets; // Fake keymanager proxy. THIS SCOREBOARD ASSUMES KEYS DONT CHANGE
 
@@ -509,8 +509,8 @@ class ExposerScoreboard : public Scoreboard<DUT> {
     uint64_t signalledGoodRead = 0;
     uint64_t signalledBadRead = 0;
 
-    std::vector<ShimmedExposerInput> inputs;
-    std::vector<ShimmedExposerOutput> outputs;
+    std::vector<ShimmedExposerInput<KMShimInput>> inputs;
+    std::vector<ShimmedExposerOutput<KMShimOutput>> outputs;
 
     std::vector<uint64_t> aw_aw_latency;
     std::vector<uint64_t> aw_b_latency;
@@ -832,6 +832,41 @@ class ExposerScoreboard : public Scoreboard<DUT> {
         }
     }
 
+    virtual void monitorAndScoreKeyManager(DUT& dut, uint64_t tick, KMShimInput& inputKeyManager, KMShimOutput& outputKeyManager) {
+        if (outputKeyManager.finishedEpoch) {
+            if (expectedEpochCompletions.empty()) {
+                throw test_failure(fmt::format("ExposerScoreboard got unexpected finishedEpoch:\nexpected None\ngot: {}\n", outputKeyManager.finishedEpoch.value()));
+            } else {
+                auto expected = expectedEpochCompletions.front();
+                expectedEpochCompletions.pop_front();
+                if (outputKeyManager.finishedEpoch.value() != expected) {
+                    throw test_failure(fmt::format("ExposerScoreboard got unexpected finishedEpoch:\nexpected: {}\ngot: {}\n", expected, outputKeyManager.finishedEpoch.value()));
+                }
+            }
+        }
+
+        if (outputKeyManager.bumpPerfCounterGoodWrite) {
+            signalledGoodWrite++;
+        }
+        if (outputKeyManager.bumpPerfCounterBadWrite) {
+            signalledBadWrite++;
+        }
+        if (outputKeyManager.bumpPerfCounterGoodRead) {
+            signalledGoodRead++;
+        }
+        if (outputKeyManager.bumpPerfCounterBadRead) {
+            signalledBadRead++;
+        }
+
+        if (inputKeyManager.newEpochRequest) {
+            onKeyMngrNewEpoch(inputKeyManager.newEpochRequest.value());
+        }
+
+        if (inputKeyManager.keyResponse) {
+            onKeyMngrKeyResponse(inputKeyManager.keyResponse.value());
+        }
+    }
+
 public:
     ExposerScoreboard(std::unordered_map<key_manager::KeyId, U128>& secrets, bool expectPassthroughInvalidTransactions = false) : secrets(secrets),
         expectPassthroughInvalidTransactions(expectPassthroughInvalidTransactions),
@@ -848,36 +883,11 @@ public:
     virtual ~ExposerScoreboard() = default;
     // Should raise a test_failure on failure
     virtual void monitorAndScore(DUT& dut, uint64_t tick) {
-        ShimmedExposerOutput output{0};
+        ShimmedExposerOutput<KMShimOutput> output{0};
         output.time = tick;
         pull_output(dut, output); // TODO apply backpressure?
         if (output.is_notable())
             outputs.push_back(output);
-
-        if (output.keyManager.finishedEpoch) {
-            if (expectedEpochCompletions.empty()) {
-                throw test_failure(fmt::format("ExposerScoreboard got unexpected finishedEpoch:\nexpected None\ngot: {}\n", output.keyManager.finishedEpoch.value()));
-            } else {
-                auto expected = expectedEpochCompletions.front();
-                expectedEpochCompletions.pop_front();
-                if (output.keyManager.finishedEpoch.value() != expected) {
-                    throw test_failure(fmt::format("ExposerScoreboard got unexpected finishedEpoch:\nexpected: {}\ngot: {}\n", expected, output.keyManager.finishedEpoch.value()));
-                }
-            }
-        }
-
-        if (output.keyManager.bumpPerfCounterGoodWrite) {
-            signalledGoodWrite++;
-        }
-        if (output.keyManager.bumpPerfCounterBadWrite) {
-            signalledBadWrite++;
-        }
-        if (output.keyManager.bumpPerfCounterGoodRead) {
-            signalledGoodRead++;
-        }
-        if (output.keyManager.bumpPerfCounterBadRead) {
-            signalledBadRead++;
-        }
 
         if (output.clean_flit_aw) {
             if (expectedAw.empty()) {
@@ -955,19 +965,11 @@ public:
             }
         }
 
-        ShimmedExposerInput input{0};
+        ShimmedExposerInput<KMShimInput> input{0};
         input.time = tick;
         observe_input(dut, input);
         if (input.is_notable())
             inputs.push_back(input);
-
-        if (input.keyManager.newEpochRequest) {
-            onKeyMngrNewEpoch(input.keyManager.newEpochRequest.value());
-        }
-
-        if (input.keyManager.keyResponse) {
-            onKeyMngrKeyResponse(input.keyManager.keyResponse.value());
-        }
 
         // Add incoming B and R flits from the sanitized-side to the list of expected outputs
         if (input.clean_flit_b) {
@@ -1004,6 +1006,8 @@ public:
 
         // Add incoming W flits from the IOCap-side to the list of expected output W flits, if possible.
         resolveWFlits(tick, input.iocap_flit_w);
+
+        this->monitorAndScoreKeyManager(dut, tick, input.keyManager, output.keyManager);
     }
     // Should raise a test_failure on failure
     virtual void endTest() override {
@@ -1088,7 +1092,7 @@ class ExposerUVMishTest: public UVMishTest<DUT> {
 public:
     ExposerUVMishTest(ExposerStimulus<DUT, ctype>* stimulus, bool expectPassthroughInvalidTransactions = false) :
         UVMishTest<DUT>(
-            new ExposerScoreboard<DUT, ctype>(stimulus->keyMgr->secrets, expectPassthroughInvalidTransactions),
+            new ExposerScoreboard<DUT, ctype, KeyMngrV1ShimInput, KeyMngrV1ShimOutput>(stimulus->keyMgr->secrets, expectPassthroughInvalidTransactions),
             stimulus
         ) {}
 };

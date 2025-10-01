@@ -9,7 +9,7 @@
 #include "util.h"
 
 template<class DUT>
-struct ExposerCycleTest : public CycleTest<DUT, ShimmedExposerInput, ShimmedExposerOutput> {
+struct ExposerCycleTest : public CycleTest<DUT, ShimmedExposerInput<KeyMngrV1ShimInput>, ShimmedExposerOutput<KeyMngrV1ShimOutput>> {
     virtual ValidCapWithRange<CapType::Cap2024_02> test_legacy_random_initial_resource_cap(const U128& key, uint32_t secret_id, CCapPerms perms) {
         return ValidCapWithRange(
             CapStruct<CapType::Cap2024_02>::legacy_random_initial_resource_cap(this->rng, key, secret_id, perms)
@@ -22,9 +22,9 @@ struct ValidKeyValidCapValidWrite : public ExposerCycleTest<DUT> {
     virtual std::string name() override {
         return "Valid-Key Valid-Cap Valid-Write";
     }
-    virtual std::pair<ShimmedExposerInputs, ShimmedExposerOutputs> stimuli() {
-        ShimmedExposerInputsMaker inputs;
-        ShimmedExposerOutputsMaker outputs;
+    virtual std::pair<ShimmedExposerInputs<KeyMngrV1ShimInput>, ShimmedExposerOutputs<KeyMngrV1ShimOutput>> stimuli() {
+        ShimmedExposerInputsMaker<KeyMngrV1ShimInput> inputs;
+        ShimmedExposerOutputsMaker<KeyMngrV1ShimOutput> outputs;
 
         // Generate a random key, a random writable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
@@ -111,9 +111,9 @@ struct ValidKeyValidCapValidRead : public ExposerCycleTest<DUT> {
     virtual std::string name() override {
         return "Valid-Key Valid-Cap Valid-Read";
     }
-    virtual std::pair<ShimmedExposerInputs, ShimmedExposerOutputs> stimuli() {
-        ShimmedExposerInputsMaker inputs;
-        ShimmedExposerOutputsMaker outputs;
+    virtual std::pair<ShimmedExposerInputs<KeyMngrV1ShimInput>, ShimmedExposerOutputs<KeyMngrV1ShimOutput>> stimuli() {
+        ShimmedExposerInputsMaker<KeyMngrV1ShimInput> inputs;
+        ShimmedExposerOutputsMaker<KeyMngrV1ShimOutput> outputs;
 
         // Generate a random key, a random readable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
@@ -185,9 +185,9 @@ struct ValidReadThenValidWrite : public ExposerCycleTest<DUT> {
     virtual std::string name() override {
         return "Valid-Key Valid-Cap Valid-Read then Valid-Key Valid-Cap Valid-Write";
     }
-    virtual std::pair<ShimmedExposerInputs, ShimmedExposerOutputs> stimuli() {
-        ShimmedExposerInputsMaker inputs;
-        ShimmedExposerOutputsMaker outputs;
+    virtual std::pair<ShimmedExposerInputs<KeyMngrV1ShimInput>, ShimmedExposerOutputs<KeyMngrV1ShimOutput>> stimuli() {
+        ShimmedExposerInputsMaker<KeyMngrV1ShimInput> inputs;
+        ShimmedExposerOutputsMaker<KeyMngrV1ShimOutput> outputs;
 
         // Generate a random key, a random read/write capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
@@ -317,9 +317,9 @@ struct OOBWrite_Passthrough : public ExposerCycleTest<DUT> {
     virtual std::string name() override {
         return "Valid-Key Valid-Cap OOB-Write - Passthrough";
     }
-    virtual std::pair<ShimmedExposerInputs, ShimmedExposerOutputs> stimuli() {
-        ShimmedExposerInputsMaker inputs;
-        ShimmedExposerOutputsMaker outputs;
+    virtual std::pair<ShimmedExposerInputs<KeyMngrV1ShimInput>, ShimmedExposerOutputs<KeyMngrV1ShimOutput>> stimuli() {
+        ShimmedExposerInputsMaker<KeyMngrV1ShimInput> inputs;
+        ShimmedExposerOutputsMaker<KeyMngrV1ShimOutput> outputs;
 
         // Generate a random key, a random writable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
@@ -397,9 +397,9 @@ struct OOBRead_Passthrough : public ExposerCycleTest<DUT> {
     virtual std::string name() override {
         return "Valid-Key Valid-Cap OOB-Read - Passthrough";
     }
-    virtual std::pair<ShimmedExposerInputs, ShimmedExposerOutputs> stimuli() {
-        ShimmedExposerInputsMaker inputs;
-        ShimmedExposerOutputsMaker outputs;
+    virtual std::pair<ShimmedExposerInputs<KeyMngrV1ShimInput>, ShimmedExposerOutputs<KeyMngrV1ShimOutput>> stimuli() {
+        ShimmedExposerInputsMaker<KeyMngrV1ShimInput> inputs;
+        ShimmedExposerOutputsMaker<KeyMngrV1ShimOutput> outputs;
 
         // Generate a random key, a random writable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
@@ -473,9 +473,9 @@ struct MismatchedPerms_Passthrough : public ExposerCycleTest<DUT> {
     virtual std::string name() override {
         return "Valid-Key Valid-Cap BadPerms - Passthrough";
     }
-    virtual std::pair<ShimmedExposerInputs, ShimmedExposerOutputs> stimuli() {
-        ShimmedExposerInputsMaker inputs;
-        ShimmedExposerOutputsMaker outputs;
+    virtual std::pair<ShimmedExposerInputs<KeyMngrV1ShimInput>, ShimmedExposerOutputs<KeyMngrV1ShimOutput>> stimuli() {
+        ShimmedExposerInputsMaker<KeyMngrV1ShimInput> inputs;
+        ShimmedExposerOutputsMaker<KeyMngrV1ShimOutput> outputs;
 
         // Generate a random key, a random writable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
@@ -550,9 +550,9 @@ struct InvalidSig_Passthrough : public ExposerCycleTest<DUT> {
     virtual std::string name() override {
         return "Valid-Key BadSig-Cap Write - Passthrough";
     }
-    virtual std::pair<ShimmedExposerInputs, ShimmedExposerOutputs> stimuli() {
-        ShimmedExposerInputsMaker inputs;
-        ShimmedExposerOutputsMaker outputs;
+    virtual std::pair<ShimmedExposerInputs<KeyMngrV1ShimInput>, ShimmedExposerOutputs<KeyMngrV1ShimOutput>> stimuli() {
+        ShimmedExposerInputsMaker<KeyMngrV1ShimInput> inputs;
+        ShimmedExposerOutputsMaker<KeyMngrV1ShimOutput> outputs;
 
         U128 cap{
             .top = 0x00abcdef'11abcdef,
@@ -637,9 +637,9 @@ struct NewEpoch_NoAccesses : public ExposerCycleTest<DUT> {
     virtual std::string name() override {
         return "New Epoch - No Accesses";
     }
-    virtual std::pair<ShimmedExposerInputs, ShimmedExposerOutputs> stimuli() {
-        ShimmedExposerInputsMaker inputs;
-        ShimmedExposerOutputsMaker outputs;
+    virtual std::pair<ShimmedExposerInputs<KeyMngrV1ShimInput>, ShimmedExposerOutputs<KeyMngrV1ShimOutput>> stimuli() {
+        ShimmedExposerInputsMaker<KeyMngrV1ShimInput> inputs;
+        ShimmedExposerOutputsMaker<KeyMngrV1ShimOutput> outputs;
 
         inputs[100].keyManager.newEpochRequest = 1;
         outputs[120].keyManager.finishedEpoch = 0;
@@ -653,9 +653,9 @@ struct NewEpoch_PreAccess : public ExposerCycleTest<DUT> {
     virtual std::string name() override {
         return "New Epoch - Pre-Access";
     }
-    virtual std::pair<ShimmedExposerInputs, ShimmedExposerOutputs> stimuli() {
-        ShimmedExposerInputsMaker inputs;
-        ShimmedExposerOutputsMaker outputs;
+    virtual std::pair<ShimmedExposerInputs<KeyMngrV1ShimInput>, ShimmedExposerOutputs<KeyMngrV1ShimOutput>> stimuli() {
+        ShimmedExposerInputsMaker<KeyMngrV1ShimInput> inputs;
+        ShimmedExposerOutputsMaker<KeyMngrV1ShimOutput> outputs;
 
         // Generate a random key, a random writable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
@@ -770,9 +770,9 @@ struct NewEpoch_SameCycle : public ExposerCycleTest<DUT> {
     virtual std::string name() override {
         return "New Epoch - Same Cycle as Access";
     }
-    virtual std::pair<ShimmedExposerInputs, ShimmedExposerOutputs> stimuli() {
-        ShimmedExposerInputsMaker inputs;
-        ShimmedExposerOutputsMaker outputs;
+    virtual std::pair<ShimmedExposerInputs<KeyMngrV1ShimInput>, ShimmedExposerOutputs<KeyMngrV1ShimOutput>> stimuli() {
+        ShimmedExposerInputsMaker<KeyMngrV1ShimInput> inputs;
+        ShimmedExposerOutputsMaker<KeyMngrV1ShimOutput> outputs;
 
         // Generate a random key, a random writable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
@@ -886,9 +886,9 @@ struct NewEpoch_PostAccess : public ExposerCycleTest<DUT> {
     virtual std::string name() override {
         return "New Epoch - Post-Access";
     }
-    virtual std::pair<ShimmedExposerInputs, ShimmedExposerOutputs> stimuli() {
-        ShimmedExposerInputsMaker inputs;
-        ShimmedExposerOutputsMaker outputs;
+    virtual std::pair<ShimmedExposerInputs<KeyMngrV1ShimInput>, ShimmedExposerOutputs<KeyMngrV1ShimOutput>> stimuli() {
+        ShimmedExposerInputsMaker<KeyMngrV1ShimInput> inputs;
+        ShimmedExposerOutputsMaker<KeyMngrV1ShimOutput> outputs;
 
         // Generate a random key, a random writable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
@@ -1002,9 +1002,9 @@ struct NewEpoch_BetweenAccesses : public ExposerCycleTest<DUT> {
     virtual std::string name() override {
         return "Valid-Key Valid-Cap Valid-Read; New Epoch; Invalid-Key Write - Passthrough";
     }
-    virtual std::pair<ShimmedExposerInputs, ShimmedExposerOutputs> stimuli() {
-        ShimmedExposerInputsMaker inputs;
-        ShimmedExposerOutputsMaker outputs;
+    virtual std::pair<ShimmedExposerInputs<KeyMngrV1ShimInput>, ShimmedExposerOutputs<KeyMngrV1ShimOutput>> stimuli() {
+        ShimmedExposerInputsMaker<KeyMngrV1ShimInput> inputs;
+        ShimmedExposerOutputsMaker<KeyMngrV1ShimOutput> outputs;
 
         // Generate a random key, a random writable capability, and figure out the pow2 transfer width/n_transfers available
         U128 key = U128::random(this->rng);
@@ -1167,9 +1167,9 @@ struct NewEpoch_BetweenAccesses : public ExposerCycleTest<DUT> {
 //     virtual std::string name() override {
 //         return "TODO";
 //     }
-//     virtual std::pair<ShimmedExposerInputs, ShimmedExposerOutputs> stimuli() {
-//         ShimmedExposerInputsMaker inputs;
-//         ShimmedExposerOutputsMaker outputs;
+//     virtual std::pair<ShimmedExposerInputs<KeyMngrV1ShimInput>, ShimmedExposerOutputs<KeyMngrV1ShimOutput>> stimuli() {
+//         ShimmedExposerInputsMaker<KeyMngrV1ShimInput> inputs;
+//         ShimmedExposerOutputsMaker<KeyMngrV1ShimOutput> outputs;
 //
 //         // TODO
 //

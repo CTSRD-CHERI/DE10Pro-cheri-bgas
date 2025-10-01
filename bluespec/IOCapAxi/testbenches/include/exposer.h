@@ -65,46 +65,48 @@ template <> class fmt::formatter<exposer::ExposerOutput> {
     }
 };
 
-struct KeyMngrShimInput {
+struct KeyMngrV1ShimInput {
     std::optional<key_manager::Epoch> newEpochRequest;
     std::optional<key_manager::KeyResponse> keyResponse;
 
-    bool operator==(const KeyMngrShimInput&) const = default;
+    bool operator==(const KeyMngrV1ShimInput&) const = default;
     bool is_notable() const {
         return (newEpochRequest) || (keyResponse);
     }
 };
-template <> class fmt::formatter<KeyMngrShimInput> {
+template <> class fmt::formatter<KeyMngrV1ShimInput> {
     public:
     constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
     template <typename Context>
-    constexpr auto format (KeyMngrShimInput const& x, Context& ctx) const {
-        return format_to(ctx.out(), "KeyMngrShimInput {{ .newEpochRequest = {}, .keyResponse = {} }}", x.newEpochRequest, x.keyResponse);
+    constexpr auto format (KeyMngrV1ShimInput const& x, Context& ctx) const {
+        return format_to(ctx.out(), "KeyMngrV1ShimInput {{ .newEpochRequest = {}, .keyResponse = {} }}", x.newEpochRequest, x.keyResponse);
     }
 };
 
+template<class KeyMgrShim>
 struct ShimmedExposerInput : exposer::ExposerInput {
-    KeyMngrShimInput keyManager;
+    KeyMgrShim keyManager;
 
     bool operator==(const ShimmedExposerInput&) const = default;
     bool is_notable() const {
         return exposer::ExposerInput::is_notable() || (keyManager.is_notable());
     }
 };
-template <> class fmt::formatter<ShimmedExposerInput> {
+template<class KeyMgrShim> class fmt::formatter<ShimmedExposerInput<KeyMgrShim>> {
     public:
     constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
     template <typename Context>
-    constexpr auto format (ShimmedExposerInput const& x, Context& ctx) const {
+    constexpr auto format (ShimmedExposerInput<KeyMgrShim> const& x, Context& ctx) const {
         return format_to(ctx.out(), "ShimmedExposerInput {{\n\t.exposer = {},\n\t.keyManager = {}\n}}", (exposer::ExposerInput)x, x.keyManager);
     }
 };
 
+template<class KeyMgrShim>
+using ShimmedExposerInputs = std::vector<ShimmedExposerInput<KeyMgrShim>>;
+template<class KeyMgrShim>
+using ShimmedExposerInputsMaker = TimeSeriesMaker<ShimmedExposerInput<KeyMgrShim>>;
 
-using ShimmedExposerInputs = std::vector<ShimmedExposerInput>;
-using ShimmedExposerInputsMaker = TimeSeriesMaker<ShimmedExposerInput>;
-
-struct KeyMngrShimOutput {
+struct KeyMngrV1ShimOutput {
     bool bumpPerfCounterGoodWrite;
     bool bumpPerfCounterBadWrite;
     bool bumpPerfCounterGoodRead;
@@ -113,37 +115,40 @@ struct KeyMngrShimOutput {
     std::optional<key_manager::KeyId> keyRequest;
     std::optional<key_manager::Epoch> finishedEpoch;
 
-    bool operator==(const KeyMngrShimOutput&) const = default;
+    bool operator==(const KeyMngrV1ShimOutput&) const = default;
     bool is_notable() {
         return (bumpPerfCounterGoodWrite) || (bumpPerfCounterBadWrite) || (bumpPerfCounterGoodRead) || (bumpPerfCounterBadRead) || (keyRequest) || (finishedEpoch);
     }
 };
-template <> class fmt::formatter<KeyMngrShimOutput> {
+template <> class fmt::formatter<KeyMngrV1ShimOutput> {
     public:
     constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
     template <typename Context>
-    constexpr auto format (KeyMngrShimOutput const& x, Context& ctx) const {
-        return format_to(ctx.out(), "KeyMngrShimOutput {{ .bumpPerfCounterGoodWrite = {}, ....BadWrite = {}, ....GoodRead = {}, ....BadRead = {}, .keyRequest = {}, .finishedEpoch = {} }}", x.bumpPerfCounterGoodWrite, x.bumpPerfCounterBadWrite, x.bumpPerfCounterGoodRead, x.bumpPerfCounterBadRead, x.keyRequest, x.finishedEpoch);
+    constexpr auto format (KeyMngrV1ShimOutput const& x, Context& ctx) const {
+        return format_to(ctx.out(), "KeyMngrV1ShimOutput {{ .bumpPerfCounterGoodWrite = {}, ....BadWrite = {}, ....GoodRead = {}, ....BadRead = {}, .keyRequest = {}, .finishedEpoch = {} }}", x.bumpPerfCounterGoodWrite, x.bumpPerfCounterBadWrite, x.bumpPerfCounterGoodRead, x.bumpPerfCounterBadRead, x.keyRequest, x.finishedEpoch);
     }
 };
+template<class KeyMgrShim>
 struct ShimmedExposerOutput : exposer::ExposerOutput {
-    KeyMngrShimOutput keyManager;
+    KeyMgrShim keyManager;
 
     bool operator==(const ShimmedExposerOutput&) const = default;
     bool is_notable() {
         return (exposer::ExposerOutput::is_notable()) || (keyManager.is_notable());
     }
 };
-template <> class fmt::formatter<ShimmedExposerOutput> {
+template<class KeyMgrShim> class fmt::formatter<ShimmedExposerOutput<KeyMgrShim>> {
     public:
     constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
     template <typename Context>
-    constexpr auto format (ShimmedExposerOutput const& x, Context& ctx) const {
+    constexpr auto format (ShimmedExposerOutput<KeyMgrShim> const& x, Context& ctx) const {
         return format_to(ctx.out(), "ShimmedExposerOutput {{\n\t.exposer = {},\n\t.keyManager = {}\n}}", (exposer::ExposerOutput)x, x.keyManager);
     }
 };
-using ShimmedExposerOutputs = std::vector<ShimmedExposerOutput>;
-using ShimmedExposerOutputsMaker = TimeSeriesMaker<ShimmedExposerOutput>;
+template<class KeyMgrShim>
+using ShimmedExposerOutputs = std::vector<ShimmedExposerOutput<KeyMgrShim>>;
+template<class KeyMgrShim>
+using ShimmedExposerOutputsMaker = TimeSeriesMaker<ShimmedExposerOutput<KeyMgrShim>>;
 
 /**
  * Apply a ShimmedExposerInput to a Verilator device-under-test.
@@ -154,7 +159,7 @@ using ShimmedExposerOutputsMaker = TimeSeriesMaker<ShimmedExposerOutput>;
  * Otherwise an assertion failure is thrown. TODO better error handling.
  */
 template<class DUT>
-void push_input(DUT& dut, const ShimmedExposerInput& input) {
+void push_input(DUT& dut, const ShimmedExposerInput<KeyMngrV1ShimInput>& input) {
     #define PUT(name, value) do {                  \
         dut.EN_## name ##_put = 1;        \
         dut. name ##_put_val = (value); \
@@ -214,7 +219,7 @@ void push_input(DUT& dut, const ShimmedExposerInput& input) {
 }
 
 template<class DUT>
-void observe_input(DUT& dut, ShimmedExposerInput& input) {
+void observe_input(DUT& dut, ShimmedExposerInput<KeyMngrV1ShimInput>& input) {
     #define CANPEEK(from) (dut.EN_## from ##_put)
     #define PEEK(from) dut. from ##_put_val
 
@@ -261,7 +266,7 @@ void observe_input(DUT& dut, ShimmedExposerInput& input) {
  * dut.keyMgr32_hostFacingSlave_r_canPeek and RDY_keyMgr32_hostfacingSlave_r_drop must both be truthy.
  */
 template<class DUT>
-void pull_output(DUT& dut, ShimmedExposerOutput& output) {
+void pull_output(DUT& dut, ShimmedExposerOutput<KeyMngrV1ShimOutput>& output) {
     #define CANPEEK(from) (dut.RDY_## from ##_peek)
     #define POP(from, into) \
         assert(dut. from ##_canPeek); \
