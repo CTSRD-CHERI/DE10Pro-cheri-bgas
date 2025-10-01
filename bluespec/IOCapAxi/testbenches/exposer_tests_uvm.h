@@ -464,7 +464,7 @@ template <typename T> class fmt::formatter<LatencyTrackedWithAuthCorrectness<T>>
  * Does not do anything to handle revocation, but revocation can be simulated by modifying the KeyID -> Key map `secrets` the scoreboard uses
  * to determine if incoming requests will be valid or not.
  */
-template<class DUT, CapType ctype, class KMShimInput, class KMShimOutput>
+template<class DUT, CapType ctype, KeyMngrVersion V>
 class ExposerScoreboard : public Scoreboard<DUT> {
     std::unordered_map<key_manager::KeyId, U128>& secrets; // Fake keymanager proxy. THIS SCOREBOARD ASSUMES KEYS DONT CHANGE
 
@@ -509,8 +509,8 @@ class ExposerScoreboard : public Scoreboard<DUT> {
     uint64_t signalledGoodRead = 0;
     uint64_t signalledBadRead = 0;
 
-    std::vector<ShimmedExposerInput<KMShimInput>> inputs;
-    std::vector<ShimmedExposerOutput<KMShimOutput>> outputs;
+    std::vector<ShimmedExposerInput<V>> inputs;
+    std::vector<ShimmedExposerOutput<V>> outputs;
 
     std::vector<uint64_t> aw_aw_latency;
     std::vector<uint64_t> aw_b_latency;
@@ -832,7 +832,7 @@ class ExposerScoreboard : public Scoreboard<DUT> {
         }
     }
 
-    virtual void monitorAndScoreKeyManager(DUT& dut, uint64_t tick, KMShimInput& inputKeyManager, KMShimOutput& outputKeyManager) {
+    virtual void monitorAndScoreKeyManager(DUT& dut, uint64_t tick, KeyMngrShimInput<V>& inputKeyManager, KeyMngrShimOutput<V>& outputKeyManager) {
         if (outputKeyManager.finishedEpoch) {
             if (expectedEpochCompletions.empty()) {
                 throw test_failure(fmt::format("ExposerScoreboard got unexpected finishedEpoch:\nexpected None\ngot: {}\n", outputKeyManager.finishedEpoch.value()));
@@ -883,7 +883,7 @@ public:
     virtual ~ExposerScoreboard() = default;
     // Should raise a test_failure on failure
     virtual void monitorAndScore(DUT& dut, uint64_t tick) {
-        ShimmedExposerOutput<KMShimOutput> output{0};
+        ShimmedExposerOutput<V> output{0};
         output.time = tick;
         pull_output(dut, output); // TODO apply backpressure?
         if (output.is_notable())
@@ -965,7 +965,7 @@ public:
             }
         }
 
-        ShimmedExposerInput<KMShimInput> input{0};
+        ShimmedExposerInput<V> input{0};
         input.time = tick;
         observe_input(dut, input);
         if (input.is_notable())
@@ -1092,7 +1092,7 @@ class ExposerUVMishTest: public UVMishTest<DUT> {
 public:
     ExposerUVMishTest(ExposerStimulus<DUT, ctype>* stimulus, bool expectPassthroughInvalidTransactions = false) :
         UVMishTest<DUT>(
-            new ExposerScoreboard<DUT, ctype, KeyMngrV1ShimInput, KeyMngrV1ShimOutput>(stimulus->keyMgr->secrets, expectPassthroughInvalidTransactions),
+            new ExposerScoreboard<DUT, ctype, KeyMngrV1>(stimulus->keyMgr->secrets, expectPassthroughInvalidTransactions),
             stimulus
         ) {}
 };
