@@ -156,7 +156,7 @@ struct MaybeValidCapWithRange {
  * (e.g. responding with the requested key data).
  * Intended for use inside a ExposerStimulus.
  */
-template<class DUT>
+template<class DUT, KeyMngrVersion V>
 class KeyManagerShimStimulus {
 public:
     std::unordered_map<key_manager::KeyId, U128> secrets; // Fake keymanager proxy.
@@ -171,11 +171,14 @@ public:
  * Implementation of KeyManagerShimStimulus that assumes revocation never occurs.
  * Simply responds to key requests with the contents of the `secrets` field of the parent class.
  */
+template<class DUT, KeyMngrVersion V>
+class BasicKeyManagerShimStimulus;
+
 template<class DUT>
-class BasicKeyManagerShimStimulus : public KeyManagerShimStimulus<DUT> {
+class BasicKeyManagerShimStimulus<DUT, KeyMngrV1>: public KeyManagerShimStimulus<DUT, KeyMngrV1> {
     std::deque<key_manager::KeyResponse> keyResponses;
 public:
-    BasicKeyManagerShimStimulus() : KeyManagerShimStimulus<DUT>() {}
+    BasicKeyManagerShimStimulus() : KeyManagerShimStimulus<DUT, KeyMngrV1>() {}
     virtual void driveInputsForKeyMgr(DUT& dut, uint64_t tick) {
         if (!keyResponses.empty() && CANPUT_INPUT(keyStoreShim_keyResponses)) {
             auto keyResponse = keyResponses.front();
@@ -319,10 +322,10 @@ public:
 /**
  * Base class for all ShimmedExposer stimulus generators
  */
-template<class DUT, CapType ctype>
+template<class DUT, CapType ctype, KeyMngrVersion V>
 class ExposerStimulus : public StimulusGenerator<DUT> {
 public:
-    std::unique_ptr<KeyManagerShimStimulus<DUT>> keyMgr;
+    std::unique_ptr<KeyManagerShimStimulus<DUT, V>> keyMgr;
 protected:
     std::unique_ptr<SanitizedMemStimulus<DUT>> sanitizedMem;
 
@@ -391,7 +394,7 @@ protected:
     }
 
 public:
-    ExposerStimulus(KeyManagerShimStimulus<DUT>* keyMgr, SanitizedMemStimulus<DUT>* sanitizedMem) :
+    ExposerStimulus(KeyManagerShimStimulus<DUT, V>* keyMgr, SanitizedMemStimulus<DUT>* sanitizedMem) :
         keyMgr(keyMgr), sanitizedMem(sanitizedMem), awInputs(), wInputs(), arInputs() {}
 
     virtual ~ExposerStimulus() = default;
@@ -465,13 +468,12 @@ template <typename T> class fmt::formatter<LatencyTrackedWithAuthCorrectness<T>>
  * to determine if incoming requests will be valid or not.
  */
 template<class DUT, CapType ctype, KeyMngrVersion V>
-class ExposerScoreboard : public Scoreboard<DUT> {
+class BaseExposerScoreboard : public Scoreboard<DUT> {
+protected:
     std::unordered_map<key_manager::KeyId, U128>& secrets; // Fake keymanager proxy. THIS SCOREBOARD ASSUMES KEYS DONT CHANGE
 
     // Early versions of the exposer will always pass transactions through, even if it later registers them as "invalid" with the performance counters.
     bool expectPassthroughInvalidTransactions;
-
-    std::deque<key_manager::Epoch> expectedEpochCompletions;
 
     std::vector<axi::IOCapAxi::AWFlit_id4_addr64_user3> awInProgress;
     // tick_initiated = the tick on which the last AW flit was put-ed into the unit
@@ -520,27 +522,13 @@ class ExposerScoreboard : public Scoreboard<DUT> {
     std::vector<uint64_t> b_b_latency;
     std::vector<uint64_t> r_r_latency;
 
-    virtual void onKeyMngrNewEpoch(key_manager::Epoch nextEpoch) {
-        fmt::println(stderr, "Note - ExposerScoreboard base class doesn't automatically handle keys when getting new key epoch.");
-        expectedEpochCompletions.push_back((nextEpoch - 1) & 1);
-    }
-    virtual void onKeyMngrKeyResponse(key_manager::KeyResponse response) {
-        std::optional<U128> expected = std::nullopt;
-        if (secrets.contains(response.keyId)) {
-            expected = secrets[response.keyId];
-        }
-        if (expected != response.key) {
-            throw test_failure(fmt::format("ExposerScoreboard base class saw a new value {} for key ID {} that doesn't match expected value {}", response.key, response.keyId, expected));
-        }
-    }
-
     void resolveAwFlit(uint64_t tick, std::optional<axi::IOCapAxi::AWFlit_id4_addr64_user3> newIncomingFlit) {
         if (newIncomingFlit) {
             awInProgress.push_back(newIncomingFlit.value());
             if (awInProgress.size() == 1 && expectPassthroughInvalidTransactions) {
                 // No matter what, this AW transaction *will* be passed through, so do it immediately
                 if (awInProgress[0].awuser != (uint8_t)axi::IOCapAxi::IOCapAxi_User::Start) {
-                    throw test_failure(fmt::format("ExposerScoreboard got nonsensical initial aw flit - incorrect user flags {}", awInProgress));
+                    throw test_failure(fmt::format("BaseExposerScoreboard got nonsensical initial aw flit - incorrect user flags {}", awInProgress));
                 }
                 expectedAw.push_back({
                     tick,
@@ -562,7 +550,7 @@ class ExposerScoreboard : public Scoreboard<DUT> {
             }
         }
         if (awInProgress.size() > 4) {
-            throw test_failure(fmt::format("ExposerScoreboard got nonsensical set of aw flits - too many somehow? {}", awInProgress));
+            throw test_failure(fmt::format("BaseExposerScoreboard got nonsensical set of aw flits - too many somehow? {}", awInProgress));
         }
         if (awInProgress.size() == 4) {
             if (
@@ -571,7 +559,7 @@ class ExposerScoreboard : public Scoreboard<DUT> {
                 (awInProgress[2].awuser != (uint8_t)axi::IOCapAxi::IOCapAxi_User::Cap2) ||
                 (awInProgress[3].awuser != (uint8_t)axi::IOCapAxi::IOCapAxi_User::Cap3)
             ) {
-                throw test_failure(fmt::format("ExposerScoreboard got nonsensical set of aw flits - incorrect user flags {}", awInProgress));
+                throw test_failure(fmt::format("BaseExposerScoreboard got nonsensical set of aw flits - incorrect user flags {}", awInProgress));
             }
             U128 data{.top = 0, .bottom = 0};
             U128 sig{.top = 0, .bottom = 0};
@@ -589,7 +577,7 @@ class ExposerScoreboard : public Scoreboard<DUT> {
             try {
                 axiTop = axiBase + axi::burst_byte_length((axi::AXI4_Burst)awInProgress[0].awburst, awInProgress[0].awsize, awInProgress[0].awlen);
             } catch (std::runtime_error& ex) {
-                throw test_failure(fmt::format("ExposerScoreboard got nonsensical set of aw flits - {} - {}", awInProgress, ex.what()));
+                throw test_failure(fmt::format("BaseExposerScoreboard got nonsensical set of aw flits - {} - {}", awInProgress, ex.what()));
             }
             
             uint64_t base = 0;
@@ -674,7 +662,7 @@ class ExposerScoreboard : public Scoreboard<DUT> {
             if (arInProgress.size() == 1 && expectPassthroughInvalidTransactions) {
                 // No matter what, this AR transaction *will* be passed through, so do it immediately
                 if (arInProgress[0].aruser != (uint8_t)axi::IOCapAxi::IOCapAxi_User::Start) {
-                    throw test_failure(fmt::format("ExposerScoreboard got nonsensical initial ar flit - incorrect user flags {}", awInProgress));
+                    throw test_failure(fmt::format("BaseExposerScoreboard got nonsensical initial ar flit - incorrect user flags {}", awInProgress));
                 }
                 expectedAr.push_back({
                     tick,
@@ -694,7 +682,7 @@ class ExposerScoreboard : public Scoreboard<DUT> {
             }
         }
         if (arInProgress.size() > 4) {
-            throw test_failure(fmt::format("ExposerScoreboard got nonsensical set of ar flits - too many somehow? {}", arInProgress));
+            throw test_failure(fmt::format("BaseExposerScoreboard got nonsensical set of ar flits - too many somehow? {}", arInProgress));
         }
         if (arInProgress.size() == 4) {
             if (
@@ -703,7 +691,7 @@ class ExposerScoreboard : public Scoreboard<DUT> {
                 (arInProgress[2].aruser != (uint8_t)axi::IOCapAxi::IOCapAxi_User::Cap2) ||
                 (arInProgress[3].aruser != (uint8_t)axi::IOCapAxi::IOCapAxi_User::Cap3)
             ) {
-                throw test_failure(fmt::format("ExposerScoreboard got nonsensical set of ar flits - incorrect user flags {}", arInProgress));
+                throw test_failure(fmt::format("BaseExposerScoreboard got nonsensical set of ar flits - incorrect user flags {}", arInProgress));
             }
             U128 data{.top = 0, .bottom = 0};
             U128 sig{.top = 0, .bottom = 0};
@@ -721,7 +709,7 @@ class ExposerScoreboard : public Scoreboard<DUT> {
             try {
                 axiTop = axiBase + axi::burst_byte_length((axi::AXI4_Burst)arInProgress[0].arburst, arInProgress[0].arsize, arInProgress[0].arlen);
             } catch (std::runtime_error& ex) {
-                throw test_failure(fmt::format("ExposerScoreboard got nonsensical set of ar flits - {} - {}", arInProgress, ex.what()));
+                throw test_failure(fmt::format("BaseExposerScoreboard got nonsensical set of ar flits - {} - {}", arInProgress, ex.what()));
             }
             
             uint64_t base = 0;
@@ -832,45 +820,11 @@ class ExposerScoreboard : public Scoreboard<DUT> {
         }
     }
 
-    virtual void monitorAndScoreKeyManager(DUT& dut, uint64_t tick, KeyMngrShimInput<V>& inputKeyManager, KeyMngrShimOutput<V>& outputKeyManager) {
-        if (outputKeyManager.finishedEpoch) {
-            if (expectedEpochCompletions.empty()) {
-                throw test_failure(fmt::format("ExposerScoreboard got unexpected finishedEpoch:\nexpected None\ngot: {}\n", outputKeyManager.finishedEpoch.value()));
-            } else {
-                auto expected = expectedEpochCompletions.front();
-                expectedEpochCompletions.pop_front();
-                if (outputKeyManager.finishedEpoch.value() != expected) {
-                    throw test_failure(fmt::format("ExposerScoreboard got unexpected finishedEpoch:\nexpected: {}\ngot: {}\n", expected, outputKeyManager.finishedEpoch.value()));
-                }
-            }
-        }
-
-        if (outputKeyManager.bumpPerfCounterGoodWrite) {
-            signalledGoodWrite++;
-        }
-        if (outputKeyManager.bumpPerfCounterBadWrite) {
-            signalledBadWrite++;
-        }
-        if (outputKeyManager.bumpPerfCounterGoodRead) {
-            signalledGoodRead++;
-        }
-        if (outputKeyManager.bumpPerfCounterBadRead) {
-            signalledBadRead++;
-        }
-
-        if (inputKeyManager.newEpochRequest) {
-            onKeyMngrNewEpoch(inputKeyManager.newEpochRequest.value());
-        }
-
-        if (inputKeyManager.keyResponse) {
-            onKeyMngrKeyResponse(inputKeyManager.keyResponse.value());
-        }
-    }
+    virtual void monitorAndScoreKeyManager(DUT& dut, uint64_t tick, KeyMngrShimInput<V>& inputKeyManager, KeyMngrShimOutput<V>& outputKeyManager) = 0;
 
 public:
-    ExposerScoreboard(std::unordered_map<key_manager::KeyId, U128>& secrets, bool expectPassthroughInvalidTransactions = false) : secrets(secrets),
+    BaseExposerScoreboard(std::unordered_map<key_manager::KeyId, U128>& secrets, bool expectPassthroughInvalidTransactions = false) : secrets(secrets),
         expectPassthroughInvalidTransactions(expectPassthroughInvalidTransactions),
-        expectedEpochCompletions(),
         awInProgress(),
         expectedAw(),
         wInProgress(),
@@ -880,7 +834,7 @@ public:
         expectedAr(),
         expectedB(),
         expectedR() {}
-    virtual ~ExposerScoreboard() = default;
+    virtual ~BaseExposerScoreboard() = default;
     // Should raise a test_failure on failure
     virtual void monitorAndScore(DUT& dut, uint64_t tick) {
         ShimmedExposerOutput<V> output{0};
@@ -891,12 +845,12 @@ public:
 
         if (output.clean_flit_aw) {
             if (expectedAw.empty()) {
-                throw test_failure(fmt::format("ExposerScoreboard got unexpected aw flit:\nexpected None\ngot: {}\n", output.clean_flit_aw.value()));
+                throw test_failure(fmt::format("BaseExposerScoreboard got unexpected aw flit:\nexpected None\ngot: {}\n", output.clean_flit_aw.value()));
             } else {
                 auto expected = expectedAw.front();
                 expectedAw.pop_front();
                 if (output.clean_flit_aw.value() != expected.value) {
-                    throw test_failure(fmt::format("ExposerScoreboard got unexpected aw flit:\nexpected: {}\ngot: {}\n", expected, output.clean_flit_aw.value()));
+                    throw test_failure(fmt::format("BaseExposerScoreboard got unexpected aw flit:\nexpected: {}\ngot: {}\n", expected, output.clean_flit_aw.value()));
                 }
                 aw_aw_latency.push_back(tick - expected.tick_initiated);
             }
@@ -904,12 +858,12 @@ public:
 
         if (output.clean_flit_ar) {
             if (expectedAr.empty()) {
-                throw test_failure(fmt::format("ExposerScoreboard got unexpected ar flit:\nexpected None\ngot: {}\n", output.clean_flit_ar.value()));
+                throw test_failure(fmt::format("BaseExposerScoreboard got unexpected ar flit:\nexpected None\ngot: {}\n", output.clean_flit_ar.value()));
             } else {
                 auto expected = expectedAr.front();
                 expectedAr.pop_front();
                 if (output.clean_flit_ar.value() != expected.value) {
-                    throw test_failure(fmt::format("ExposerScoreboard got unexpected ar flit:\nexpected: {}\ngot: {}\n", expected, output.clean_flit_ar.value()));
+                    throw test_failure(fmt::format("BaseExposerScoreboard got unexpected ar flit:\nexpected: {}\ngot: {}\n", expected, output.clean_flit_ar.value()));
                 }
                 ar_ar_latency.push_back(tick - expected.tick_initiated);
             }
@@ -917,12 +871,12 @@ public:
 
         if (output.clean_flit_w) {
             if (expectedW.empty()) {
-                throw test_failure(fmt::format("ExposerScoreboard got unexpected w flit:\nexpected None, had {} unresolved and {} groups\ngot: {}\n", wInProgress, wflitValidity, output.clean_flit_w.value()));
+                throw test_failure(fmt::format("BaseExposerScoreboard got unexpected w flit:\nexpected None, had {} unresolved and {} groups\ngot: {}\n", wInProgress, wflitValidity, output.clean_flit_w.value()));
             } else {
                 auto expected = expectedW.front();
                 expectedW.pop_front();
                 if (output.clean_flit_w.value() != expected.value) {
-                    throw test_failure(fmt::format("ExposerScoreboard got unexpected w flit:\nexpected {}, had {} unresolved and {} groups\ngot: {}\n", expected, wInProgress, wflitValidity, output.clean_flit_w.value()));
+                    throw test_failure(fmt::format("BaseExposerScoreboard got unexpected w flit:\nexpected {}, had {} unresolved and {} groups\ngot: {}\n", expected, wInProgress, wflitValidity, output.clean_flit_w.value()));
                 }
                 // TODO: note that this is the latency of entering the pipe e.g. the latency from the input port being *ready* to it coming out the other end. Not the latency from the input becoming available.
                 w_w_latency.push_back(tick - expected.tick_initiated);
@@ -932,12 +886,12 @@ public:
         if (output.iocap_flit_b) {
             auto& expectedForId = expectedB[output.iocap_flit_b.value().bid];
             if (expectedForId.empty()) {
-                throw test_failure(fmt::format("ExposerScoreboard got unexpected b flit:\nexpected None\nall expected: {}\ngot: {}\n", expectedB, output.iocap_flit_b.value()));
+                throw test_failure(fmt::format("BaseExposerScoreboard got unexpected b flit:\nexpected None\nall expected: {}\ngot: {}\n", expectedB, output.iocap_flit_b.value()));
             } else {
                 auto expected = expectedForId.front();
                 expectedForId.pop_front();
                 if (output.iocap_flit_b.value() != expected.value) {
-                    throw test_failure(fmt::format("ExposerScoreboard got unexpected b flit:\nexpected: {}\nall expected: {}\ngot: {}\n", expected, expectedB, output.iocap_flit_b.value()));
+                    throw test_failure(fmt::format("BaseExposerScoreboard got unexpected b flit:\nexpected: {}\nall expected: {}\ngot: {}\n", expected, expectedB, output.iocap_flit_b.value()));
                 }
                 if (expected.was_correct) {
                     b_b_latency.push_back(tick - expected.tick_initiated);
@@ -950,12 +904,12 @@ public:
         if (output.iocap_flit_r) {
             auto& expectedForId = expectedR[output.iocap_flit_r.value().rid];
             if (expectedForId.empty()) {
-                throw test_failure(fmt::format("ExposerScoreboard got unexpected r flit:\nexpected None\nall expected: {}\ngot: {}\n", expectedR, output.iocap_flit_r.value()));
+                throw test_failure(fmt::format("BaseExposerScoreboard got unexpected r flit:\nexpected None\nall expected: {}\ngot: {}\n", expectedR, output.iocap_flit_r.value()));
             } else {
                 auto expected = expectedForId.front();
                 expectedForId.pop_front();
                 if (output.iocap_flit_r.value() != expected.value) {
-                    throw test_failure(fmt::format("ExposerScoreboard got unexpected r flit:\nexpected: {}\nall expected: {}\ngot: {}\n", expected, expectedR, output.iocap_flit_r.value()));
+                    throw test_failure(fmt::format("BaseExposerScoreboard got unexpected r flit:\nexpected: {}\nall expected: {}\ngot: {}\n", expected, expectedR, output.iocap_flit_r.value()));
                 }
                 if (expected.was_correct) {
                     r_r_latency.push_back(tick - expected.tick_initiated);
@@ -1013,24 +967,22 @@ public:
     virtual void endTest() override {
         // TODO log inputs and outputs
         if (
-            !expectedEpochCompletions.empty() ||
-            !awInProgress.empty() ||
-            !expectedAw.empty() ||
-            !wInProgress.empty() ||
-            !expectedW.empty() ||
-            !arInProgress.empty() ||
-            !expectedAr.empty() ||
+            !this->awInProgress.empty() ||
+            !this->expectedAw.empty() ||
+            !this->wInProgress.empty() ||
+            !this->expectedW.empty() ||
+            !this->arInProgress.empty() ||
+            !this->expectedAr.empty() ||
             // Check foreach ID in {B, R}
-            std::any_of(expectedB.begin(), expectedB.end(), [](auto& expectedForId) { return !expectedForId.empty(); }) ||
-            std::any_of(expectedR.begin(), expectedR.end(), [](auto& expectedForId) { return !expectedForId.empty(); }) ||
-            (expectedGoodWrite != signalledGoodWrite) ||
-            (expectedBadWrite != signalledBadWrite) ||
-            (expectedGoodRead != signalledGoodRead) ||
-            (expectedBadRead != signalledBadRead)
+            std::any_of(this->expectedB.begin(), this->expectedB.end(), [](auto& expectedForId) { return !expectedForId.empty(); }) ||
+            std::any_of(this->expectedR.begin(), this->expectedR.end(), [](auto& expectedForId) { return !expectedForId.empty(); }) ||
+            (this->expectedGoodWrite != this->signalledGoodWrite) ||
+            (this->expectedBadWrite != this->signalledBadWrite) ||
+            (this->expectedGoodRead != this->signalledGoodRead) ||
+            (this->expectedBadRead != this->signalledBadRead)
         ) {
             throw test_failure(fmt::format(
-                "ExposerScoreboard unexpected outcome:\n"
-                "epoch completions: {}\n"
+                "BaseExposerScoreboard unexpected outcome:\n"
                 "aw: {} in progress, {} expected\n"
                 "w: {} in progress, {} expected\n"
                 "ar: {} in progress, {} expected\n"
@@ -1046,18 +998,17 @@ public:
                 "bad read bad cap {}\n"
                 "bad read good cap bad range {}\n"
                 ,
-                expectedEpochCompletions,
-                awInProgress, expectedAw,
-                wInProgress, expectedW,
-                arInProgress, expectedAr,
-                expectedB,
-                expectedR,
-                expectedGoodWrite, signalledGoodWrite,
-                expectedBadWrite, signalledBadWrite,
-                expectedBadWriteBadCap, expectedBadWriteGoodCapBadRange,
-                expectedGoodRead, signalledGoodRead,
-                expectedBadRead, signalledBadRead,
-                expectedBadReadBadCap, expectedBadReadGoodCapBadRange
+                this->awInProgress, this->expectedAw,
+                this->wInProgress, this->expectedW,
+                this->arInProgress, this->expectedAr,
+                this->expectedB,
+                this->expectedR,
+                this->expectedGoodWrite, this->signalledGoodWrite,
+                this->expectedBadWrite, this->signalledBadWrite,
+                this->expectedBadWriteBadCap, this->expectedBadWriteGoodCapBadRange,
+                this->expectedGoodRead, this->signalledGoodRead,
+                this->expectedBadRead, this->signalledBadRead,
+                this->expectedBadReadBadCap, this->expectedBadReadGoodCapBadRange
             ));
         }
     }
@@ -1087,18 +1038,133 @@ public:
     #undef STRINGIFY
 };
 
-template<class DUT, CapType ctype = CapType::Cap2024_02>
+template<class DUT, CapType ctype, KeyMngrVersion V>
+class ExposerScoreboard;
+
+template<class DUT, CapType ctype>
+class ExposerScoreboard<DUT, ctype, KeyMngrV1> : public BaseExposerScoreboard<DUT, ctype, KeyMngrV1> {
+protected:
+    std::deque<key_manager::Epoch> expectedEpochCompletions;
+
+    virtual void onKeyMngrNewEpoch(key_manager::Epoch nextEpoch) {
+        fmt::println(stderr, "Note - ExposerScoreboard<KeyMngrV1> base class doesn't automatically handle keys when getting new key epoch.");
+        expectedEpochCompletions.push_back((nextEpoch - 1) & 1);
+    }
+    virtual void onKeyMngrKeyResponse(key_manager::KeyResponse response) {
+        std::optional<U128> expected = std::nullopt;
+        if (this->secrets.contains(response.keyId)) {
+            expected = this->secrets[response.keyId];
+        }
+        if (expected != response.key) {
+            throw test_failure(fmt::format("ExposerScoreboard<KeyMngrV1> base class saw a new value {} for key ID {} that doesn't match expected value {}", response.key, response.keyId, expected));
+        }
+    }
+
+    virtual void monitorAndScoreKeyManager(DUT& dut, uint64_t tick, KeyMngrShimInput<KeyMngrV1>& inputKeyManager, KeyMngrShimOutput<KeyMngrV1>& outputKeyManager) override{
+        if (outputKeyManager.finishedEpoch) {
+            if (expectedEpochCompletions.empty()) {
+                throw test_failure(fmt::format("ExposerScoreboard<KeyMngrV1> got unexpected finishedEpoch:\nexpected None\ngot: {}\n", outputKeyManager.finishedEpoch.value()));
+            } else {
+                auto expected = expectedEpochCompletions.front();
+                expectedEpochCompletions.pop_front();
+                if (outputKeyManager.finishedEpoch.value() != expected) {
+                    throw test_failure(fmt::format("ExposerScoreboard<KeyMngrV1> got unexpected finishedEpoch:\nexpected: {}\ngot: {}\n", expected, outputKeyManager.finishedEpoch.value()));
+                }
+            }
+        }
+
+        if (outputKeyManager.bumpPerfCounterGoodWrite) {
+            this->signalledGoodWrite++;
+        }
+        if (outputKeyManager.bumpPerfCounterBadWrite) {
+            this->signalledBadWrite++;
+        }
+        if (outputKeyManager.bumpPerfCounterGoodRead) {
+            this->signalledGoodRead++;
+        }
+        if (outputKeyManager.bumpPerfCounterBadRead) {
+            this->signalledBadRead++;
+        }
+
+        if (inputKeyManager.newEpochRequest) {
+            onKeyMngrNewEpoch(inputKeyManager.newEpochRequest.value());
+        }
+
+        if (inputKeyManager.keyResponse) {
+            onKeyMngrKeyResponse(inputKeyManager.keyResponse.value());
+        }
+    }
+public:
+    ExposerScoreboard(std::unordered_map<key_manager::KeyId, U128>& secrets, bool expectPassthroughInvalidTransactions = false) :
+        BaseExposerScoreboard<DUT, ctype, KeyMngrV1>(secrets, expectPassthroughInvalidTransactions),
+        expectedEpochCompletions() {}
+    virtual ~ExposerScoreboard() override = default;
+    // Should raise a test_failure on failure
+    virtual void endTest() override {
+        // TODO log inputs and outputs
+        if (
+            !expectedEpochCompletions.empty() ||
+            !this->awInProgress.empty() ||
+            !this->expectedAw.empty() ||
+            !this->wInProgress.empty() ||
+            !this->expectedW.empty() ||
+            !this->arInProgress.empty() ||
+            !this->expectedAr.empty() ||
+            // Check foreach ID in {B, R}
+            std::any_of(this->expectedB.begin(), this->expectedB.end(), [](auto& expectedForId) { return !expectedForId.empty(); }) ||
+            std::any_of(this->expectedR.begin(), this->expectedR.end(), [](auto& expectedForId) { return !expectedForId.empty(); }) ||
+            (this->expectedGoodWrite != this->signalledGoodWrite) ||
+            (this->expectedBadWrite != this->signalledBadWrite) ||
+            (this->expectedGoodRead != this->signalledGoodRead) ||
+            (this->expectedBadRead != this->signalledBadRead)
+        ) {
+            throw test_failure(fmt::format(
+                "BaseExposerScoreboard unexpected outcome:\n"
+                "epoch completions: {}\n"
+                "aw: {} in progress, {} expected\n"
+                "w: {} in progress, {} expected\n"
+                "ar: {} in progress, {} expected\n"
+                "b: {}\n"
+                "r: {}\n"
+                "perf counters exp/act:\n"
+                "good write {}/{}\n"
+                "bad write {}/{}\n"
+                "bad write bad cap {}\n"
+                "bad write good cap bad range {}\n"
+                "good read {}/{}\n"
+                "bad read {}/{}\n"
+                "bad read bad cap {}\n"
+                "bad read good cap bad range {}\n"
+                ,
+                expectedEpochCompletions,
+                this->awInProgress, this->expectedAw,
+                this->wInProgress, this->expectedW,
+                this->arInProgress, this->expectedAr,
+                this->expectedB,
+                this->expectedR,
+                this->expectedGoodWrite, this->signalledGoodWrite,
+                this->expectedBadWrite, this->signalledBadWrite,
+                this->expectedBadWriteBadCap, this->expectedBadWriteGoodCapBadRange,
+                this->expectedGoodRead, this->signalledGoodRead,
+                this->expectedBadRead, this->signalledBadRead,
+                this->expectedBadReadBadCap, this->expectedBadReadGoodCapBadRange
+            ));
+        }
+    }
+};
+
+template<class DUT, CapType ctype = CapType::Cap2024_02, KeyMngrVersion V = KeyMngrV1>
 class ExposerUVMishTest: public UVMishTest<DUT> {
 public:
-    ExposerUVMishTest(ExposerStimulus<DUT, ctype>* stimulus, bool expectPassthroughInvalidTransactions = false) :
+    ExposerUVMishTest(ExposerStimulus<DUT, ctype, V>* stimulus, bool expectPassthroughInvalidTransactions = false) :
         UVMishTest<DUT>(
-            new ExposerScoreboard<DUT, ctype, KeyMngrV1>(stimulus->keyMgr->secrets, expectPassthroughInvalidTransactions),
+            new ExposerScoreboard<DUT, ctype, V>(stimulus->keyMgr->secrets, expectPassthroughInvalidTransactions),
             stimulus
         ) {}
 };
 
-template<class DUT, CapType ctype>
-class UVMValidKeyValidInitialCapValidAccess : public ExposerStimulus<DUT, ctype> {
+template<class DUT, CapType ctype, KeyMngrVersion V>
+class UVMValidKeyValidInitialCapValidAccess : public ExposerStimulus<DUT, ctype, V> {
     CCapPerms perms;
     
 public:
@@ -1106,8 +1172,8 @@ public:
     virtual std::string name() override {
         return fmt::format("Valid-Key Valid-Cap Valid-{}", ccap_perms_str(perms));
     }
-    UVMValidKeyValidInitialCapValidAccess(CCapPerms perms) : ExposerStimulus<DUT, ctype>(
-        new BasicKeyManagerShimStimulus<DUT>(),
+    UVMValidKeyValidInitialCapValidAccess(CCapPerms perms) : ExposerStimulus<DUT, ctype, V>(
+        new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
     ), perms(perms) {}
     virtual void setup(std::mt19937& rng) override {
@@ -1131,8 +1197,8 @@ public:
     }
 };
 
-template<class DUT, CapType ctype>
-class UVMValidKeyValidInitialCapOOBAccess : public ExposerStimulus<DUT, ctype> {
+template<class DUT, CapType ctype, KeyMngrVersion V>
+class UVMValidKeyValidInitialCapOOBAccess : public ExposerStimulus<DUT, ctype, V> {
     CCapPerms perms;
     
 public:
@@ -1140,8 +1206,8 @@ public:
     virtual std::string name() override {
         return fmt::format("Valid-Key Valid-Cap OOB-{}", ccap_perms_str(perms));
     }
-    UVMValidKeyValidInitialCapOOBAccess(CCapPerms perms) : ExposerStimulus<DUT, ctype>(
-        new BasicKeyManagerShimStimulus<DUT>(),
+    UVMValidKeyValidInitialCapOOBAccess(CCapPerms perms) : ExposerStimulus<DUT, ctype, V>(
+        new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
     ), perms(perms) {}
     virtual void setup(std::mt19937& rng) override {        
@@ -1166,8 +1232,8 @@ public:
     }
 };
 
-template<class DUT, CapType ctype>
-class UVMInvalidKeyAccess : public ExposerStimulus<DUT, ctype> {
+template<class DUT, CapType ctype, KeyMngrVersion V>
+class UVMInvalidKeyAccess : public ExposerStimulus<DUT, ctype, V> {
     CCapPerms perms;
     
 public:
@@ -1175,8 +1241,8 @@ public:
     virtual std::string name() override {
         return fmt::format("Invalid-Key {}", ccap_perms_str(perms));
     }
-    UVMInvalidKeyAccess(CCapPerms perms) : ExposerStimulus<DUT, ctype>(
-        new BasicKeyManagerShimStimulus<DUT>(),
+    UVMInvalidKeyAccess(CCapPerms perms) : ExposerStimulus<DUT, ctype, V>(
+        new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
     ), perms(perms) {}
     virtual void setup(std::mt19937& rng) override {        
@@ -1202,15 +1268,15 @@ public:
     }
 };
 
-template<class DUT, CapType ctype>
-class UVMValidKeyValidCapBadPerms : public ExposerStimulus<DUT, ctype> {
+template<class DUT, CapType ctype, KeyMngrVersion V>
+class UVMValidKeyValidCapBadPerms : public ExposerStimulus<DUT, ctype, V> {
 public:
     virtual ~UVMValidKeyValidCapBadPerms() = default;
     virtual std::string name() override {
         return "Valid-Key Valid-Cap BadPerms";
     }
-    UVMValidKeyValidCapBadPerms() : ExposerStimulus<DUT, ctype>(
-        new BasicKeyManagerShimStimulus<DUT>(),
+    UVMValidKeyValidCapBadPerms() : ExposerStimulus<DUT, ctype, V>(
+        new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
     ) {}
     virtual void setup(std::mt19937& rng) override {        
@@ -1236,15 +1302,15 @@ public:
     }
 };
 
-template<class DUT, CapType ctype>
-class UVMValidKeyBadSigCap : public ExposerStimulus<DUT, ctype> {
+template<class DUT, CapType ctype, KeyMngrVersion V>
+class UVMValidKeyBadSigCap : public ExposerStimulus<DUT, ctype, V> {
 public:
     virtual ~UVMValidKeyBadSigCap() = default;
     virtual std::string name() override {
         return "Valid-Key BadSig-Cap";
     }
-    UVMValidKeyBadSigCap() : ExposerStimulus<DUT, ctype>(
-        new BasicKeyManagerShimStimulus<DUT>(),
+    UVMValidKeyBadSigCap() : ExposerStimulus<DUT, ctype, V>(
+        new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
     ) {}
     virtual void setup(std::mt19937& rng) override {        
@@ -1277,16 +1343,16 @@ public:
 };
 
 template<class DUT, CapType ctype>
-class UVMTransactionsBetweenRevocations : public ExposerStimulus<DUT, ctype> {
+class UVMTransactionsBetweenRevocations_KeyMngrV1 : public ExposerStimulus<DUT, ctype, KeyMngrV1> {
     uint64_t n_revocations;
     uint8_t epoch = 0;
 public:
-    virtual ~UVMTransactionsBetweenRevocations() = default;
+    virtual ~UVMTransactionsBetweenRevocations_KeyMngrV1() = default;
     virtual std::string name() override {
         return fmt::format("Valid-Key Valid-Cap Valid-ReadWrite with {} revocations", n_revocations);
     }
-    UVMTransactionsBetweenRevocations(uint64_t n_revocations) : ExposerStimulus<DUT, ctype>(
-        new BasicKeyManagerShimStimulus<DUT>(),
+    UVMTransactionsBetweenRevocations_KeyMngrV1(uint64_t n_revocations) : ExposerStimulus<DUT, ctype, KeyMngrV1>(
+        new BasicKeyManagerShimStimulus<DUT, KeyMngrV1>(),
         new BasicSanitizedMemStimulus<DUT>()
     ), n_revocations(n_revocations) {}
     virtual void driveInputsForTick(std::mt19937& rng, DUT& dut, uint64_t tick) {
@@ -1311,7 +1377,7 @@ public:
             }
         }
 
-        ExposerStimulus<DUT, ctype>::driveInputsForTick(rng, dut, tick);
+        ExposerStimulus<DUT, ctype, KeyMngrV1>::driveInputsForTick(rng, dut, tick);
 
         if (tick % 5000 == 4500) {
             // Transactions should be over, drive the revocation signal
@@ -1345,8 +1411,8 @@ public:
     }
 };
 
-template<class DUT, CapType ctype>
-class UVMStreamOfNValidTransactions : public ExposerStimulus<DUT, ctype> {
+template<class DUT, CapType ctype, KeyMngrVersion V>
+class UVMStreamOfNValidTransactions : public ExposerStimulus<DUT, ctype, V> {
     CCapPerms perms;
     uint64_t n_transactions;
 
@@ -1357,8 +1423,8 @@ public:
     virtual std::string name() override {
         return fmt::format("Stream of {} {} transactions", n_transactions, ccap_perms_str(perms));
     }
-    UVMStreamOfNValidTransactions(CCapPerms perms, uint64_t n_transactions) : ExposerStimulus<DUT, ctype>(
-        new BasicKeyManagerShimStimulus<DUT>(),
+    UVMStreamOfNValidTransactions(CCapPerms perms, uint64_t n_transactions) : ExposerStimulus<DUT, ctype, V>(
+        new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
     ), perms(perms), n_transactions(n_transactions) {}
     virtual void setup(std::mt19937& rng) override {
@@ -1391,8 +1457,8 @@ public:
     }
 };
 
-template<class DUT, CapType ctype>
-class UVMStreamOfNLibRustValidTransactions : public ExposerStimulus<DUT, ctype> {
+template<class DUT, CapType ctype, KeyMngrVersion V>
+class UVMStreamOfNLibRustValidTransactions : public ExposerStimulus<DUT, ctype, V> {
     uint64_t n_transactions;
     int n_cavs = -1;
 
@@ -1407,8 +1473,8 @@ public:
             return fmt::format("Stream of {} librust random valid {} {}-caveat transactions", n_transactions, ctype, n_cavs);
         }
     }
-    UVMStreamOfNLibRustValidTransactions(uint64_t n_transactions, int n_cavs = -1) : ExposerStimulus<DUT, ctype>(
-        new BasicKeyManagerShimStimulus<DUT>(),
+    UVMStreamOfNLibRustValidTransactions(uint64_t n_transactions, int n_cavs = -1) : ExposerStimulus<DUT, ctype, V>(
+        new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
     ), n_transactions(n_transactions), n_cavs(n_cavs) {
         if (n_cavs < -1 || n_cavs > 2) {
@@ -1445,8 +1511,8 @@ public:
     }
 };
 
-template<class DUT, CapType ctype>
-class UVMStreamOfNLibRustEdgeCaseTransactions : public ExposerStimulus<DUT, ctype> {
+template<class DUT, CapType ctype, KeyMngrVersion V>
+class UVMStreamOfNLibRustEdgeCaseTransactions : public ExposerStimulus<DUT, ctype, V> {
     uint64_t n_transactions;
     uintptr_t edge_case;
 
@@ -1457,8 +1523,8 @@ public:
     virtual std::string name() override {
         return fmt::format("Stream of {} librust random edge case {} {} transactions", n_transactions, CapStruct<ctype>::librust_rand_edge_case_str(edge_case), ctype);
     }
-    UVMStreamOfNLibRustEdgeCaseTransactions(uint64_t n_transactions, uintptr_t edge_case) : ExposerStimulus<DUT, ctype>(
-        new BasicKeyManagerShimStimulus<DUT>(),
+    UVMStreamOfNLibRustEdgeCaseTransactions(uint64_t n_transactions, uintptr_t edge_case) : ExposerStimulus<DUT, ctype, V>(
+        new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
     ), n_transactions(n_transactions), edge_case(edge_case) {}
     virtual void setup(std::mt19937& rng) override {

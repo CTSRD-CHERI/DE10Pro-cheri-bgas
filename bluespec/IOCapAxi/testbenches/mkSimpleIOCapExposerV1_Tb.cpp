@@ -6,8 +6,8 @@
 
 using TheDUT = VmkSimpleIOCapExposerV1_Tb;
 
-TestBase* exposerUVMishTestAssumeInvalidPassthrough(ExposerStimulus<TheDUT, CapType::Cap2024_02>* stimulus) {
-    return new ExposerUVMishTest<TheDUT, CapType::Cap2024_02>(stimulus, /* expectPassthroughInvalidTransactions = */ true);
+TestBase* exposerUVMishTestAssumeInvalidPassthrough(ExposerStimulus<TheDUT, CapType::Cap2024_02, KeyMngrV1>* stimulus) {
+    return new ExposerUVMishTest<TheDUT, CapType::Cap2024_02, KeyMngrV1>(stimulus, /* expectPassthroughInvalidTransactions = */ true);
 
 }
 
@@ -19,18 +19,18 @@ int main(int argc, char** argv) {
         new ValidReadThenValidWrite<TheDUT>(),
         // UVM-style testing
         exposerUVMishTestAssumeInvalidPassthrough(
-            new UVMValidKeyValidInitialCapValidAccess<TheDUT, CapType::Cap2024_02>(CCapPerms_Read)
+            new UVMValidKeyValidInitialCapValidAccess<TheDUT, CapType::Cap2024_02, KeyMngrV1>(CCapPerms_Read)
         ),
         exposerUVMishTestAssumeInvalidPassthrough(
-            new UVMValidKeyValidInitialCapValidAccess<TheDUT, CapType::Cap2024_02>(CCapPerms_Write)
+            new UVMValidKeyValidInitialCapValidAccess<TheDUT, CapType::Cap2024_02, KeyMngrV1>(CCapPerms_Write)
         ),
         exposerUVMishTestAssumeInvalidPassthrough(
-            new UVMValidKeyValidInitialCapValidAccess<TheDUT, CapType::Cap2024_02>(CCapPerms_ReadWrite)
+            new UVMValidKeyValidInitialCapValidAccess<TheDUT, CapType::Cap2024_02, KeyMngrV1>(CCapPerms_ReadWrite)
         ),
     
         // Test caps with invalid keys are rejected
         exposerUVMishTestAssumeInvalidPassthrough(
-            new UVMInvalidKeyAccess<TheDUT, CapType::Cap2024_02>(CCapPerms_ReadWrite)
+            new UVMInvalidKeyAccess<TheDUT, CapType::Cap2024_02, KeyMngrV1>(CCapPerms_ReadWrite)
         ),
 
         // TODO test valid cap with 1 cav
@@ -40,22 +40,22 @@ int main(int argc, char** argv) {
         new OOBRead_Passthrough<TheDUT>(),
 
         exposerUVMishTestAssumeInvalidPassthrough(
-            new UVMValidKeyValidInitialCapOOBAccess<TheDUT, CapType::Cap2024_02>(CCapPerms_Read)
+            new UVMValidKeyValidInitialCapOOBAccess<TheDUT, CapType::Cap2024_02, KeyMngrV1>(CCapPerms_Read)
         ),
         exposerUVMishTestAssumeInvalidPassthrough(
-            new UVMValidKeyValidInitialCapOOBAccess<TheDUT, CapType::Cap2024_02>(CCapPerms_Write)
+            new UVMValidKeyValidInitialCapOOBAccess<TheDUT, CapType::Cap2024_02, KeyMngrV1>(CCapPerms_Write)
         ),
 
         // Test valid cap with mismatched perms - DONE below
         new MismatchedPerms_Passthrough<TheDUT>(),
         exposerUVMishTestAssumeInvalidPassthrough(
-            new UVMValidKeyValidCapBadPerms<TheDUT, CapType::Cap2024_02>()
+            new UVMValidKeyValidCapBadPerms<TheDUT, CapType::Cap2024_02, KeyMngrV1>()
         ),
 
         // Test invalid caps (i.e. bad signatures) with valid keys are rejected - DONE below
         new InvalidSig_Passthrough<TheDUT>(),
         exposerUVMishTestAssumeInvalidPassthrough(
-            new UVMValidKeyBadSigCap<TheDUT, CapType::Cap2024_02>()
+            new UVMValidKeyBadSigCap<TheDUT, CapType::Cap2024_02, KeyMngrV1>()
         ),
 
         // TODO test inbalanced completions > starts behaviour
@@ -75,11 +75,11 @@ int main(int argc, char** argv) {
         // 5 cycles of revocations
         // TODO test this with valid and invalid transactions!
         exposerUVMishTestAssumeInvalidPassthrough(
-            new UVMTransactionsBetweenRevocations<TheDUT, CapType::Cap2024_02>(5)
+            new UVMTransactionsBetweenRevocations_KeyMngrV1<TheDUT, CapType::Cap2024_02>(5)
         ),
 
         exposerUVMishTestAssumeInvalidPassthrough(
-            new UVMStreamOfNValidTransactions<TheDUT, CapType::Cap2024_02>(CCapPerms_ReadWrite, 100)
+            new UVMStreamOfNValidTransactions<TheDUT, CapType::Cap2024_02, KeyMngrV1>(CCapPerms_ReadWrite, 100)
         )
     };
 

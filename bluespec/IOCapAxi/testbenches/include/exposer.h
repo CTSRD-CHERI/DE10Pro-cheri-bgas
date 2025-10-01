@@ -172,7 +172,7 @@ using ShimmedExposerOutputsMaker = TimeSeriesMaker<ShimmedExposerOutput<V>>;
  * Otherwise an assertion failure is thrown. TODO better error handling.
  */
 template<class DUT>
-void push_input(DUT& dut, const ShimmedExposerInput<KeyMngrV1>& input) {
+void push_input(DUT& dut, const exposer::ExposerInput& input) {
     #define PUT(name, value) do {                  \
         dut.EN_## name ##_put = 1;        \
         dut. name ##_put_val = (value); \
@@ -215,14 +215,27 @@ void push_input(DUT& dut, const ShimmedExposerInput<KeyMngrV1>& input) {
         NOPUT(exposer4x32_sanitizedOut_r);
     }
 
-    if (input.keyManager.newEpochRequest) {
-        PUT(keyStoreShim_newEpochRequests, input.keyManager.newEpochRequest.value());
+    #undef NOPUT
+    #undef PUT
+}
+template<class DUT>
+void push_input(DUT& dut, const KeyMngrShimInput<KeyMngrV1>& input) {
+    #define PUT(name, value) do {                  \
+        dut.EN_## name ##_put = 1;        \
+        dut. name ##_put_val = (value); \
+        assert(dut.RDY_## name ##_put);   \
+        assert(dut. name ##_canPut);    \
+    } while(0);
+    #define NOPUT(name) dut.EN_## name ##_put = 0;
+
+    if (input.newEpochRequest) {
+        PUT(keyStoreShim_newEpochRequests, input.newEpochRequest.value());
     } else {
         NOPUT(keyStoreShim_newEpochRequests);
     }
 
-    if (input.keyManager.keyResponse) {
-        PUT(keyStoreShim_keyResponses, verilate_array(input.keyManager.keyResponse.value().asBluespec().pack()));
+    if (input.keyResponse) {
+        PUT(keyStoreShim_keyResponses, verilate_array(input.keyResponse.value().asBluespec().pack()));
     } else {
         NOPUT(keyStoreShim_keyResponses);
     }
@@ -230,9 +243,14 @@ void push_input(DUT& dut, const ShimmedExposerInput<KeyMngrV1>& input) {
     #undef NOPUT
     #undef PUT
 }
+template<class DUT>
+void push_input(DUT& dut, const ShimmedExposerInput<KeyMngrV1>& input) {
+    push_input(dut, (const exposer::ExposerInput&)input);
+    push_input(dut, input.keyManager);
+}
 
 template<class DUT>
-void observe_input(DUT& dut, ShimmedExposerInput<KeyMngrV1>& input) {
+void observe_input(DUT& dut, exposer::ExposerInput& input) {
     #define CANPEEK(from) (dut.EN_## from ##_put)
     #define PEEK(from) dut. from ##_put_val
 
@@ -256,18 +274,33 @@ void observe_input(DUT& dut, ShimmedExposerInput<KeyMngrV1>& input) {
         input.clean_flit_r = axi::SanitizedAxi::RFlit_id4_data32::unpack(PEEK(exposer4x32_sanitizedOut_r));
     }
 
+    #undef PEEK
+    #undef CANPEEK
+}
+
+template<class DUT>
+void observe_input(DUT& dut, KeyMngrShimInput<KeyMngrV1>& input) {
+    #define CANPEEK(from) (dut.EN_## from ##_put)
+    #define PEEK(from) dut. from ##_put_val
+
     if (CANPEEK(keyStoreShim_newEpochRequests)) {
-        input.keyManager.newEpochRequest = PEEK(keyStoreShim_newEpochRequests);
+        input.newEpochRequest = PEEK(keyStoreShim_newEpochRequests);
     }
 
     if (CANPEEK(keyStoreShim_keyResponses)) {
-        input.keyManager.keyResponse = key_manager::KeyResponse::fromBluespec(
+        input.keyResponse = key_manager::KeyResponse::fromBluespec(
             key_manager::Tuple2_KeyId_MaybeKey::unpack(stdify_array(PEEK(keyStoreShim_keyResponses)))
         );
     }
 
     #undef PEEK
     #undef CANPEEK
+}
+
+template<class DUT>
+void observe_input(DUT& dut, ShimmedExposerInput<KeyMngrV1>& input) {
+    observe_input(dut, (exposer::ExposerInput&)input);
+    observe_input(dut, input.keyManager);
 }
 
 /**
@@ -279,7 +312,7 @@ void observe_input(DUT& dut, ShimmedExposerInput<KeyMngrV1>& input) {
  * dut.keyMgr32_hostFacingSlave_r_canPeek and RDY_keyMgr32_hostfacingSlave_r_drop must both be truthy.
  */
 template<class DUT>
-void pull_output(DUT& dut, ShimmedExposerOutput<KeyMngrV1>& output) {
+void pull_output(DUT& dut, exposer::ExposerOutput& output) {
     #define CANPEEK(from) (dut.RDY_## from ##_peek)
     #define POP(from, into) \
         assert(dut. from ##_canPeek); \
@@ -329,10 +362,26 @@ void pull_output(DUT& dut, ShimmedExposerOutput<KeyMngrV1>& output) {
         NOPOP(exposer4x32_sanitizedOut_ar);
     }
 
+    #undef NOPOP
+    #undef POP
+    #undef CANPEEK
+}
+
+template<class DUT>
+void pull_output(DUT& dut, KeyMngrShimOutput<KeyMngrV1>& output) {
+    #define CANPEEK(from) (dut.RDY_## from ##_peek)
+    #define POP(from, into) \
+        assert(dut. from ##_canPeek); \
+        assert(dut.RDY_## from ##_drop); \
+        dut.EN_## from ##_drop = 1; \
+        into = dut. from ##_peek;
+    #define NOPOP(from) \
+        dut.EN_## from ##_drop = 0; \
+
     if (CANPEEK(keyStoreShim_keyRequests)){
         key_manager::KeyId keyRequest;
         POP(keyStoreShim_keyRequests, keyRequest);
-        output.keyManager.keyRequest = std::optional(keyRequest);
+        output.keyRequest = std::optional(keyRequest);
     } else {
         NOPOP(keyStoreShim_keyRequests);
     }
@@ -340,38 +389,40 @@ void pull_output(DUT& dut, ShimmedExposerOutput<KeyMngrV1>& output) {
     if (CANPEEK(keyStoreShim_finishedEpochs)){
         key_manager::Epoch finishedEpoch;
         POP(keyStoreShim_finishedEpochs, finishedEpoch);
-        output.keyManager.finishedEpoch = std::optional(finishedEpoch);
+        output.finishedEpoch = std::optional(finishedEpoch);
     } else {
         NOPOP(keyStoreShim_finishedEpochs);
     }
 
     if (dut.RDY_keyStoreShim_bumpedPerfCounterGoodWrite___05Fread &&
         dut.keyStoreShim_bumpedPerfCounterGoodWrite___05Fread) {
-        output.keyManager.bumpPerfCounterGoodWrite = true;
-        fmt::println("pull_output good write at {}", output.time);
+        output.bumpPerfCounterGoodWrite = true;
     }
 
     if (dut.RDY_keyStoreShim_bumpedPerfCounterBadWrite___05Fread &&
         dut.keyStoreShim_bumpedPerfCounterBadWrite___05Fread) {
-        output.keyManager.bumpPerfCounterBadWrite = true;
-        fmt::println("pull_output bad write at {}", output.time);
+        output.bumpPerfCounterBadWrite = true;
     }
 
     if (dut.RDY_keyStoreShim_bumpedPerfCounterGoodRead___05Fread &&
         dut.keyStoreShim_bumpedPerfCounterGoodRead___05Fread) {
-        output.keyManager.bumpPerfCounterGoodRead = true;
-        fmt::println("pull_output good read at {}", output.time);
+        output.bumpPerfCounterGoodRead = true;
     }
 
     if (dut.RDY_keyStoreShim_bumpedPerfCounterBadRead___05Fread &&
         dut.keyStoreShim_bumpedPerfCounterBadRead___05Fread) {
-        output.keyManager.bumpPerfCounterBadRead = true;
-        fmt::println("pull_output bad read at {}", output.time);
+        output.bumpPerfCounterBadRead = true;
     }
 
     #undef NOPOP
     #undef POP
     #undef CANPEEK
+}
+
+template<class DUT>
+void pull_output(DUT& dut, ShimmedExposerOutput<KeyMngrV1>& output) {
+    pull_output(dut, (exposer::ExposerOutput&)output);
+    pull_output(dut, output.keyManager);
 }
 
 #endif // EXPOSER_H
