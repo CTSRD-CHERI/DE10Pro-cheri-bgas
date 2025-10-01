@@ -305,7 +305,7 @@ public:
             // Assume the arFlits use 32-bit data
             for (uint32_t i = 0; i < arFlit.arlen + 1; i++) {
                 rInputs.push_back(axi::SanitizedAxi::RFlit_id4_data32 {
-                    .rlast = ((i == arFlit.arlen) ? 1 : 0),
+                    .rlast = (uint8_t)((i == arFlit.arlen) ? 1 : 0),
                     .rresp = (uint8_t)axi::AXI4_Resp::Okay,
                     .rdata = i, // TODO better RDATA generation
                     .rid = arFlit.arid,
@@ -362,7 +362,7 @@ protected:
             .arsize = axi::transfer_width_to_size(axi_params.transfer_width),
             .arlen = axi::n_transfers_to_len(axi_params.n_transfers),
             .araddr = axi_params.address,
-            .arid = id & 0xF,
+            .arid = (uint8_t)(id & 0xF),
         });
         arInputs.push_back(axi::IOCapAxi::packCap1_ar(cap128, sig128));
         arInputs.push_back(axi::IOCapAxi::packCap2_ar(cap128, sig128));
@@ -378,7 +378,7 @@ protected:
             .awsize = axi::transfer_width_to_size(axi_params.transfer_width),
             .awlen = axi::n_transfers_to_len(axi_params.n_transfers),
             .awaddr = axi_params.address,
-            .awid = id & 0xF,
+            .awid = (uint8_t)(id & 0xF),
         });
         awInputs.push_back(axi::IOCapAxi::packCap1_aw(cap128, sig128));
         awInputs.push_back(axi::IOCapAxi::packCap2_aw(cap128, sig128));
