@@ -23,7 +23,7 @@ interface IOCapAxi_KeyManager2_CheckerIfc;
     // de-authenticate all currently-processing transactions authenticated with this key without passing them to the valve.
     // They MAY continue to start a new transaction authenticated with this key, triggering all related callbacks in the Valve, on that cycle only,
     // but not on any subsequent cycle. 
-    interface RWire#(KeyId) killKeyMessage;
+    interface ReadOnly#(KeyId) killKeyMessage;
 endinterface
 
 interface IOCapAxi_KeyManager2_ValveIfc;
@@ -31,11 +31,14 @@ interface IOCapAxi_KeyManager2_ValveIfc;
     interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc perf;
 endinterface
 
-// This interface implicitly assumes one checker port is shared between two checkers (one per read/write).
-interface IOCapAxi_KeyManager2#(numeric type t_data, numeric type n_lanes);
-    interface Vector#(n_lanes, IOCapAxi_KeyManager2_CheckerIfc) checkerPorts;
-    interface Vector#(n_lanes, IOCapAxi_KeyManager2_ValveIfc) readValvePorts;
-    interface Vector#(n_lanes, IOCapAxi_KeyManager2_ValveIfc) writeValvePorts;
+interface IOCapAxi_KeyManager2_ExposerIfc;
+    interface IOCapAxi_KeyManager2_CheckerIfc checker;
+    interface IOCapAxi_KeyManager2_RefCountPipe_ValveIfc rValve;
+    interface IOCapAxi_KeyManager2_RefCountPipe_ValveIfc wValve;
+endinterface
+
+interface IOCapAxi_KeyManager2#(numeric type t_data, numeric type n_exposers);
+    interface Vector#(n_exposers, IOCapAxi_KeyManager2_ExposerIfc) exposerPorts;
 
     interface AXI4Lite_Slave#(TLog#('h2000), t_data, 0, 0, 0, 0, 0) hostFacingSlave;
 
@@ -112,12 +115,6 @@ module mkIOCapAxi_KeyManager2_V1(IOCapAxi_KeyManager2#(64, 1));
 
     IOCapAxi_KeyManager2_MMIO#(64, 1)         mmio <- mkIOCapAxi_KeyManager2_MMIO(keyState.mmio, keyData.mmio, error);
 
-    function IOCapAxi_KeyManager2_CheckerIfc makeCheckerPort(Integer idx) = interface IOCapAxi_KeyManager2_CheckerIfc;
-        interface keyRequest = keyData.checkerKeyRequest[idx];
-        interface keyResponse = keyData.checkerKeyResponse[idx];
-        interface killKeyMessage = mmio.checkerKillKeyMessages[idx];
-    endinterface;
-
     function IOCapAxi_KeyManager2_ValveIfc makeReadValvePort(Integer idx) = interface IOCapAxi_KeyManager2_ValveIfc;
         Integer valveIdx = idx * 2;
         interface refcount = refcount.valvePorts[valveIdx];
@@ -130,9 +127,18 @@ module mkIOCapAxi_KeyManager2_V1(IOCapAxi_KeyManager2#(64, 1));
         interface perf = mmio.valvePerfCounters.write[idx];
     endinterface;
 
-    interface checkerPorts = genWith(makeCheckerPort);
-    interface readValvePorts = genWith(makeReadValvePort);
-    interface writeValvePorts = genWith(makeWriteValvePort);
+    let exposerPort = interface IOCapAxi_KeyManager2_ExposerIfc;
+        interface checker = interface IOCapAxi_KeyManager2_CheckerIfc;
+            interface keyRequest = keyData.checkerKeyRequest[0];
+            interface keyResponse = keyData.checkerKeyResponse[0];
+            interface killKeyMessage = mkRwireToReadOnlyDirect(mmio.checkerKillKeyMessages[0]);
+        endinterface;
+        
+        interface rValve = makeReadValvePort(0);
+        interface wValve = makeWriteValvePort(0);
+    endinterface
+
+    interface exposerPorts = cons(exposerPort, nil);
 
     interface hostFacingSlave = mmio.hostFacingSlave;
 

@@ -98,7 +98,7 @@ endinterface
 
 module mkIOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc_Shim(IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc_Shim);
     RWire#(Tuple2#(KeyId, Bit#(1))) triedWriteKeyWordRwire <- mkRWire;
-    let triedWriteKeyWordReadOnly <- mkRwireToReadOnlyViaReg(triedWriteKeyWordRwire);
+    let triedWriteKeyWordReadOnly <- mkRwireToReadOnlyDirect(triedWriteKeyWordRwire);
     RWire#(KeyId) keyToStartRevokingRwire <- mkRWire;
     Reg#(Vector#(256, KeyStatus)) keyStatusReg <- mkReg(replicate(KeyInvalidRevoked));
 
@@ -140,7 +140,7 @@ endinterface
 
 module mkIOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_ShimAndInternal(IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_ShimAndInternal);
     RWire#(KeyId) tryConfirmingRevokeKeyRWire <- mkRWire;
-    let tryConfirmingRevokeKeyReadOnly <- mkRwireToReadOnlyViaReg(tryConfirmingRevokeKeyRWire);
+    let tryConfirmingRevokeKeyReadOnly <- mkRwireToReadOnlyDirect(tryConfirmingRevokeKeyRWire);
     RWire#(KeyId) keyToStartRevokingRWire <- mkRWire;
 
     interface shim = interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc_Shim;

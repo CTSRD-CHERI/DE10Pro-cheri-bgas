@@ -140,6 +140,12 @@ struct ThroughputTracker {
     uint64_t n_accepted = 0;
     uint64_t n_cycles_where_attempting_to_push_input = 0;
 
+    // TODO change this api to allow tracking this
+    // uint64_t longest_cycle_streak_where_blocked = 0;
+    // uint64_t current_cycle_streak_where_blocked = 0;
+
+    // bool couldnt_push_input_last_cycle = false;
+
     void trackAccepted() {
         n_accepted++;
     }

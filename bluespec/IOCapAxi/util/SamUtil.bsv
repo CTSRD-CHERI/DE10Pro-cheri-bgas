@@ -29,4 +29,8 @@ module mkRwireToReadOnlyViaReg#(RWire#(t) rwire)(ReadOnly#(Maybe#(t))) provisos 
     method _read = val._read;
 endmodule
 
+module mkRwireToReadOnlyDirect#(RWire#(t) rwire)(ReadOnly#(Maybe#(t)));
+    method _read = rwire.wget();
+endmodule
+
 endpackage

@@ -23,43 +23,22 @@ struct IncDecRefcountTest : public RefCountPipe2ValveCycleTest<DUT> {
         RefCountPipe_2Valve_InputsMaker inputs;
         RefCountPipe_OutputsMaker outputs;
 
-        for (int i = 0; i < 1; i += 1) {
-            // increment 5x
-            inputs[100 + (i * 70) + 00].valve0.keyIncrementRefcountRequest = i * 2;
-            inputs[100 + (i * 70) + 10].valve0.keyIncrementRefcountRequest = i * 2;
-            inputs[100 + (i * 70) + 20].valve0.keyIncrementRefcountRequest = i * 2;
-            inputs[100 + (i * 70) + 30].valve0.keyIncrementRefcountRequest = i * 2;
-            inputs[100 + (i * 70) + 40].valve0.keyIncrementRefcountRequest = i * 2;
-            
-            // decrement 5x, overlapping with increment
-            inputs[100 + (i * 70) + 20].valve0.keyDecrementRefcountRequest = i * 2;
-            inputs[100 + (i * 70) + 30].valve0.keyIncrementRefcountRequest = i * 2;
-            inputs[100 + (i * 70) + 40].valve0.keyIncrementRefcountRequest = i * 2;
-            inputs[100 + (i * 70) + 50].valve0.keyIncrementRefcountRequest = i * 2;
-            inputs[100 + (i * 70) + 60].valve0.keyIncrementRefcountRequest = i * 2;
+        // increment 5x
+        inputs[100 + 00].valve0.keyIncrementRefcountRequest = 1;
+        inputs[100 + 10].valve0.keyIncrementRefcountRequest = 1;
+        inputs[100 + 20].valve0.keyIncrementRefcountRequest = 1;
+        inputs[100 + 30].valve0.keyIncrementRefcountRequest = 1;
+        inputs[100 + 40].valve0.keyIncrementRefcountRequest = 1;
+        
+        // decrement 5x, overlapping with increment
+        inputs[100 + 20].valve0.keyDecrementRefcountRequest = 1;
+        inputs[100 + 30].valve0.keyDecrementRefcountRequest = 1;
+        inputs[100 + 40].valve0.keyDecrementRefcountRequest = 1;
+        inputs[100 + 50].valve0.keyDecrementRefcountRequest = 1;
+        inputs[100 + 60].valve0.keyDecrementRefcountRequest = 1;
 
-            // get notified it has died
-            outputs[100 + (i * 70) + 90].keyStatus.tryConfirmingRevokeKey = i * 2;
-        }
-
-        for (int i = 0; i < 1; i += 1) {
-            // increment 5x
-            inputs[100 + (i * 70) + 20 + 00].valve1.keyIncrementRefcountRequest = (i * 2) + 1;
-            inputs[100 + (i * 70) + 20 + 10].valve1.keyIncrementRefcountRequest = (i * 2) + 1;
-            inputs[100 + (i * 70) + 20 + 20].valve1.keyIncrementRefcountRequest = (i * 2) + 1;
-            inputs[100 + (i * 70) + 20 + 30].valve1.keyIncrementRefcountRequest = (i * 2) + 1;
-            inputs[100 + (i * 70) + 20 + 40].valve1.keyIncrementRefcountRequest = (i * 2) + 1;
-            
-            // decrement 5x, overlapping with increment
-            inputs[100 + (i * 70) + 20 + 20].valve1.keyDecrementRefcountRequest = (i * 2) + 1;
-            inputs[100 + (i * 70) + 20 + 30].valve1.keyIncrementRefcountRequest = (i * 2) + 1;
-            inputs[100 + (i * 70) + 20 + 40].valve1.keyIncrementRefcountRequest = (i * 2) + 1;
-            inputs[100 + (i * 70) + 20 + 50].valve1.keyIncrementRefcountRequest = (i * 2) + 1;
-            inputs[100 + (i * 70) + 20 + 60].valve1.keyIncrementRefcountRequest = (i * 2) + 1;
-
-            // get notified it has died
-            outputs[100 + (i * 70) + 90].keyStatus.tryConfirmingRevokeKey = i * 2;
-        }
+        // get notified it has died
+        outputs[100 + 2000].keyStatus.tryConfirmingRevokeKey = 1;
         
         return {inputs.asVec(), outputs.asVec()};
     }

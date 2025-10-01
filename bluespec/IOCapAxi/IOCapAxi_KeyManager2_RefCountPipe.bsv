@@ -212,11 +212,11 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
     function UInt#(3) indexOfFirstTrue(Vector#(5, Bool) bits);
         Tuple5#(Bool, Bool, Bool, Bool, Bool) tup = unpack(pack(bits));
         case (tup) matches
-            { True,    .*,    .*,    .*,    .* } : return 0;
-            { False, True,    .*,    .*,    .* } : return 1;
-            { False, False, True,    .*,    .* } : return 2;
-            { False, False, False, True,    .* } : return 3;
-            { False, False, False, False, True } : return 4;
+            {   .*,    .*,    .*,    .*,  True } : return 0;
+            {   .*,    .*,    .*,  True, False } : return 1;
+            {   .*,    .*,  True, False, False } : return 2;
+            {   .*,  True, False, False, False } : return 3;
+            { True, False, False, False, False } : return 4;
             default : return 7;
         endcase
     endfunction
@@ -224,19 +224,19 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
     function UInt#(3) indexOfSecondTrue(Vector#(5, Bool) bits);
         Tuple5#(Bool, Bool, Bool, Bool, Bool) tup = unpack(pack(bits));
         case (tup) matches
-            { True, True,    .*,    .*,    .* } : return 1;
+            { .*, .*, .*, True, True } : return 1;
 
-            { False, True, True,    .*,    .* } : return 2;
-            { True, False, True,    .*,    .* } : return 2;
+            { .*, .*, True, True, False } : return 2;
+            { .*, .*, True, False, True } : return 2;
             
-            { False, False, True, True,    .* } : return 3;
-            { False, True, False, True,    .* } : return 3;
-            { True, False, False, True,    .* } : return 3;
+            { .*, True, True, False, False } : return 3;
+            { .*, True, False, True, False } : return 3;
+            { .*, True, False, False, True } : return 3;
 
             { True, False, False, False, True } : return 4;
-            { False, True, False, False, True } : return 4;
-            { False, False, True, False, True } : return 4;
-            { False, False, False, True, True } : return 4;
+            { True, False, False, True, False } : return 4;
+            { True, False, True, False, False } : return 4;
+            { True, True, False, False, False } : return 4;
 
             default : return 7;
         endcase
@@ -245,18 +245,18 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
     function UInt#(3) indexOfThirdTrue(Vector#(5, Bool) bits);
         Tuple5#(Bool, Bool, Bool, Bool, Bool) tup = unpack(pack(bits));
         case (tup) matches
-            { True, True, True,    .*,    .* } : return 2;
+            { .*, .*, True, True, True } : return 2;
 
-            { True, True, False, True,    .* } : return 3;
-            { True, False, True, True,    .* } : return 3;
-            { False, True, True, True,    .* } : return 3;
+            { .*, True, False, True, True } : return 3;
+            { .*, True, True, False, True } : return 3;
+            { .*, True, True, True, False } : return 3;
 
-            { True, True, False, False, True } : return 4;
-            { True, False, True, False, True } : return 4;
             { True, False, False, True, True } : return 4;
-            { False, True, True, False, True } : return 4;
-            { False, True, False, True, True } : return 4;
-            { False, False, True, True, True } : return 4;
+            { True, False, True, False, True } : return 4;
+            { True, True, False, False, True } : return 4;
+            { True, False, True, True, False } : return 4;
+            { True, True, False, True, False } : return 4;
+            { True, True, True, False, False } : return 4;
             
             default : return 7;
         endcase
@@ -265,12 +265,12 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
     function UInt#(3) indexOfFourthTrue(Vector#(5, Bool) bits);
         Tuple5#(Bool, Bool, Bool, Bool, Bool) tup = unpack(pack(bits));
         case (tup) matches
-            { True, True, True, True,    .* } : return 3;
+            { .*, True, True, True, True } : return 3;
 
-            { True, True, True, False, True } : return 4;
-            { True, True, False, True, True } : return 4;
             { True, False, True, True, True } : return 4;
-            { False, True, True, True, True } : return 4;
+            { True, True, False, True, True } : return 4;
+            { True, True, True, False, True } : return 4;
+            { True, True, True, True, False } : return 4;
             
             default : return 7;
         endcase
@@ -384,6 +384,10 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
                 count = 5;
             end
 
+            // if (count > 0) begin
+            //     $display("ENQ FROM ", fshow(items), " AS ", fshow(count), " OF ", fshow(packedVector), " IDX ", fshow(itemValidity), fshow(idx0), fshow(idx1), fshow(idx2), fshow(idx3), fshow(idx4));
+            // end
+
             mimo.enq(count, packedVector);
         end else begin
             // sanity_check_backpressure asserts that this will *always* be possible
@@ -428,6 +432,7 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
         // TODO it could be useful to throw an error if we can read from BRAM but don't have rcOpInProgress
 
         let actualRc = mostRecentRefCount(op.key, readRc);
+        $display("REFCOUNT ID ", fshow(op.key), " RC ", fshow(actualRc), " DELTA ", fshow(op.change));
         // Update the Rc if needed
         if (op.change != 0) begin
             actualRc = actualRc + signExtend(op.change);
@@ -446,9 +451,11 @@ module mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve#(IOCapAxi_KeyManager2_KeySta
             // Assume the forwarding vector is big enough that whatever gets shifted out will definitely be inside the BRAM by this point.
             let newForwarding = rotateR(forwarded);
             forwarded[0] = tuple2(tagged Valid (op.key), actualRc);
+            rcWriteForwarding <= forwarded;
         end
         
         if (actualRc == 0) begin
+            $display("tryConfirmingRevokeKey");
             keyState.tryConfirmingRevokeKey(op.key);
         end
     endrule
