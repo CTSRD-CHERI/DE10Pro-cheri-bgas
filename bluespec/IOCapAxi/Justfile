@@ -25,6 +25,7 @@ test-exposer-v1: (sim-v "mkSimpleIOCapExposerV1_Tb")
 test-exposer-v2: (sim-v "mkSimpleIOCapExposerV2_Tb")
 test-exposer-v3: (sim-v "mkSimpleIOCapExposerV3_Tb")
 test-exposer-v4-noblock: (sim-v "mkSimpleIOCapExposerV4_noblock_Tb")
+test-exposer-v4: (sim-v "mkSimpleIOCapExposerV4_blockinvalid_Tb")
 test-decoder-comb-11: (sim-v "mkCap2024_11_Decode_Comb_Tb")
 test-decoder-comb-02: (sim-v "mkCap2024_02_Decode_Comb_Tb")
 test-decoder-fsm-11: (sim-v "mkCap2024_11_Decode_FastFSM_Tb")
@@ -42,6 +43,7 @@ build-all: \
     (build-sim-v "mkSimpleIOCapExposerV2_Tb") \
     (build-sim-v "mkSimpleIOCapExposerV3_Tb") \
     (build-sim-v "mkSimpleIOCapExposerV4_noblock_Tb") \
+    (build-sim-v "mkSimpleIOCapExposerV4_blockinvalid_Tb") \
     (build-sim-v "mkCap2024_11_Decode_Comb_Tb") \
     (build-sim-v "mkCap2024_02_Decode_Comb_Tb") \
     (build-sim-v "mkCap2024_11_Decode_FastFSM_Tb") \
