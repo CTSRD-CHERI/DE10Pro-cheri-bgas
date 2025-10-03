@@ -9,16 +9,166 @@ import BlueBasics :: *;
 import IOCapAxi_Types :: *;
 import IOCapAxi_Flits :: *;
 import IOCapAxi_KeyManager2s :: *;
+// TODO the structs from these two should be exported by KeyManager2s
+import IOCapAxi_KeyManager2_MMIO :: *;
+import IOCapAxi_KeyManager2_RefCountPipe :: *;
 import IOCapAxi_CreditValve :: *;
 import IOCapAxi_Checkers :: *;
 
 import Cap2024_11 :: *;
 import Cap2024_11_Decode_FastFSM :: *;
 
+// The Scoreboard tracks which TxnIds for outstanding valid transactions are associated with which KeyIds for the purposes of reference counting.
+// It also tracks which TxnIds currently have outstanding valid transactions, which means it can help avoid out-of-order completions for a TxnId
+// when there's an invalid transaction while there's a currently outstanding valid transaction - the completion for the invalid transaction
+// should fire after the completion for the valid one.
+//
+// 
+interface TxnKeyIdScoreboard#(numeric type t_id);
+    method Bool canBeginTxn(Bit#(t_id) txnId);
+    method Action beginTxn(Bit#(t_id) txnId, KeyId keyId, Bool isValid);
+    method Action completeValidTxn(Bit#(t_id) txnId);
+    interface Source#(KeyId) completedValidTxnKeys;
+    interface Source#(Bit#(t_id)) invalidTxnsToComplete;
+endinterface
+
+
+// This impl of the scoreboard assumes a small t_id, codify this as <8
+// This impl of the scoreboard uses a register with one bit per txnid to see if that txnid is outstanding,
+// and doesn't allow you to begin new txns with the same id as a currently outstanding one.
+// This coarsely adheres to the AXI spec - transactions with the same ID are ordered relative to each other - but 
+// doesn't adhere to the intent, that trasnactions with the same ID can be pipelined together.
+module mkSimpleTxnKeyIdScoreboard(TxnKeyIdScoreboard#(t_id)) provisos (Add#(8, t_id, __a));
+    // Reg#(Bool) hasClearedBram <- mkReg(False);
+    // Reg#(Bit#(t_id)) nextTxnIdToClear <- mkReg(0);
+    BRAM_Configure bramConfig = BRAM_Configure {
+        memorySize: 0, // Number of words is inferred from the KeyId parameter to BRAM2Port below.
+        // Size of each word is determined by the other parameter to BRAM2Port below.
+        latency: 2, // (address is registered, data is too because this isn't latency sensitive)
+        loadFormat: None,
+        outFIFODepth: 4, // latency+2
+        allowWriteResponseBypass: False // TODO check if this is fine
+    };
+    // Single bank
+    // Addressed by Bit#(t_id)
+    // Holds items of type KeyId
+    // 2 ports - one read, one write
+    BRAM2Port#(Bit#(t_id), KeyId) bram <- mkBRAM2Server(bramConfig);
+
+    // rule clear_bram(!hasClearedBram);
+    //     KeyId newNextTxnIdToClear = nextTxnIdToClear + 2;
+    //     if (newNextTxnIdToClear == 0) // has overflowed
+    //         hasClearedBram <= True;
+    //     nextTxnIdToClear <= newNextTxnIdToClear;
+
+    //     keyRefcountBram.portA.request.put(BRAMRequest {
+    //         write: True,
+    //         responseOnWrite: False,
+    //         address: nextTxnIdToClear + 0,
+    //         datain: tagged Invalid
+    //     });
+    //     keyRefcountBram.portB.request.put(BRAMRequest {
+    //         write: True,
+    //         responseOnWrite: False,
+    //         address: nextTxnIdToClear + 1,
+    //         datain: tagged Invalid
+    //     });
+    // endrule
+
+    // Bit for every transaction id indicating if it's currently in progress
+    // Because this is here, we don't need to zero out the bram
+    Reg#(Bit#(TExp#(t_id))) txnsInProgress <- mkReg(0);
+
+    FIFOF#(KeyId) completedValidTxnKeysImpl <- mkFIFOF;
+    FIFOF#(Bit#(t_id)) invalidTxnsToCompleteImpl <- mkFIFOF;
+
+    RWire#(Tuple2#(Bit#(t_id), KeyId)) toWriteToBram <- mkRWire;
+    RWire#(Bit#(t_id)) toComplete <- mkRWire;
+
+    rule handle_txnsInProgress;
+        let newTxnsInProgress = txnsInProgress;
+        case (tuple2(toWriteToBram.wget(), toComplete.wget())) matches
+            { tagged Invalid,                  tagged Invalid } : noAction;
+            { tagged Valid { .txnId, .keyId }, tagged Invalid } : begin
+                newTxnsInProgress[txnId] = 1;
+            end
+            { tagged Invalid, tagged Valid .txnId } : begin
+                newTxnsInProgress[txnId] = 0;
+            end
+            { tagged Valid { .txnIdEnq, .keyId }, tagged Valid .txnIdDeq } : begin
+                if (txnIdEnq == txnIdDeq) begin
+                    // TODO assert error
+                end else begin
+                    newTxnsInProgress[txnIdEnq] = 1;
+                    newTxnsInProgress[txnIdDeq] = 0;
+                end
+            end
+        endcase
+        txnsInProgress <= newTxnsInProgress;
+    endrule
+
+    rule enq_new_transaction;
+        case (toWriteToBram.wget()) matches
+            tagged Invalid : noAction;
+            tagged Valid { .txnId, .keyId } : begin
+                bram.portA.request.put(BRAMRequest {
+                    write: True,
+                    responseOnWrite: False,
+                    address: txnId,
+                    datain: keyId
+                });
+            end
+        endcase
+    endrule
+
+    rule start_complete_transaction;
+        case (toComplete.wget()) matches
+            tagged Invalid : noAction;
+            tagged Valid .txnId : begin
+                bram.portB.request.put(BRAMRequest {
+                    write: False,
+                    responseOnWrite: False,
+                    address: txnId,
+                    datain: ?
+                });
+            end
+        endcase
+    endrule
+
+    rule get_completed_keyid;
+        let keyId <- bram.portB.response.get();
+        completedValidTxnKeysImpl.enq(keyId);
+    endrule
+    
+    method Bool canBeginTxn(Bit#(t_id) txnId) = txnsInProgress[txnId] == 0;
+    // Use the implicit condition to force the caller to block if two trnasactions with the same id exist
+    method Action beginTxn(Bit#(t_id) txnId, KeyId keyId, Bool isValid);
+        if (txnsInProgress[txnId] == 0) begin
+            // TODO some sort of error
+            $display("beginTxn called when can't begin");
+        end
+        if (isValid) begin
+            toWriteToBram.wset(tuple2(txnId, keyId));
+        end else begin
+            invalidTxnsToCompleteImpl.enq(txnId);
+        end
+    endmethod
+    method Action completeValidTxn(Bit#(t_id) txnId); // if (txnsInProgress[txnId] == 1)
+        if (txnsInProgress[txnId] == 0) begin
+            // TODO some sort of error
+            $display("completeValidTxn called when wasn't begun");
+        end
+        toComplete.wset(txnId);
+    endmethod
+    interface completedValidTxnKeys = toSource(completedValidTxnKeysImpl);
+    interface invalidTxnsToComplete = toSource(invalidTxnsToCompleteImpl);
+endmodule
 
 // NOT AXI COMPLIAMT
 // - doesn't support WRAP bursts
 // - doesn't correctly handle ordering for same-ID transaction responses if one of those transactions is correctly authenticated and the other isn't.
+//      TODO Samuel's guess about this is that if the second transaction is bad, it might send a response first.
+//      TODO this may be fixed? Need to write a test
 // Changes from V1
 // - correctly blocks invalid transactions
 // Changes from V2
@@ -31,7 +181,7 @@ import Cap2024_11_Decode_FastFSM :: *;
 // Changes from V4
 // - compatability with KeyManagerV2, which requires...
 // - TODO swapping out the checkers with versions that support in-situ invalidation by KeyId
-// - TODO swapping out the valves with versions that support per-transaction KeyId tracking
+// - TODO (maybe done?) Support per-transaction KeyId tracking
 module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool blockInvalid)(IOCapSingleExposer#(t_id, t_data)) provisos (
 );
     // Doesn't support WRAP bursts right now
@@ -45,13 +195,11 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
     // This is managed by a credit system in wValve.
     FIFOF#(AXI4_WFlit#(t_data, 0)) wIn <- mkSizedFIFOF(50); // TODO figure out the correct size
     CreditValve#(AXI4_WFlit#(t_data, 0), 32) wValve <- mkSimpleCreditValve(toSource(wIn));
+    TxnKeyIdScoreboard#(t_id) wScoreboard <- mkSimpleTxnKeyIdScoreboard;
 
     // B responses from the subordinate (de facto for *valid* requests) are sent through to the master, interleaved with responses from invalid requests.
-    // This interleaving is currently done without considering order.
-    // TODO that's bad! - I need to track the outstanding IDs and make sure that "Transaction responses with the same ID are returned in the same order as the requests were issued."
-    // as per the AXI Spec Issue K A6.3
+    // These invalid responses are taken from the wScoreboard, and are prioritized over any pending responses from valid requests to ensure ordering.
     FIFOF#(AXI4_BFlit#(t_id, 0)) bIn <- mkFIFOF;
-    FIFOF#(AXI4_BFlit#(t_id, 0)) invalidBToInsert <- mkFIFOF;
     FIFOF#(AXI4_BFlit#(t_id, 0)) bOut <- mkFIFOF;
 
     // AR transactions come in encoding an IOCap with a standard AR flit. The IOCap and flit are examined, and if verified they are passed on through arOut.
@@ -59,29 +207,10 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
     FIFOF#(AXI4_ARFlit#(t_id, 64, 0)) arOut <- mkFIFOF;
 
     // R responses from the subordinate (de facto for *valid* requests) are sent through to the master, interleaved with responses from invalid requests.
-    // This interleaving is currently done without considering order.
-    // TODO that's bad! - I need to track the outstanding IDs and make sure that "Transaction responses with the same ID are returned in the same order as the requests were issued."
-    // as per the AXI Spec Issue K A6.3
+    // These invalid responses are taken from the rScoreboard, and are prioritized over any pending responses from valid requests to ensure ordering.
+    TxnKeyIdScoreboard#(t_id) rScoreboard <- mkSimpleTxnKeyIdScoreboard;
     FIFOF#(AXI4_RFlit#(t_id, t_data, 0)) rIn <- mkFIFOF;
-    FIFOF#(AXI4_RFlit#(t_id, t_data, 0)) invalidRToInsert <- mkFIFOF;
     FIFOF#(AXI4_RFlit#(t_id, t_data, 0)) rOut <- mkFIFOF;
-
-    // Epoch checking: every time a capability is revoked, the current epoch changes.
-    // All transactions initiated in the previous epoch must finish before the revocation in the key exposer completes.
-        // For the purposes of simplicity, "transactions initiated" = transactions where the entire 
-    // Revocation is immediate from the perspective of the key store, so other accesses *could* go ahead as part of the next epoch, but that requires tracking here.
-    // Right now I just want to do the simplest impl possible, so while waiting for a new epoch other requests can't go through.
-    Reg#(Bool) wantEpochIncrease <- mkReg(False);
-    Reg#(Epoch) currentEpoch <- mkReg(0);
-    Reg#(UInt#(64)) outstandingAccessesInCurrentEpoch <- mkReg(0);
-    Reg#(Epoch) nextEpoch <- mkReg(0);
-    
-    RWire#(Epoch) requestedNextEpoch <- mkRWire;
-    
-    rule start_epoch_change(!wantEpochIncrease);
-        let reqNextEpoch <- get(keyStore.newEpochRequests);
-        requestedNextEpoch.wset(reqNextEpoch);
-    endrule
 
     // Track the initiated and completed transactions for each cycle
     // These are all initiated/completed *valid* transactions - ones which were correctly authenticated with an IOcap.
@@ -99,47 +228,11 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         let completed = (completedRead ? 1 : 0) + (completedWrite ? 1 : 0);
 
         if (initiatedRead || initiatedWrite || completedRead || completedWrite) begin
-            $display("IOCap - track_epoch - outstandingAccesses = ", outstandingAccessesInCurrentEpoch, " initiated = ", initiated, " completed = ", completed, " init r/w ", fshow(initiatedRead), fshow(initiatedWrite), " comp r/w ", fshow(completedRead), fshow(completedWrite));
+            $display("IOCap - track_epoch - initiated = ", initiated, " completed = ", completed, " init r/w ", fshow(initiatedRead), fshow(initiatedWrite), " comp r/w ", fshow(completedRead), fshow(completedWrite));
         end
-        let newOutstandingAccesses = outstandingAccessesInCurrentEpoch + initiated - completed;
-        // TODO detect overflow? negative or positive?
-
-        // If we're currently trying to transition between epochs, handle that
-        if (wantEpochIncrease) begin
-            if (newOutstandingAccesses == 0) begin
-                wantEpochIncrease <= False;
-                currentEpoch <= nextEpoch;
-                keyStore.finishedEpochs.put(currentEpoch);
-                $display("IOCap - track_epoch - Finishing after newOutstandingAccesses = 0");
-            end
-        end else begin
-            // Otherwise start_epoch_change may have pulled a new request to transition,
-            // handle that
-            case (requestedNextEpoch.wget()) matches 
-                tagged Invalid : noAction;
-                tagged Valid .requestedNextEpoch : begin
-                    $display("IOCap - track_epoch - wantEpochIncrease=False, requestedNextEpoch=", fshow(requestedNextEpoch));
-                    // If there are no outstanding accesses, finish immediately
-                    // TODO may create a too-long path
-                    if (newOutstandingAccesses == 0) begin
-                        wantEpochIncrease <= False;
-                        currentEpoch <= requestedNextEpoch;
-                        keyStore.finishedEpochs.put(currentEpoch);
-                        $display("IOCap - track_epoch - Immediately finishing");
-                    end else begin
-                        // If there are outstanding accesses, note that a new epoch is imminent
-                        wantEpochIncrease <= True;
-                        nextEpoch <= requestedNextEpoch;
-                        $display("IOCap - track_epoch - Delaying for newOutstandingAccesses = ", fshow(newOutstandingAccesses));
-                    end
-                end
-            endcase
-        end
-        
-        outstandingAccessesInCurrentEpoch <= newOutstandingAccesses;
     endrule
 
-    function Bool canInitiateTransaction() = (!wantEpochIncrease);
+    function Bool canInitiateTransaction() = True;
 
     // // Once a write transaction has been checked, then and only then can we pass through the write flits for that transaction.
     // // This manifests as a credit system: when a write transaction is valid, increment the credit count, and that many w flits will be passed on.
@@ -191,7 +284,7 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         // TODO could optimize key retrieval by caching the key here - for now be simple and re-request it every time.
         let awFlit <- get(awIn.out);
         awPreCheckBuffer.enq(awFlit);
-        keyStore.keyRequests.put(keyIdForFlit(awFlit));
+        keyStore.checker.keyRequest.put(keyIdForFlit(awFlit));
         initiatedWrite.send();
         $display("IOCap - recv_aw ", fshow(awFlit));
     endrule
@@ -202,13 +295,13 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         // TODO could optimize key retrieval by caching the key here - for now be simple and re-request it every time.
         let arFlit <- get(arIn.out);
         arPreCheckBuffer.enq(arFlit);
-        keyStore.keyRequests.put(keyIdForFlit(arFlit));
+        keyStore.checker.keyRequest.put(keyIdForFlit(arFlit));
         initiatedRead.send();
         $display("IOCap - recv_ar ", fshow(arFlit));
     endrule
 
-    // After requesting a key, it will eventually arrive at the keyStore.keyResponses Source.
-    // There is exactly one keyStore.keyResponses item for each AW and AR request, 
+    // After requesting a key, it will eventually arrive at the keyStore.checker.keyResponse Source.
+    // There is exactly one keyStore.checker.keyResponse item for each AW and AR request, 
     // but if an AW and AR request use the same keyId there's no reason not to use a single response for both.
     // TODO reason about how that works with epochs?
     // If we use a single response for two transactions (a single response is *split* across AW and AR), the second response needs to be discarded.
@@ -232,9 +325,9 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
     PulseWire keyMatchedAr <- mkPulseWire;
     PulseWire usedPeekedKeyForAr <- mkPulseWire;
 
-    rule peek_key(keyStore.keyResponses.canPeek);
+    rule peek_key(keyStore.checker.keyResponse.canPeek);
         // Retrieve the latest key request, check against the buffered AW and AR flits, and if they're good then send them into their respective checkers.
-        let resp = keyStore.keyResponses.peek;
+        let resp = keyStore.checker.keyResponse.peek;
         $display("IOCap - peek_key ", fshow(resp));
         peekedKey <= resp;
     endrule
@@ -291,12 +384,12 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         end
     endrule
 
-    rule deq_peeked_key(keyStore.keyResponses.canPeek);
+    rule deq_peeked_key(keyStore.checker.keyResponse.canPeek);
         if ((usedPeekedKeyForAw || usedPeekedKeyForAr)) begin
-            keyStore.keyResponses.drop();
+            keyStore.checker.keyResponse.drop();
             $display("IOCap - deq_peeked_key dequeued ", fshow(peekedKey));
         end else if (!keyMatchedAr && !keyMatchedAw) begin
-            keyStore.keyResponses.drop();
+            keyStore.checker.keyResponse.drop();
             $display("IOCap - deq_peeked_key dequeued ", fshow(peekedKey));
         end else begin
             $display("IOCap - deq_peeked_key wasn't dequeued ", fshow(peekedKey));
@@ -305,7 +398,8 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
 
     rule check_aw if (awChecker.checkResponse.canPeek && (
         // If !blockInvalid, we will always be in Pass mode.
-        (tpl_3(awChecker.checkResponse.peek) == True && wValve.canUpdateCredits(Pass)) || (tpl_3(awChecker.checkResponse.peek) == False && wValve.canUpdateCredits(Drop)) || !blockInvalid
+        ((tpl_3(awChecker.checkResponse.peek) == True && wValve.canUpdateCredits(Pass)) || (tpl_3(awChecker.checkResponse.peek) == False && wValve.canUpdateCredits(Drop)) || !blockInvalid)
+        && wScoreboard.canBeginTxn(tpl_1(awChecker.checkResponse.peek).awid)
     ));
         // Pull the AW check result out of the awChecker
         let awResp <- get(awChecker.checkResponse);
@@ -317,21 +411,19 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
             { .flit, .keyId, .allowed } : begin
                 Bit#(8) awlen = flit.awlen;
                 Bit#(9) nCredits = zeroExtend(awlen) + 1;
+                wScoreboard.beginTxn(flit.awid, keyId, allowed);
                 if (allowed) begin
-                    keyStore.bumpPerfCounterGoodWrite();
+                    keyStore.wValve.perf.bumpPerfCounterGood();
                     // Pass through the valid write
                     awOut.enq(flit);
                     // Tell the W valve to let through the right number of flits
                     wValve.updateCredits(Pass, extend(unpack(nCredits)));
+                    // Tell the key manager that we're using a keyId
+                    keyStore.wValve.refcount.keyIncrementRefcountRequest.put(keyId);
                 end else begin
-                    keyStore.bumpPerfCounterBadWrite();
+                    keyStore.wValve.perf.bumpPerfCounterBad();
                     if (blockInvalid) begin
-                        // Drop the AW flit, insert an invalid-write response
-                        invalidBToInsert.enq(AXI4_BFlit {
-                            bid: flit.awid,
-                            bresp: SLVERR,
-                            buser: ?
-                        });
+                        // We will send the invalid-write-response once it passes through the scoreboard
                         // Tell the W valve to drop the right number of flits
                         wValve.updateCredits(Drop, extend(unpack(nCredits)));
                     end else begin
@@ -345,7 +437,7 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         endcase
     endrule
 
-    rule check_ar;
+    rule check_ar (rScoreboard.canBeginTxn(tpl_1(arChecker.checkResponse.peek).arid));
         // Pull the AR check result out of the arChecker
         let arResp <- get(arChecker.checkResponse);
         $display("IOCap - check_ar ", fshow(arResp));
@@ -353,21 +445,16 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         // If invalid, send a failure response
         case (arResp) matches
             { .flit, .keyId, .allowed } : begin
+                rScoreboard.beginTxn(flit.arid, keyId, allowed);
                 if (allowed) begin
-                    keyStore.bumpPerfCounterGoodRead();
+                    keyStore.rValve.perf.bumpPerfCounterGood();
                     // Pass through the valid AR flit
                     arOut.enq(flit);
+                    keyStore.rValve.refcount.keyIncrementRefcountRequest.put(keyId);
                 end else begin
-                    keyStore.bumpPerfCounterBadRead();
+                    keyStore.rValve.perf.bumpPerfCounterBad();
                     if (blockInvalid) begin
-                        // Drop the AR flit, insert an invalid-read response
-                        invalidRToInsert.enq(AXI4_RFlit {
-                            rid: flit.arid,
-                            rresp: SLVERR,
-                            ruser: ?,
-                            rdata: ?,
-                            rlast: True
-                        });
+                        // We will send the invalid-read-response once it passes through the scoreboard
                     end else begin
                         // Pass through the invalid AR flit
                         arOut.enq(flit);
@@ -378,23 +465,34 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
     endrule
 
     // If there isn't an invalid-b-flit to insert, just pass through valid completions from bIn to bOut
-    rule passthru_b if (!invalidBToInsert.notEmpty);
+    rule passthru_b if (!wScoreboard.invalidTxnsToComplete.canPeek());
         // Pass the responses from the b channel
         bOut.enq(bIn.first);
         bIn.deq();
         // Each B flit signals the end of a write transaction we received an AW for - valid or not
         completedWrite.send();
+        // Figure out what key that was so we can tell the Valve
+        wScoreboard.completeValidTxn(bIn.first.bid);
     endrule
 
-    rule insert_invalid_b if (invalidBToInsert.notEmpty);
+    rule inform_wValve_keyid_completed;
+        wScoreboard.completedValidTxnKeys.drop();
+        keyStore.wValve.refcount.keyDecrementRefcountRequest.put(wScoreboard.completedValidTxnKeys.peek());
+    endrule
+
+    rule insert_invalid_b if (wScoreboard.invalidTxnsToComplete.canPeek());
         // Insert the b into the stream
-        bOut.enq(invalidBToInsert.first);
-        invalidBToInsert.deq();
+        bOut.enq(AXI4_BFlit {
+            bid: wScoreboard.invalidTxnsToComplete.peek(),
+            bresp: SLVERR,
+            buser: ?
+        });
+        wScoreboard.invalidTxnsToComplete.drop();
         completedWrite.send();
     endrule
 
     // If there isn't an invalid-r-flit to insert, just pass through valid completions from rIn to rOut
-    rule passthru_r if (!invalidRToInsert.notEmpty);
+    rule passthru_r if (!rScoreboard.invalidTxnsToComplete.canPeek());
         // Pass the responses from the r channel
         rOut.enq(rIn.first);
         rIn.deq();
@@ -402,13 +500,26 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         // The read is only completed once the last flit in the burst has been sent
         if (rIn.first.rlast) begin
             completedRead.send();
+            // Figure out what key that was so we can tell the Valve
+            rScoreboard.completeValidTxn(rIn.first.rid);
         end
     endrule
 
-    rule insert_invalid_r if (invalidRToInsert.notEmpty);
+    rule inform_rValve_keyid_completed;
+        rScoreboard.completedValidTxnKeys.drop();
+        keyStore.rValve.refcount.keyDecrementRefcountRequest.put(rScoreboard.completedValidTxnKeys.peek());
+    endrule
+
+    rule insert_invalid_r if (rScoreboard.invalidTxnsToComplete.canPeek());
         // Insert the r into the stream
-        rOut.enq(invalidRToInsert.first);
-        invalidRToInsert.deq();
+        rOut.enq(AXI4_RFlit {
+            rid: rScoreboard.invalidTxnsToComplete.peek(),
+            rresp: SLVERR,
+            ruser: ?,
+            rdata: ?,
+            rlast: True
+        });
+        rScoreboard.invalidTxnsToComplete.drop();
         completedRead.send();
     endrule
 

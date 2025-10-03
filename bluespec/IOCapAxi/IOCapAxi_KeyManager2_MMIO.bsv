@@ -37,6 +37,7 @@ interface IOCapAxi_KeyManager2_MMIO#(type t_data, numeric type n_checkers);
 
     interface IOCapAxi_KeyManager2_MMIO_PerfCounters#(n_checkers) valvePerfCounters;
 
+    // TODO make ReadOnly
     interface Vector#(n_checkers, RWire#(KeyId)) checkerKillKeyMessages;
 endinterface
 
