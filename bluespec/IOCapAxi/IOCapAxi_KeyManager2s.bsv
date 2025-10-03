@@ -13,6 +13,7 @@ import IOCapAxi_KeyManager2_KeyStatePipe :: *;
 import IOCapAxi_KeyManager2_KeyDataPipe :: *;
 import IOCapAxi_KeyManager2_RefCountPipe :: *;
 import IOCapAxi_KeyManager2_MMIO :: *;
+import SamUtil :: *;
 
 interface IOCapAxi_KeyManager2_CheckerIfc;
     // Used by the checker to request keys from the KeyManager
@@ -23,7 +24,7 @@ interface IOCapAxi_KeyManager2_CheckerIfc;
     // de-authenticate all currently-processing transactions authenticated with this key without passing them to the valve.
     // They MAY continue to start a new transaction authenticated with this key, triggering all related callbacks in the Valve, on that cycle only,
     // but not on any subsequent cycle. 
-    interface ReadOnly#(KeyId) killKeyMessage;
+    interface ReadOnly#(Maybe#(KeyId)) killKeyMessage;
 endinterface
 
 interface IOCapAxi_KeyManager2_ValveIfc;
@@ -33,8 +34,8 @@ endinterface
 
 interface IOCapAxi_KeyManager2_ExposerIfc;
     interface IOCapAxi_KeyManager2_CheckerIfc checker;
-    interface IOCapAxi_KeyManager2_RefCountPipe_ValveIfc rValve;
-    interface IOCapAxi_KeyManager2_RefCountPipe_ValveIfc wValve;
+    interface IOCapAxi_KeyManager2_ValveIfc rValve;
+    interface IOCapAxi_KeyManager2_ValveIfc wValve;
 endinterface
 
 interface IOCapAxi_KeyManager2#(numeric type t_data, numeric type n_exposers);
@@ -127,16 +128,18 @@ module mkIOCapAxi_KeyManager2_V1(IOCapAxi_KeyManager2#(64, 1));
         interface perf = mmio.valvePerfCounters.write[idx];
     endinterface;
 
+    let killKeyMessageImpl <- mkRwireToReadOnlyDirect(mmio.checkerKillKeyMessages[0]);
+
     let exposerPort = interface IOCapAxi_KeyManager2_ExposerIfc;
         interface checker = interface IOCapAxi_KeyManager2_CheckerIfc;
             interface keyRequest = keyData.checkerKeyRequest[0];
             interface keyResponse = keyData.checkerKeyResponse[0];
-            interface killKeyMessage = mkRwireToReadOnlyDirect(mmio.checkerKillKeyMessages[0]);
+            interface killKeyMessage = killKeyMessageImpl;
         endinterface;
         
         interface rValve = makeReadValvePort(0);
         interface wValve = makeWriteValvePort(0);
-    endinterface
+    endinterface;
 
     interface exposerPorts = cons(exposerPort, nil);
 
