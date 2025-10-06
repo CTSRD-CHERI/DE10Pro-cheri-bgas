@@ -180,8 +180,9 @@ endmodule
 // - increased checker pool size to handle 2-cav iocaps with full throughput
 // Changes from V4
 // - compatability with KeyManagerV2, which requires...
-// - TODO swapping out the checkers with versions that support in-situ invalidation by KeyId
+// - TODO (maybe done?) swapping out the checkers with versions that support in-situ invalidation by KeyId
 // - TODO (maybe done?) Support per-transaction KeyId tracking
+// - for now, swapping back to a single checker per lane
 module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool blockInvalid)(IOCapSingleExposer#(t_id, t_data)) provisos (
 );
     // IOCapAxiChecker2 Doesn't support WRAP bursts right now

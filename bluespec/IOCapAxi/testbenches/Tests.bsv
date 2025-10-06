@@ -8,9 +8,12 @@ import Vector :: *;
 import IOCapAxi_Types :: *;
 import IOCapAxi_Exposers :: *;
 import IOCapAxi_KeyManagers :: *;
+import IOCapAxi_KeyManager2s :: *;
 import IOCapAxi_KeyManager2_Types :: *;
 import IOCapAxi_KeyManager2_KeyStatePipe :: *;
 import IOCapAxi_KeyManager2_KeyDataPipe :: *;
+import IOCapAxi_KeyManager2_RefCountPipe :: *;
+import IOCapAxi_KeyManager2_MMIO :: *;
 import IOCapAxi_ErrorUnit :: *;
 
 // An inversion of the KeyManager interface which the C++ can use to provide stimulus to the Exposer.
@@ -73,65 +76,91 @@ module mkKeyStoreShim(Tuple2#(KeyStoreShim, IOCap_KeyManager#(32)));
     return tuple2(keyStoreShim, keyManager);
 endmodule
 
-// An inversion of the KeyManager2 interface which the C++ can use to provide stimulus to the Exposer.
+// An inversion of the KeyManager2_ExposerIfc which the C++ can use to provide stimulus to the Exposer.
 // TODO finish this
 interface KeyStore2Shim;
+    // C++ can detect when exposerIfc::{r,w}Valve.perf.bumpPerfCounter{Good,Bad} are called
     interface ReadOnly#(Bool) bumpedPerfCounterGoodWrite;
     interface ReadOnly#(Bool) bumpedPerfCounterBadWrite;
     interface ReadOnly#(Bool) bumpedPerfCounterGoodRead;
     interface ReadOnly#(Bool) bumpedPerfCounterBadRead;
 
     // The C++ can receive keyRequests from the exposer
-    interface Source#(KeyId) keyRequests;
+    interface Source#(KeyId) checker_keyRequest;
     // The C++ can send keyResponses to the exposer
-    interface Sink#(Tuple2#(KeyId, Maybe#(Key))) keyResponses;
+    interface Sink#(Tuple2#(KeyId, Maybe#(Key))) checker_keyResponse;
+    // The C++ can send killKeyMessages to the exposer
+    interface WriteOnly#(KeyId) checker_killKeyMessage;
 
-    // The C++ can send newEpochRequests to the exposer
-    interface Sink#(Epoch) newEpochRequests;
-    // The C++ can receive finishedEpoch notifications from the exposer
-    interface Source#(Epoch) finishedEpochs;
+    // The C++ can receive increment/decrement refcount requests from the exposer
+    interface Source#(KeyId) rValve_Increment;
+    interface Source#(KeyId) rValve_Decrement;
+    interface Source#(KeyId) wValve_Increment;
+    interface Source#(KeyId) wValve_Decrement;
 endinterface
 
-module mkKeyStore2Shim(Tuple2#(KeyStore2Shim, IOCap_KeyManager#(32)));
-    // PulseWire reqGoodWrite <- mkPulseWire;
-    // PulseWire reqBadWrite <- mkPulseWire;
-    // PulseWire reqGoodRead <- mkPulseWire;
-    // PulseWire reqBadRead <- mkPulseWire;
+module mkKeyStore2Shim(Tuple2#(KeyStore2Shim, IOCapAxi_KeyManager2_ExposerIfc));
+    PulseWire reqGoodWrite <- mkPulseWire;
+    PulseWire reqBadWrite <- mkPulseWire;
+    PulseWire reqGoodRead <- mkPulseWire;
+    PulseWire reqBadRead <- mkPulseWire;
 
-    // let keyReqFF <- mkFIFOF;
-    // let keyRespFF <- mkFIFOF;
-    // let newEpochRequest <- mkFIFOF;
-    // let epochCompleteResponse <- mkFIFOF;
+    let keyReqFF <- mkFIFOF;
+    let keyRespFF <- mkFIFOF;
 
-    // let keyStoreShim = interface KeyStoreShim;
-    //     interface bumpedPerfCounterGoodWrite = pulseWireToReadOnly(reqGoodWrite);
-    //     interface bumpedPerfCounterBadWrite = pulseWireToReadOnly(reqBadWrite);
-    //     interface bumpedPerfCounterGoodRead = pulseWireToReadOnly(reqGoodRead);
-    //     interface bumpedPerfCounterBadRead = pulseWireToReadOnly(reqBadRead);
+    RWire#(KeyId) checker_killKeyMessageRWire <- mkRWire;
+    let checker_killKeyMessageReadonly <-mkRwireToReadOnlyDirect(checker_killKeyMessageRWire); 
 
-    //     interface keyRequests = toSource(keyReqFF);
-    //     interface keyResponses = toSink(keyRespFF);
-    //     interface newEpochRequests = toSink(newEpochRequest);
-    //     interface finishedEpochs = toSource(epochCompleteResponse);
-    // endinterface;
+    let rValve_Increment <- mkFIFOF;
+    let rValve_Decrement <- mkFIFOF;
+    let wValve_Increment <- mkFIFOF;
+    let wValve_Decrement <- mkFIFOF;
 
-    // let keyManager = interface IOCap_KeyManager#(32);
-    //     method Action bumpPerfCounterGoodWrite() = reqGoodWrite.send();
-    //     method Action bumpPerfCounterBadWrite() = reqBadWrite.send();
-    //     method Action bumpPerfCounterGoodRead() = reqGoodRead.send();
-    //     method Action bumpPerfCounterBadRead() = reqBadRead.send();
+    let keyStoreShim = interface KeyStore2Shim;
+        interface bumpedPerfCounterGoodWrite = pulseWireToReadOnly(reqGoodWrite);
+        interface bumpedPerfCounterBadWrite = pulseWireToReadOnly(reqBadWrite);
+        interface bumpedPerfCounterGoodRead = pulseWireToReadOnly(reqGoodRead);
+        interface bumpedPerfCounterBadRead = pulseWireToReadOnly(reqBadRead);
 
-    //     interface keyRequests = toSink(keyReqFF);
-    //     interface keyResponses = toSource(keyRespFF);
-    //     interface newEpochRequests = toSource(newEpochRequest);
-    //     interface finishedEpochs = toSink(epochCompleteResponse);
+        interface checker_keyRequest = toSource(keyReqFF);
+        interface checker_keyResponse = toSink(keyRespFF);
+        interface checker_killKeyMessage = rwireToWriteOnly(checker_killKeyMessageRWire);
 
-    //     interface hostFacingSlave = culDeSac;
-        
-    //     // TODO errorUnit
-    // endinterface;
+        interface rValve_Increment = toSource(rValve_Increment);
+        interface rValve_Decrement = toSource(rValve_Decrement);
+        interface wValve_Increment = toSource(wValve_Increment);
+        interface wValve_Decrement = toSource(wValve_Decrement);
+    endinterface;
 
-    // return tuple2(keyStoreShim, keyManager);
+    let keyManager = interface IOCapAxi_KeyManager2_ExposerIfc;
+        interface checker = interface IOCapAxi_KeyManager2_CheckerIfc;
+            interface keyRequest = toSink(keyReqFF);
+            interface keyResponse = toSource(keyRespFF);
+            interface killKeyMessage = checker_killKeyMessageReadonly;
+        endinterface;
+        interface rValve = interface IOCapAxi_KeyManager2_ValveIfc;
+            interface refcount = interface IOCapAxi_KeyManager2_RefCountPipe_ValveIfc;
+                interface keyIncrementRefcountRequest = toSink(rValve_Increment);
+                interface keyDecrementRefcountRequest = toSink(rValve_Decrement);
+            endinterface;
+            interface perf = interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc;
+                method Action bumpPerfCounterGood() = reqGoodRead.send();
+                method Action bumpPerfCounterBad() = reqBadRead.send();
+            endinterface;
+        endinterface;
+        interface wValve = interface IOCapAxi_KeyManager2_ValveIfc;
+            interface refcount = interface IOCapAxi_KeyManager2_RefCountPipe_ValveIfc;
+                interface keyIncrementRefcountRequest = toSink(wValve_Increment);
+                interface keyDecrementRefcountRequest = toSink(wValve_Decrement);
+            endinterface;
+            interface perf = interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc;
+                method Action bumpPerfCounterGood() = reqGoodWrite.send();
+                method Action bumpPerfCounterBad() = reqBadWrite.send();
+            endinterface;
+        endinterface;
+    endinterface;
+
+    return tuple2(keyStoreShim, keyManager);
 endmodule
 
 interface SimpleIOCapExposerTb;
