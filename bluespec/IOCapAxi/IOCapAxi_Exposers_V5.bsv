@@ -13,7 +13,7 @@ import IOCapAxi_KeyManager2s :: *;
 import IOCapAxi_KeyManager2_MMIO :: *;
 import IOCapAxi_KeyManager2_RefCountPipe :: *;
 import IOCapAxi_CreditValve :: *;
-import IOCapAxi_Checkers :: *;
+import IOCapAxi_Checker2s :: *;
 
 import Cap2024_11 :: *;
 import Cap2024_11_Decode_FastFSM :: *;
@@ -184,10 +184,53 @@ endmodule
 // - TODO (maybe done?) Support per-transaction KeyId tracking
 module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool blockInvalid)(IOCapSingleExposer#(t_id, t_data)) provisos (
 );
-    // Doesn't support WRAP bursts right now
+    // IOCapAxiChecker2 Doesn't support WRAP bursts right now
+
+    function KeyId keyIdForFlit(Cap2024_11 cap);
+        return truncate(cap.secret_key_id);
+    endfunction
+
+    // Simple arbitration between AW and AR, prioritising AW
+    RWire#(KeyId) awKeyRequest <- mkRWire;
+    RWire#(KeyId) arKeyRequest <- mkRWire;
+    let awKeyReqIfc = interface Sink;
+        method Bool canPut = keyStore.checker.keyRequest.canPut;
+        method Action put(keyId) = awKeyRequest.wset(keyId);
+    endinterface;
+    let arKeyReqIfc = interface Sink;
+        method Bool canPut = keyStore.checker.keyRequest.canPut() && !isValid(awKeyRequest.wget());
+        method Action put(keyId) = arKeyRequest.wset(keyId);
+    endinterface;
+
+    rule sendKeyReq;
+        case (tuple2(awKeyRequest.wget(), arKeyRequest.wget())) matches
+            { tagged Invalid, tagged Invalid } : noAction;
+            { tagged Valid .awKeyId, .* } : keyStore.checker.keyRequest.put(awKeyId);    
+            { .*, tagged Valid .arKeyId } : keyStore.checker.keyRequest.put(arKeyId);  
+            default : $display("SOMEHOW SET AW AND AR REQUEST AT THE SAME TIME");
+        endcase  
+    endrule
+
+    let keyResponse = interface ReadOnly;
+        method Maybe#(Tuple2#(KeyId, Maybe#(Key))) _read();
+            return (keyStore.checker.keyResponse.canPeek() ? 
+                tagged Valid (keyStore.checker.keyResponse.peek()) : tagged Invalid); 
+        endmethod
+    endinterface;
+
+    rule pump_keyResponse;
+        keyStore.checker.keyResponse.drop();
+    endrule
 
     // AW transactions come in encoding an IOCap with a standard AW flit. The IOCap and flit are examined, and if verified they are passed on through awOut.
-    AddressChannelCapUnwrapper#(AXI4_AWFlit#(t_id, 64, 3), AXI4_AWFlit#(t_id, 64, 0), Cap2024_11) awIn <- mkSimpleAddressChannelCapUnwrapper(Proxy{});
+    // AddressChannelCapUnwrapper#(AXI4_AWFlit#(t_id, 64, 3), AXI4_AWFlit#(t_id, 64, 0), Cap2024_11) awIn <- mkSimpleAddressChannelCapUnwrapper(Proxy{});
+    IOCapAxiChecker2#(AXI4_AWFlit#(t_id, 64, 3), AXI4_AWFlit#(t_id, 64, 0)) awIn <- mkSimpleIOCapAxiChecker2(
+        connectFastFSMCapDecode_2024_11,
+        awKeyReqIfc,
+        keyResponse,
+        keyStore.checker.killKeyMessage,
+        keyIdForFlit
+    );
     FIFOF#(AXI4_AWFlit#(t_id, 64, 0)) awOut <- mkFIFOF;
 
     // W flits are passed through or dropped depending on the AW transactions they map to - if the AW transaction is valid, its w flits go through.
@@ -203,7 +246,14 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
     FIFOF#(AXI4_BFlit#(t_id, 0)) bOut <- mkFIFOF;
 
     // AR transactions come in encoding an IOCap with a standard AR flit. The IOCap and flit are examined, and if verified they are passed on through arOut.
-    AddressChannelCapUnwrapper#(AXI4_ARFlit#(t_id, 64, 3), AXI4_ARFlit#(t_id, 64, 0), Cap2024_11) arIn <- mkSimpleAddressChannelCapUnwrapper(Proxy{});
+    // AddressChannelCapUnwrapper#(AXI4_ARFlit#(t_id, 64, 3), AXI4_ARFlit#(t_id, 64, 0), Cap2024_11) arIn <- mkSimpleAddressChannelCapUnwrapper(Proxy{});
+    IOCapAxiChecker2#(AXI4_ARFlit#(t_id, 64, 3), AXI4_ARFlit#(t_id, 64, 0)) arIn <- mkSimpleIOCapAxiChecker2(
+        connectFastFSMCapDecode_2024_11,
+        arKeyReqIfc,
+        keyResponse,
+        keyStore.checker.killKeyMessage,
+        keyIdForFlit
+    );
     FIFOF#(AXI4_ARFlit#(t_id, 64, 0)) arOut <- mkFIFOF;
 
     // R responses from the subordinate (de facto for *valid* requests) are sent through to the master, interleaved with responses from invalid requests.
@@ -234,6 +284,8 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
 
     function Bool canInitiateTransaction() = True;
 
+    /*
+
     // // Once a write transaction has been checked, then and only then can we pass through the write flits for that transaction.
     // // This manifests as a credit system: when a write transaction is valid, increment the credit count, and that many w flits will be passed on.
     // // If a write transaction is *invalid*, those flits need to be dropped instead. In that case, wait for "valid credit" to expire, set wDropCredited <= True and increment the credit count.
@@ -259,13 +311,11 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
     // or (1 shared = 8 total with 1/2 occupancy) vs the 12 we use.
     NumProxy#(6) poolSize = ?;
     // TODO test throughput of these vs non-pooled
-    IOCapAxiChecker#(AXI4_AWFlit#(t_id, 64, 0), Cap2024_11) awChecker <- mkInOrderIOCapAxiCheckerPool(poolSize, mkSimpleIOCapAxiChecker(connectFastFSMCapDecode_2024_11));
+    IOCapAxiChecker#(AXI4_AWFlit#(t_id, 64, 0), Cap2024_11) awIn <- mkInOrderIOCapAxiCheckerPool(poolSize, mkSimpleIOCapAxiChecker(connectFastFSMCapDecode_2024_11));
     // TODO could do out-of-order for ar
-    IOCapAxiChecker#(AXI4_ARFlit#(t_id, 64, 0), Cap2024_11) arChecker <- mkInOrderIOCapAxiCheckerPool(poolSize, mkSimpleIOCapAxiChecker(connectFastFSMCapDecode_2024_11));
+    IOCapAxiChecker#(AXI4_ARFlit#(t_id, 64, 0), Cap2024_11) arIn <- mkInOrderIOCapAxiCheckerPool(poolSize, mkSimpleIOCapAxiChecker(connectFastFSMCapDecode_2024_11));
 
-    function KeyId keyIdForFlit(AuthenticatedFlit#(t, Cap2024_11) authFlit);
-        return truncate(authFlit.cap.secret_key_id);
-    endfunction
+    */
 
     // There are two possible strategies for epoch counting.
     // 1. Count transactions as "initiated" when they move into the preCheck buffer, as we ask the keyStore to retrieve the relevant key.
@@ -276,6 +326,7 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
     // In that case 2. is wrong, because the response from keyStore is *buffered*. A keyStore response from a previous epoch may be buffered
     // past an epoch transition (where there are zero "initiated" transactions), and in that case a new transaction could be "initiated" using stale data from the *old* epoch.
 
+    /*
     (* descending_urgency = "recv_aw, recv_ar" *)
     // Conflict with recv_ar because they both request keys
     rule recv_aw(canInitiateTransaction());
@@ -299,7 +350,9 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         initiatedRead.send();
         $display("IOCap - recv_ar ", fshow(arFlit));
     endrule
+    */
 
+    /*
     // After requesting a key, it will eventually arrive at the keyStore.checker.keyResponse Source.
     // There is exactly one keyStore.checker.keyResponse item for each AW and AR request, 
     // but if an AW and AR request use the same keyId there's no reason not to use a single response for both.
@@ -334,17 +387,17 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
 
     rule start_aw_with_key(awPreCheckBuffer.notEmpty);
         // Important - aggressive conditions required to split canPut from cantPut
-        if (awChecker.checkRequest.canPut) begin
+        if (awIn.checkRequest.canPut) begin
             // We can start a new check!
             let keyId = tpl_1(peekedKey);
             let key = tpl_2(peekedKey); // May be tagged Invalid if the key is Invalid
 
             if (keyIdForFlit(awPreCheckBuffer.first) == keyId) begin
                 awPreCheckBuffer.deq();
-                awChecker.checkRequest.put(tuple3(awPreCheckBuffer.first, keyId, key));
+                awIn.checkRequest.put(tuple3(awPreCheckBuffer.first, keyId, key));
                 keyMatchedAw.send();
                 usedPeekedKeyForAw.send();
-                $display("IOCap - start_aw_with_key awChecker.checkRequest.put ", fshow(awPreCheckBuffer.first));
+                $display("IOCap - start_aw_with_key awIn.checkRequest.put ", fshow(awPreCheckBuffer.first));
             end
         end else begin
             // We can't start a new check - still see if the key matches the head of the AW queue, because in that case we may need to stop it from dropping
@@ -360,17 +413,17 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
 
     rule start_ar_with_key;
         // Important - aggressive conditions required to split canPut from cantPut
-        if (arChecker.checkRequest.canPut) begin
+        if (arIn.checkRequest.canPut) begin
             // We can start a new check!
             let keyId = tpl_1(peekedKey);
             let key = tpl_2(peekedKey); // May be tagged Invalid if the key is Invalid
 
             if (keyIdForFlit(arPreCheckBuffer.first) == keyId) begin
                 arPreCheckBuffer.deq();
-                arChecker.checkRequest.put(tuple3(arPreCheckBuffer.first, keyId, key));
+                arIn.checkRequest.put(tuple3(arPreCheckBuffer.first, keyId, key));
                 keyMatchedAr.send();
                 usedPeekedKeyForAr.send();
-                $display("IOCap - start_ar_with_key arChecker.checkRequest.put ", fshow(arPreCheckBuffer.first));
+                $display("IOCap - start_ar_with_key arIn.checkRequest.put ", fshow(arPreCheckBuffer.first));
             end
         end else begin
             // We can't start a new check - still see if the key matches the head of the AR queue, because in that case we may need to stop it from dropping
@@ -395,14 +448,15 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
             $display("IOCap - deq_peeked_key wasn't dequeued ", fshow(peekedKey));
         end
     endrule
+    */
 
-    rule check_aw if (awChecker.checkResponse.canPeek && (
+    rule check_aw if (awIn.checkResponse.canPeek && (
         // If !blockInvalid, we will always be in Pass mode.
-        ((tpl_3(awChecker.checkResponse.peek) == True && wValve.canUpdateCredits(Pass)) || (tpl_3(awChecker.checkResponse.peek) == False && wValve.canUpdateCredits(Drop)) || !blockInvalid)
-        && wScoreboard.canBeginTxn(tpl_1(awChecker.checkResponse.peek).awid)
+        ((tpl_3(awIn.checkResponse.peek) == True && wValve.canUpdateCredits(Pass)) || (tpl_3(awIn.checkResponse.peek) == False && wValve.canUpdateCredits(Drop)) || !blockInvalid)
+        && wScoreboard.canBeginTxn(tpl_1(awIn.checkResponse.peek).awid)
     ));
-        // Pull the AW check result out of the awChecker
-        let awResp <- get(awChecker.checkResponse);
+        // Pull the AW check result out of the awIn
+        let awResp <- get(awIn.checkResponse);
         $display("IOCap - check_aw ", fshow(awResp));
         // If valid, pass on and increment send credits (if wDropCredited = True, don't dequeue - wait for wSendCredits == 0 so we can set it to False)
         // If invalid, drop the AW flit and increment drop credits
@@ -437,9 +491,9 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         endcase
     endrule
 
-    rule check_ar (rScoreboard.canBeginTxn(tpl_1(arChecker.checkResponse.peek).arid));
-        // Pull the AR check result out of the arChecker
-        let arResp <- get(arChecker.checkResponse);
+    rule check_ar (rScoreboard.canBeginTxn(tpl_1(arIn.checkResponse.peek).arid));
+        // Pull the AR check result out of the arIn
+        let arResp <- get(arIn.checkResponse);
         $display("IOCap - check_ar ", fshow(arResp));
         // If valid, pass on
         // If invalid, send a failure response
@@ -525,10 +579,10 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
 
     interface iocapsIn = interface IOCapAXI4_Slave;
         interface axiSignals = interface AXI4_Slave;
-            interface aw = toSink(awIn.in);
+            interface aw = awIn.in;
             interface  w = toSink(wIn);
             interface  b = toSource(bOut);
-            interface ar = toSink(arIn.in);
+            interface ar = arIn.in;
             interface  r = toSource(rOut);
         endinterface;
     endinterface;

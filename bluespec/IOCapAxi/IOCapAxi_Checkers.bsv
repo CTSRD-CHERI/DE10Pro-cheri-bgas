@@ -16,30 +16,6 @@ import Cap2024_02_Decode_FastFSM :: *;
 import Cap2024_SigCheck_Aes_1RoundPerCycle :: *; // Get CapSigCheckIn
 import Cap2024_SigCheck_Aes_2RoundPerCycle :: *;
 
-typeclass AxiCtrlFlit64#(type flit);
-    function Bit#(64) burstAddr(flit f);
-    function AXI4_Len burstLen(flit f);
-    function AXI4_Size burstSize(flit f);
-    function AXI4_Burst burstKind(flit f);
-    function Bool isBurstRead(flit f);
-endtypeclass
-
-instance AxiCtrlFlit64#(AXI4_AWFlit#(t_id, 64, t_data));
-    function Bit#(64) burstAddr(AXI4_AWFlit#(t_id, 64, t_data) f) = f.awaddr;
-    function AXI4_Len burstLen(AXI4_AWFlit#(t_id, 64, t_data) f) = f.awlen;
-    function AXI4_Size burstSize(AXI4_AWFlit#(t_id, 64, t_data) f) = f.awsize;
-    function AXI4_Burst burstKind(AXI4_AWFlit#(t_id, 64, t_data) f) = f.awburst;
-    function Bool isBurstRead(AXI4_AWFlit#(t_id, 64, t_data) f) = False;
-endinstance
-
-instance AxiCtrlFlit64#(AXI4_ARFlit#(t_id, 64, t_data));
-    function Bit#(64) burstAddr(AXI4_ARFlit#(t_id, 64, t_data) f) = f.araddr;
-    function AXI4_Len burstLen(AXI4_ARFlit#(t_id, 64, t_data) f) = f.arlen;
-    function AXI4_Size burstSize(AXI4_ARFlit#(t_id, 64, t_data) f) = f.arsize;
-    function AXI4_Burst burstKind(AXI4_ARFlit#(t_id, 64, t_data) f) = f.arburst;
-    function Bool isBurstRead(AXI4_ARFlit#(t_id, 64, t_data) f) = True;
-endinstance
-
 interface IOCapAxiChecker#(type no_iocap_flit, type tcap);
     interface Sink#(Tuple3#(AuthenticatedFlit#(no_iocap_flit, tcap), KeyId, Maybe#(Key))) checkRequest;
     interface Source#(Tuple3#(no_iocap_flit, KeyId, Bool)) checkResponse;

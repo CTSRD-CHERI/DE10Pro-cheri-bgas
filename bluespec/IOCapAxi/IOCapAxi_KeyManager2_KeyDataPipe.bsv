@@ -81,7 +81,8 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort#(IOCapAxi_Ke
         end
     endfunction
     // TODO this depth might need to be 5 to ensure availability
-    let pendingKeyIdFF <- mkSizedMapFIFO(4'b0000, checkKeyReadAgainstKeyToStartRevoking);
+    NumProxy#(4) pendingKeyIdDepth = ?;
+    let pendingKeyIdFF <- mkSizedMapFIFO(pendingKeyIdDepth, checkKeyReadAgainstKeyToStartRevoking);
     // Queue of outgoing responses to the Exposer with (KeyId, Key) pairs.
     let keyRespFF <- mkFIFOF;
 

@@ -385,3 +385,28 @@ module mkSimpleAddressChannelCapUnwrapper#(Proxy#(tcap) _proxy)(AddressChannelCa
     interface in = toSink(inFlits);
     interface out = toSource(outFlits);
 endmodule
+
+// Shared typeclass for parsing AW and AR flits with the same generic code
+typeclass AxiCtrlFlit64#(type flit);
+    function Bit#(64) burstAddr(flit f);
+    function AXI4_Len burstLen(flit f);
+    function AXI4_Size burstSize(flit f);
+    function AXI4_Burst burstKind(flit f);
+    function Bool isBurstRead(flit f);
+endtypeclass
+
+instance AxiCtrlFlit64#(AXI4_AWFlit#(t_id, 64, t_data));
+    function Bit#(64) burstAddr(AXI4_AWFlit#(t_id, 64, t_data) f) = f.awaddr;
+    function AXI4_Len burstLen(AXI4_AWFlit#(t_id, 64, t_data) f) = f.awlen;
+    function AXI4_Size burstSize(AXI4_AWFlit#(t_id, 64, t_data) f) = f.awsize;
+    function AXI4_Burst burstKind(AXI4_AWFlit#(t_id, 64, t_data) f) = f.awburst;
+    function Bool isBurstRead(AXI4_AWFlit#(t_id, 64, t_data) f) = False;
+endinstance
+
+instance AxiCtrlFlit64#(AXI4_ARFlit#(t_id, 64, t_data));
+    function Bit#(64) burstAddr(AXI4_ARFlit#(t_id, 64, t_data) f) = f.araddr;
+    function AXI4_Len burstLen(AXI4_ARFlit#(t_id, 64, t_data) f) = f.arlen;
+    function AXI4_Size burstSize(AXI4_ARFlit#(t_id, 64, t_data) f) = f.arsize;
+    function AXI4_Burst burstKind(AXI4_ARFlit#(t_id, 64, t_data) f) = f.arburst;
+    function Bool isBurstRead(AXI4_ARFlit#(t_id, 64, t_data) f) = True;
+endinstance

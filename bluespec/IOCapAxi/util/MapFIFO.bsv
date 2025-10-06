@@ -2,13 +2,14 @@
 
 import SourceSink :: *;
 import Vector :: *;
+import BlueBasics :: *;
 
 interface MapFIFO#(type t);
     interface Sink#(t) enq;
     interface Source#(t) deq;
 endinterface
 
-module mkSizedMapFIFO#(Bit#(depth) dummy, function t mapItem(t item))(MapFIFO#(t)) provisos (
+module mkSizedMapFIFO#(NumProxy#(depth) proxy, function t mapItem(t item))(MapFIFO#(t)) provisos (
     Bits#(t, __a)
 );
     Vector#(depth, Reg#(t)) regs <- replicateM(mkReg(?));
