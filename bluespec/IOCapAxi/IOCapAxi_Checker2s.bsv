@@ -201,10 +201,12 @@ module mkSimpleIOCapAxiChecker2#(
                 // $display("-> Building1");
                 IOCapFlitSpec#(no_iocap_flit) capBits = unpackSpec(incomingFlits.peek());
                 if (capBits matches tagged CapBits1 .capBits1) begin
-                    // // TODO THIS REALLY NEEDS TO BE POSSIBLE. IF IT ISN'T, REARRANGE IOCAPAXI SO THAT IT IS
-                    // tcap partialCap = unpack({ ?, capBits1 });
-                    // let keyId = keyIdOf(partialCap);
-                    // keyIdForConstructingFlit.wset(keyId);
+                    // This is possible because capBits1 is the MIDDLE.
+                    // capBits1 covers a bottom part of the MAC and the top bits of the text,
+                    // so unpack the pair. TODO CHECK PACKING ORDER
+                    Tuple2#(Bit#(128), tcap) partialCap = unpack({ ?, capBits1, 86'? });
+                    let keyId = keyIdOf(tpl_2(partialCap));
+                    keyIdForConstructingFlit.wset(keyId);
                     currentFlit <= tagged Building1 {
                         flit: flit,
                         capBits1: capBits1
@@ -232,16 +234,14 @@ module mkSimpleIOCapAxiChecker2#(
                 // $display("-> DecodingAndSigChecking");
                 IOCapFlitSpec#(no_iocap_flit) capBits = unpackSpec(incomingFlits.peek());
                 if (capBits matches tagged CapBits3 .capBits3) begin
-                    let combinedBits = { capBits3, capBits2, capBits1 };
+                    // let combinedBits = { capBits3, capBits2, capBits1 };
+                    // See IOCapAxi_Flits.bsv, capBits1 and capBits2 are swapped for an amazing reason
+                    let combinedBits = { capBits3, capBits1, capBits2 };
                     AuthenticatedFlit#(no_iocap_flit, tcap) authFlit = AuthenticatedFlit {
                         flit: flit,
                         cap: unpack(combinedBits[127:0]),
                         sig: combinedBits[255:128]
                     };
-                    // TODO THIS REALLY NEEDS TO BE IN BIT 1. IF IT ISN'T, REARRANGE IOCAPAXI SO THAT IT IS
-                    let keyId = keyIdOf(authFlit.cap);
-                    keyIdForConstructingFlit.wset(keyId);
-                    completedFlit.wset(authFlit);
                     currentFlit <= tagged DecodingAndSigChecking authFlit;
                 end else begin
                     $display("TODO BIG ERROR");

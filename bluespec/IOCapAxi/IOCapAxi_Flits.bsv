@@ -26,6 +26,22 @@ and the 128-bit capability signature as the top 128-bits.
 TODO: The metadata bits are packed in the opposite order to the field bits
 e.g. we pack awaddr with lower bits than awlen, even though Bluespec packs awaddr into the more-significant-bits.
 TODO reverse this order
+
+CapBits1 sends the middle 86 bits first - this is a weird hack that allows us to get the key ID as early as possible
+// Originally we used
+// cap = { MAC, text } i.e. MAC = cap[255:128], text = cap[127:0]
+// IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits1 cap[85:0];
+// IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits2 cap[171:86];
+// IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits3 cap[255:172];
+//
+// Now we use 
+// cap = { MAC, text } i.e. MAC = cap[255:128], text = cap[127:0]
+// IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits1 cap[171:86];
+// IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits2 cap[85:0];
+// IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits3 cap[255:172];
+// TODO we can revert this if we put the field in the right place in the C structures.
+// 
+// I also tried completely swapping them, but 255:172 are not useful to receive first - those are all MAC bits!
 */
 
 typedef union tagged {
@@ -273,19 +289,24 @@ module mkSimpleAddressChannelCapWrapper(AddressChannelCapWrapper#(iocap_flit, no
     endrule
 
     rule st1 if (state == 1);
-        IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits1 cap[85:0];
+        // IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits1 cap[85:0];
+        // EXPERIMENT FROM COMPLETETLY FLIPPING, DIDNT HELP IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits1 cap[255:170];
+        IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits1 cap[171:86];
         outFlits.enq(packSpec(bits));
         state <= 2;
     endrule
 
     rule st2 if (state == 2);
-        IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits2 cap[171:86];
+        // IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits2 cap[171:86];
+        // EXPERIMENT FROM COMPLETETLY FLIPPING, DIDNT HELP IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits2 cap[169:84];
+        IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits2 cap[85:0];
         outFlits.enq(packSpec(bits));
         state <= 3;
     endrule
 
     rule st3 if (state == 3);
         IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits3 cap[255:172];
+        // EXPERIMENT FROM COMPLETETLY FLIPPING, DIDNT HELP IOCapFlitSpec#(no_iocap_flit) bits = tagged CapBits3 cap[83:0];
         outFlits.enq(packSpec(bits));
         state <= 0;
     endrule
@@ -335,7 +356,8 @@ module mkSimpleAddressChannelCapUnwrapper#(Proxy#(tcap) _proxy)(AddressChannelCa
             let flit = tpl_1(flitInProgress);
             flitInProgress <= tuple2(
                 flit,
-                { 0, bits }
+                // { 0, bits }
+                { 0, bits, 86'0 }
             );
         end else begin
             $error("IOCap protocol error ", fshow(bitsFlit));
@@ -352,7 +374,8 @@ module mkSimpleAddressChannelCapUnwrapper#(Proxy#(tcap) _proxy)(AddressChannelCa
             let bitsInProgress = tpl_2(flitInProgress);
             flitInProgress <= tuple2(
                 flit,
-                { 0, bits, bitsInProgress[85:0] }
+                // { 0, bits, bitsInProgress[85:0] }
+                { 0, bitsInProgress[171:86], bits }
             );
         end else begin
             $error("IOCap protocol error ", fshow(bitsFlit));
@@ -368,6 +391,7 @@ module mkSimpleAddressChannelCapUnwrapper#(Proxy#(tcap) _proxy)(AddressChannelCa
             let flit = tpl_1(flitInProgress);
             let bitsInProgress = tpl_2(flitInProgress);
             let combinedBits = { bits, bitsInProgress[171:0] };
+            // EXPERIMENT FROM COMPLETETLY FLIPPING, DIDNT HELP let combinedBits = { bitsInProgress[255:84], bits };
             AuthenticatedFlit#(no_iocap_flit, tcap) authFlit = AuthenticatedFlit {
                 flit: flit,
                 cap: unpack(combinedBits[127:0]),
