@@ -107,14 +107,16 @@ endinterface
 // It's guaranteed to arrive after the key state was set to KeyInvalidPendingRevoke, so we can guarantee that the key will eventually be checked for revocation even if it never receives a Decrement message again.
 // Even if one or more events happen in-between, pushing the key state further through the cycle, CheckZero can only ever correctly transition a key to revoked after revocation was requested.
 
-module mkIOCapAxi_KeyManager2_V1(IOCapAxi_KeyManager2#(64, 1));
+module mkIOCapAxi_KeyManager2_V1(IOCapAxi_KeyManager2#(t_data, 2)) provisos (
+    Alias#(key_write_coverage_bits, TDiv#(128, t_data))
+);
     KeyManager2ErrorUnit error <- mkErrorUnit;
 
-    IOCapAxi_KeyManager2_KeyStatePipe     keyState <- mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg(error);
-    IOCapAxi_KeyManager2_KeyDataPipe#(64, 1, 1)   keyData <- mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort(keyState.keydata, error);
+    IOCapAxi_KeyManager2_KeyStatePipe#(key_write_coverage_bits)     keyState <- mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg(error);
+    IOCapAxi_KeyManager2_KeyDataPipe#(t_data, key_write_coverage_bits, 1)   keyData <- mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort(keyState.keydata, error);
     IOCapAxi_KeyManager2_RefCountPipe#(2) refcount <- mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve(keyState.refcount, error);
 
-    IOCapAxi_KeyManager2_MMIO#(64, 1)         mmio <- mkIOCapAxi_KeyManager2_MMIO(keyState.mmio, keyData.mmio, error);
+    IOCapAxi_KeyManager2_MMIO#(t_data, key_write_coverage_bits)         mmio <- mkIOCapAxi_KeyManager2_MMIO(keyState.mmio, keyData.mmio, error);
 
     function IOCapAxi_KeyManager2_ValveIfc makeReadValvePort(Integer idx) = interface IOCapAxi_KeyManager2_ValveIfc;
         Integer valveIdx = idx * 2;

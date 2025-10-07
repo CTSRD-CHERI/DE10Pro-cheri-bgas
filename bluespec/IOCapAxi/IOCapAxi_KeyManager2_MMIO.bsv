@@ -42,16 +42,15 @@ interface IOCapAxi_KeyManager2_MMIO#(type t_data, numeric type n_checkers);
 endinterface
 
 module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc keyState, IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc#(t_data, TLog#(TDiv#(128, t_data))) keyData, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_MMIO#(t_data, n_checkers))  provisos (
-    // // t_data must be divisible by 8
-    // // i.e. (t_data/8) * 8 == t_data
-    // Mul#(TDiv#(t_data, 8), 8, t_data),
-    // // t_data must be smaller than or equal to 128 - the size of a key
-    // Add#(t_data, a__, 128),
-    // // t_data must be smaller than or equal to 64 - the size of a performance counter
-    // Add#(t_data, b__, 64),
-    // // Same thing for t_data/8 - ugh, why can't this be proven implicitly
-    // Add#(TDiv#(t_data, 8), c__, 16)
-    Add#(t_data, 0, 64)
+    // t_data must be divisible by 8
+    // i.e. (t_data/8) * 8 == t_data
+    Mul#(TDiv#(t_data, 8), 8, t_data),
+    // t_data must be smaller than or equal to 128 - the size of a key
+    Add#(t_data, a__, 128),
+    // t_data must be smaller than or equal to 64 - the size of a performance counter
+    Add#(t_data, b__, 64),
+    // Same thing for t_data/8 - ugh, why can't this be proven implicitly
+    Add#(TDiv#(t_data, 8), c__, 16)
 );
     let axiShim <- mkAXI4LiteShimFF;
 

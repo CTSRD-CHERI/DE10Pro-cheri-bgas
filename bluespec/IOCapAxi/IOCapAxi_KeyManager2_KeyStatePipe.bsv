@@ -33,10 +33,10 @@ interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc;
     interface RWire#(KeyId) keyToStartRevoking;
 endinterface
 
-interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc;
+interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc#(numeric type key_write_coverage_bits);
     // This methon returns True if it has initiated an event that will be successful, otherwise False if the event would not be successful and has not been initiated.
     // It never causes backpressure
-    method ActionValue#(Bool) tryWriteKeyWord(KeyId id, Bit#(1) word);
+    method ActionValue#(Bool) tryWriteKeyWord(KeyId id, Bit#(key_write_coverage_bits) word);
 
     // The keydata pipeline must read this value on *every* cycle and invalidate any in-progress key reads if it is set.
     interface RWire#(KeyId) keyToStartRevoking;
@@ -45,24 +45,24 @@ interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc;
     method KeyStatus keyStatus(KeyId key);
 endinterface
 
-interface IOCapAxi_KeyManager2_KeyStatePipe;
+interface IOCapAxi_KeyManager2_KeyStatePip#(numeric type key_write_coverage_bits);
     interface IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc mmio;
-    interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc keydata;
+    interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc#(key_write_coverage_bits) keydata;
     interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc refcount;
 endinterface
 
-module mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg#(KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_KeyStatePipe);
+module mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg#(KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_KeyStatePipe#(key_write_coverage_bits));
     // ===============================================
     // KEY STATE PIPELINE
     // ===============================================
 
     // Per-key state machine
-    Reg#(Vector#(256, Tuple2#(KeyStatus, Bit#(2)))) keyStates <- mkReg(replicate(tuple2(KeyInvalidRevoked, 2'b00)));
+    Reg#(Vector#(256, Tuple2#(KeyStatus, Bit#(TExp#(key_write_coverage_bits))))) keyStates <- mkReg(replicate(tuple2(KeyInvalidRevoked, 0)));
     // Inputs to the per-key state machine
     RWire#(KeyId) keyToStartRevoking <- mkRWire;                      // Set via MMIO
     RWire#(KeyId) keyToMakeValid <- mkRWire;                          // Set via MMIO
     RWire#(KeyId) keyToTryConfirmingRevoke <- mkRWire;                // Set via RefCountPipe
-    RWire#(Tuple2#(KeyId, Bit#(2))) keyToEnqueueWriteFor <- mkRWire; // Set via KeyDataPipe
+    RWire#(Tuple2#(KeyId, Bit#(TExp#(key_write_coverage_bits)))) keyToEnqueueWriteFor <- mkRWire; // Set via KeyDataPipe
 
     (* no_implicit_conditions *)
     rule stepKeyFSMs;
@@ -75,12 +75,12 @@ module mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg#(KeyManager2ErrorUnit error
                 { KeyInvalidPendingRevoke, .* } : if (
                     (keyToTryConfirmingRevoke.wget() == (tagged Valid fromInteger(i)))
                 ) begin
-                    val[i] = tuple2(KeyInvalidRevoked, 2'b00);
+                    val[i] = tuple2(KeyInvalidRevoked, 0);
                 end
-                { KeyInvalidRevoked, 2'b11 } : if (
+                { KeyInvalidRevoked, .writeCov } if ((~writeCov) == 0): if (
                     keyToMakeValid.wget() == (tagged Valid fromInteger(i))
                 ) begin
-                    val[i] = tuple2(KeyValid, 2'b11);
+                    val[i] = tuple2(KeyValid, writeCov);
                 end
                 { KeyInvalidRevoked, .status } : case (keyToEnqueueWriteFor.wget()) matches
                     tagged Valid { .key, .oneHotWordSelect } : if (key == fromInteger(i)) begin
@@ -112,15 +112,14 @@ module mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg#(KeyManager2ErrorUnit error
         method KeyStatus keyStatus(KeyId key) = tpl_1(keyStates[key]);
     endinterface;
 
-    interface keydata = interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc;
-        method ActionValue#(Bool) tryWriteKeyWord(KeyId id, Bit#(1) word);
+    interface keydata = interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc#(key_write_coverage_bits);
+        method ActionValue#(Bool) tryWriteKeyWord(KeyId id, Bit#(key_write_coverage_bits) word);
             if (tpl_1(keyStates[id]) != KeyInvalidRevoked) begin
                 return False;
             end else begin
-                case (word) matches
-                    0 : keyToEnqueueWriteFor.wset(tuple2(id, 2'b01));
-                    1 : keyToEnqueueWriteFor.wset(tuple2(id, 2'b10));
-                endcase
+                Bit#(key_write_coverage_bits) oneHot = 1;
+                oneHot = oneHot << word;
+                keyToEnqueueWriteFor.wset(tuple2(id, oneHot));
                 return True;
             end
         endmethod

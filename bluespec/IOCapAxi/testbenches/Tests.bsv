@@ -188,12 +188,12 @@ interface SimpleIOCapExposerKeyMngrV2Tb;
 endinterface
 
 interface UnifiedSingleExposerKeyMngrV2Tb;
-    interface AXI4Lite_Master#(TLog#('h2000), t_data, 0, 0, 0, 0, 0) keyStore;
+    interface AXI4Lite_Master#(TLog#('h2000), 32 /* data bits */, 0, 0, 0, 0, 0) keyStore;
     interface IOCapSingleExposer#(4 /* ID bits */, 32 /* data bits */) exposer4x32;
 endinterface
 
 interface UnifiedFourExposerKeyMngrV2Tb;
-    interface AXI4Lite_Master#(TLog#('h2000), t_data, 0, 0, 0, 0, 0) keyStore;
+    interface AXI4Lite_Master#(TLog#('h2000), 32 /* data bits */, 0, 0, 0, 0, 0) keyStore;
     interface Vector#(4, IOCapSingleExposer#(4 /* ID bits */, 32 /* data bits */)) exposer4x32;
 endinterface
 
