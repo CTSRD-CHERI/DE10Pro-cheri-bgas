@@ -92,6 +92,25 @@ template <> class fmt::formatter<KeyMngrShimInput<KeyMngrV1>> {
     }
 };
 
+template<>
+struct KeyMngrShimInput<KeyMngrV2> {
+    std::optional<key_manager::KeyResponse> keyResponse;
+    std::optional<key_manager::KeyId> killKeyMessage;
+
+    bool operator==(const KeyMngrShimInput<KeyMngrV2>&) const = default;
+    bool is_notable() const {
+        return (killKeyMessage) || (keyResponse);
+    }
+};
+template <> class fmt::formatter<KeyMngrShimInput<KeyMngrV2>> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (KeyMngrShimInput<KeyMngrV2> const& x, Context& ctx) const {
+        return format_to(ctx.out(), "KeyMngrShimInput<KeyMngrV2> {{ .killKeyMessage = {}, .keyResponse = {} }}", x.killKeyMessage, x.keyResponse);
+    }
+};
+
 template<KeyMngrVersion V>
 struct ShimmedExposerInput : exposer::ExposerInput {
     KeyMngrShimInput<V> keyManager;
@@ -141,6 +160,38 @@ template <> class fmt::formatter<KeyMngrShimOutput<KeyMngrV1>> {
         return format_to(ctx.out(), "KeyMngrShimOutput<KeyMngrV1> {{ .bumpPerfCounterGoodWrite = {}, ....BadWrite = {}, ....GoodRead = {}, ....BadRead = {}, .keyRequest = {}, .finishedEpoch = {} }}", x.bumpPerfCounterGoodWrite, x.bumpPerfCounterBadWrite, x.bumpPerfCounterGoodRead, x.bumpPerfCounterBadRead, x.keyRequest, x.finishedEpoch);
     }
 };
+
+template<>
+struct KeyMngrShimOutput<KeyMngrV2> {
+    bool bumpPerfCounterGoodWrite;
+    bool bumpPerfCounterBadWrite;
+    bool bumpPerfCounterGoodRead;
+    bool bumpPerfCounterBadRead;
+
+    std::optional<key_manager::KeyId> keyRequest;
+    std::optional<key_manager::KeyId> rValve_Increment;
+    std::optional<key_manager::KeyId> rValve_Decrement;
+    std::optional<key_manager::KeyId> wValve_Increment;
+    std::optional<key_manager::KeyId> wValve_Decrement;
+
+    bool operator==(const KeyMngrShimOutput<KeyMngrV2>&) const = default;
+    bool is_notable() {
+        return (bumpPerfCounterGoodWrite) || (bumpPerfCounterBadWrite) ||
+                (bumpPerfCounterGoodRead) || (bumpPerfCounterBadRead) ||
+                (keyRequest) ||
+                (rValve_Increment) || (rValve_Decrement) ||
+                (wValve_Increment) || (wValve_Decrement);
+    }
+};
+template <> class fmt::formatter<KeyMngrShimOutput<KeyMngrV2>> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (KeyMngrShimOutput<KeyMngrV2> const& x, Context& ctx) const {
+        return format_to(ctx.out(), "KeyMngrShimOutput<KeyMngrV2> {{ .bumpPerfCounterGoodWrite = {}, ....BadWrite = {}, ....GoodRead = {}, ....BadRead = {}, .keyRequest = {}, .rValve_Inc = {}, ...r_Dec = {}, ...w_Inc = {}, ...wDec = {} }}", x.bumpPerfCounterGoodWrite, x.bumpPerfCounterBadWrite, x.bumpPerfCounterGoodRead, x.bumpPerfCounterBadRead, x.keyRequest, x.rValve_Increment, x.rValve_Decrement, x.wValve_Increment, x.wValve_Decrement);
+    }
+};
+
 template<KeyMngrVersion V>
 struct ShimmedExposerOutput : exposer::ExposerOutput {
     KeyMngrShimOutput<V> keyManager;
@@ -303,6 +354,35 @@ void observe_input(DUT& dut, ShimmedExposerInput<KeyMngrV1>& input) {
     observe_input(dut, input.keyManager);
 }
 
+template<class DUT>
+void observe_input(DUT& dut, KeyMngrShimInput<KeyMngrV2>& input) {
+    #define CANPEEK(from) (dut.EN_## from ##_put)
+    #define PEEK(from) dut. from ##_put_val
+    #define CANPEEK_WRITE(name) (dut.EN_## name ##___05Fwrite)
+    #define PEEK_WRITE(name) (dut.name ##___05Fwrite_x)
+
+    if (CANPEEK_WRITE(keyStoreShim_killKeyMessage)) {
+        input.killKeyMessage = PEEK_WRITE(keyStoreShim_killKeyMessage);
+    }
+
+    if (CANPEEK(keyStoreShim_keyResponses)) {
+        input.keyResponse = key_manager::KeyResponse::fromBluespec(
+            key_manager::Tuple2_KeyId_MaybeKey::unpack(stdify_array(PEEK(keyStoreShim_keyResponses)))
+        );
+    }
+
+    #undef PEEK_WRITE
+    #undef CANPEEK_WRITE
+    #undef PEEK
+    #undef CANPEEK
+}
+
+template<class DUT>
+void observe_input(DUT& dut, ShimmedExposerInput<KeyMngrV2>& input) {
+    observe_input(dut, (exposer::ExposerInput&)input);
+    observe_input(dut, input.keyManager);
+}
+
 /**
  * Pull from the outputs of a Verilator device-under-test to fill a ShimmedExposerOutput.
  * The DUT must have adhere to the Bluespec `SimpleIOCapExposerTb` interface, with keyStoreShim and exposer4x32 sub-interfaces.
@@ -421,6 +501,88 @@ void pull_output(DUT& dut, KeyMngrShimOutput<KeyMngrV1>& output) {
 
 template<class DUT>
 void pull_output(DUT& dut, ShimmedExposerOutput<KeyMngrV1>& output) {
+    pull_output(dut, (exposer::ExposerOutput&)output);
+    pull_output(dut, output.keyManager);
+}
+
+template<class DUT>
+void pull_output(DUT& dut, KeyMngrShimOutput<KeyMngrV2>& output) {
+    #define CANPEEK(from) (dut.RDY_## from ##_peek)
+    #define POP(from, into) \
+        assert(dut. from ##_canPeek); \
+        assert(dut.RDY_## from ##_drop); \
+        dut.EN_## from ##_drop = 1; \
+        into = dut. from ##_peek;
+    #define NOPOP(from) \
+        dut.EN_## from ##_drop = 0; \
+
+    if (CANPEEK(keyStoreShim_keyRequests)){
+        key_manager::KeyId keyRequest;
+        POP(keyStoreShim_keyRequests, keyRequest);
+        output.keyRequest = std::optional(keyRequest);
+    } else {
+        NOPOP(keyStoreShim_keyRequests);
+    }
+
+    if (CANPEEK(keyStoreShim_rValve_Increment)){
+        key_manager::KeyId key;
+        POP(keyStoreShim_rValve_Increment, key);
+        output.rValve_Increment = std::optional(key);
+    } else {
+        NOPOP(keyStoreShim_rValve_Increment);
+    }
+
+    if (CANPEEK(keyStoreShim_rValve_Decrement)){
+        key_manager::KeyId key;
+        POP(keyStoreShim_rValve_Decrement, key);
+        output.rValve_Decrement = std::optional(key);
+    } else {
+        NOPOP(keyStoreShim_rValve_Decrement);
+    }
+
+    if (CANPEEK(keyStoreShim_wValve_Increment)){
+        key_manager::KeyId key;
+        POP(keyStoreShim_wValve_Increment, key);
+        output.rValve_Increment = std::optional(key);
+    } else {
+        NOPOP(keyStoreShim_wValve_Increment);
+    }
+
+    if (CANPEEK(keyStoreShim_wValve_Decrement)){
+        key_manager::KeyId key;
+        POP(keyStoreShim_wValve_Decrement, key);
+        output.rValve_Decrement = std::optional(key);
+    } else {
+        NOPOP(keyStoreShim_wValve_Decrement);
+    }
+
+    if (dut.RDY_keyStoreShim_bumpedPerfCounterGoodWrite___05Fread &&
+        dut.keyStoreShim_bumpedPerfCounterGoodWrite___05Fread) {
+        output.bumpPerfCounterGoodWrite = true;
+    }
+
+    if (dut.RDY_keyStoreShim_bumpedPerfCounterBadWrite___05Fread &&
+        dut.keyStoreShim_bumpedPerfCounterBadWrite___05Fread) {
+        output.bumpPerfCounterBadWrite = true;
+    }
+
+    if (dut.RDY_keyStoreShim_bumpedPerfCounterGoodRead___05Fread &&
+        dut.keyStoreShim_bumpedPerfCounterGoodRead___05Fread) {
+        output.bumpPerfCounterGoodRead = true;
+    }
+
+    if (dut.RDY_keyStoreShim_bumpedPerfCounterBadRead___05Fread &&
+        dut.keyStoreShim_bumpedPerfCounterBadRead___05Fread) {
+        output.bumpPerfCounterBadRead = true;
+    }
+
+    #undef NOPOP
+    #undef POP
+    #undef CANPEEK
+}
+
+template<class DUT>
+void pull_output(DUT& dut, ShimmedExposerOutput<KeyMngrV2>& output) {
     pull_output(dut, (exposer::ExposerOutput&)output);
     pull_output(dut, output.keyManager);
 }

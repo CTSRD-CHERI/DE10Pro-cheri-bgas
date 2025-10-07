@@ -41,7 +41,7 @@ interface IOCapAxi_KeyManager2_MMIO#(type t_data, numeric type n_checkers);
     interface Vector#(n_checkers, RWire#(KeyId)) checkerKillKeyMessages;
 endinterface
 
-module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc keyState, IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc keyData, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_MMIO#(t_data, n_checkers))  provisos (
+module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc keyState, IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc#(t_data, TLog#(TDiv#(128, t_data))) keyData, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_MMIO#(t_data, n_checkers))  provisos (
     // // t_data must be divisible by 8
     // // i.e. (t_data/8) * 8 == t_data
     // Mul#(TDiv#(t_data, 8), 8, t_data),

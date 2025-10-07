@@ -6,6 +6,7 @@ import BRAM :: *;
 import Vector :: *;
 import BlueBasics :: *;
 import MapFIFO :: *;
+import ConfigReg :: *;
 
 import IOCapAxi_Types :: *;
 import IOCapAxi_Flits :: *;
@@ -56,7 +57,7 @@ typedef union tagged {
     //     // If the signature check failed or the key was invalid
     //     Bool failed;
     // } SigChecked;
-} SigCheckState deriving (Bits, FShow);
+} SigCheckState deriving (Bits, FShow, Eq);
 
 typedef union tagged {
     void NoFlit;
@@ -146,10 +147,10 @@ module mkSimpleIOCapAxiChecker2#(
     FIFOF#(iocap_flit) reqFlits <- mkFIFOF;
     let incomingFlits = toSource(reqFlits);
 
-    Reg#(FlitState#(no_iocap_flit, tcap)) currentFlit <- mkReg(tagged NoFlit);
+    ConfigReg#(FlitState#(no_iocap_flit, tcap)) currentFlit <- mkConfigReg(tagged NoFlit);
     // Reg#(Maybe#(CurrentFlitState#(no_iocap_flit))) currentFlit <- mkReg(tagged Invalid);
-    Reg#(DecodeState) decodeState <- mkReg(tagged DecodeIdle);
-    Reg#(SigCheckState) sigCheckState <- mkReg(tagged SigCheckIdle);
+    ConfigReg#(DecodeState) decodeState <- mkConfigReg(tagged DecodeIdle);
+    ConfigReg#(SigCheckState) sigCheckState <- mkConfigReg(tagged SigCheckIdle);
 
     // The keyId we just extracted from the flit in the Building0 -> Building1 transition.
     // Used for ticking the sigCheck machine as early as possible.
@@ -164,26 +165,28 @@ module mkSimpleIOCapAxiChecker2#(
     FIFOF#(tcap) decodeInFIFO <- mkFIFOF; 
     FIFOF#(CapCheckResult#(Tuple2#(CapPerms, CapRange))) decodeOutFIFO <- mkFIFOF;
     makeDecoder(toGet(decodeInFIFO), toPut(decodeOutFIFO));
-    let decodeIn = toSink(decodeInFIFO);
-    let decodeOut = toSource(decodeOutFIFO);
+    let decodeIn <- toUnguardedSink(decodeInFIFO);
+    let decodeOut <- toUnguardedSource(decodeOutFIFO, ?);
 
     // TODO dual-end FIFOs are terrible for latency
     FIFOF#(CapSigCheckIn#(tcap)) sigCheckInFIFO <- mkFIFOF;
     FIFOF#(CapCheckResult#(Bit#(0))) sigCheckOutFIFO <- mkFIFOF;
     mk2RoundPerCycleCapSigCheck(toGet(sigCheckInFIFO), toPut(sigCheckOutFIFO));
-    let sigCheckIn = toSink(sigCheckInFIFO);
-    let sigCheckOut = toSource(sigCheckOutFIFO);
+    let sigCheckIn <- toUnguardedSink(sigCheckInFIFO);
+    let sigCheckOut <- toUnguardedSource(sigCheckOutFIFO, ?);
 
     function Bool canAccumFlit();
         if (currentFlit matches tagged DecodingAndSigChecking .*)
-            return True;
-        else 
             return False;
+        else 
+            return True;
     endfunction
 
-    rule accumulate_flit(!canAccumFlit());
+    // (* no_implicit_conditions *)
+    rule accumulate_flit(canAccumFlit() && incomingFlits.canPeek());
         case (currentFlit) matches
             tagged NoFlit : if (incomingFlits.canPeek()) begin
+                // $display("-> Building0");
                 IOCapFlitSpec#(no_iocap_flit) capFlit = unpackSpec(incomingFlits.peek());
                 if (capFlit matches tagged Start .flit) begin
                     currentFlit <= tagged Building0 {
@@ -195,12 +198,13 @@ module mkSimpleIOCapAxiChecker2#(
                 incomingFlits.drop();
             end
             tagged Building0 { flit: .flit } : if (incomingFlits.canPeek()) begin
+                // $display("-> Building1");
                 IOCapFlitSpec#(no_iocap_flit) capBits = unpackSpec(incomingFlits.peek());
                 if (capBits matches tagged CapBits1 .capBits1) begin
-                    // TODO THIS REALLY NEEDS TO BE POSSIBLE. IF IT ISN'T, REARRANGE IOCAPAXI SO THAT IT IS
-                    tcap partialCap = unpack({ ?, capBits1 });
-                    let keyId = keyIdOf(partialCap);
-                    keyIdForConstructingFlit.wset(keyId);
+                    // // TODO THIS REALLY NEEDS TO BE POSSIBLE. IF IT ISN'T, REARRANGE IOCAPAXI SO THAT IT IS
+                    // tcap partialCap = unpack({ ?, capBits1 });
+                    // let keyId = keyIdOf(partialCap);
+                    // keyIdForConstructingFlit.wset(keyId);
                     currentFlit <= tagged Building1 {
                         flit: flit,
                         capBits1: capBits1
@@ -211,6 +215,7 @@ module mkSimpleIOCapAxiChecker2#(
                 incomingFlits.drop();
             end
             tagged Building1 { flit: .flit, capBits1: .capBits1 } : if (incomingFlits.canPeek()) begin
+                // $display("-> Building2");
                 IOCapFlitSpec#(no_iocap_flit) capBits = unpackSpec(incomingFlits.peek());
                 if (capBits matches tagged CapBits2 .capBits2) begin
                     currentFlit <= tagged Building2 {
@@ -224,6 +229,7 @@ module mkSimpleIOCapAxiChecker2#(
                 incomingFlits.drop();
             end
             tagged Building2 { flit: .flit, capBits1: .capBits1, capBits2: .capBits2 } : if (incomingFlits.canPeek()) begin
+                // $display("-> DecodingAndSigChecking");
                 IOCapFlitSpec#(no_iocap_flit) capBits = unpackSpec(incomingFlits.peek());
                 if (capBits matches tagged CapBits3 .capBits3) begin
                     let combinedBits = { capBits3, capBits2, capBits1 };
@@ -232,6 +238,9 @@ module mkSimpleIOCapAxiChecker2#(
                         cap: unpack(combinedBits[127:0]),
                         sig: combinedBits[255:128]
                     };
+                    // TODO THIS REALLY NEEDS TO BE IN BIT 1. IF IT ISN'T, REARRANGE IOCAPAXI SO THAT IT IS
+                    let keyId = keyIdOf(authFlit.cap);
+                    keyIdForConstructingFlit.wset(keyId);
                     completedFlit.wset(authFlit);
                     currentFlit <= tagged DecodingAndSigChecking authFlit;
                 end else begin
@@ -251,36 +260,51 @@ module mkSimpleIOCapAxiChecker2#(
         end else begin
             return tagged Invalid;
         end
+
+        // case (tuple2(completedFlit.wget(), currentFlit._read())) matches
+        //     { tagged Valid .authFlit, .* } : return tagged Valid authFlit;
+        //     { tagged Invalid, tagged DecodingAndSigChecking .authFlit2 } : return tagged Valid authFlit2;
+        //     default: return tagged Invalid;
+        // endcase
     endfunction
 
+    // rule find_valid_keyIdForConstructing;
+    //     if (isValid(keyIdForConstructingFlit.wget())) begin
+    //         $display("Found valid keyIdForConstructing ", fshow(keyIdForConstructingFlit.wget()));
+    //     end
+    // endrule
+
+    // (* no_implicit_conditions *)
     rule tick_sigcheck;
+        let newSigCheckState = sigCheckState;
         case (sigCheckState) matches
             tagged SigCheckIdle : begin
                 if (keyIdForConstructingFlit.wget() matches tagged Valid .keyId) begin
+                    // $display("SigCheckIdle triggering on ", fshow(keyIdForConstructingFlit.wget()));
                     if (keyToKill == tagged Valid keyId) begin
-                        sigCheckState <= tagged SigCheckFailedEarly keyId;
+                        newSigCheckState = tagged SigCheckFailedEarly keyId;
                     end else if (keyResponse matches tagged Valid { .keyRespId, .maybeKeyData } &&& keyRespId == keyId) begin
                         // if (completedFlit.wget() matches tagged Valid .authFlit)
                         // The above can never be true!
                         if (isValid(maybeKeyData)) begin
-                            sigCheckState <= tagged AwaitingSigCheckStart {
+                            newSigCheckState = tagged AwaitingSigCheckStart {
                                 keyId: keyId,
                                 keyData: fromMaybe(?, maybeKeyData)
                             };
                         end else begin
-                            sigCheckState <= tagged SigCheckFailedEarly keyId;
+                            newSigCheckState = tagged SigCheckFailedEarly keyId;
                         end
                     end else if (keyRequest.canPut()) begin
                         keyRequest.put(keyId);
-                        sigCheckState <= tagged AwaitingKey keyId;
+                        newSigCheckState = tagged AwaitingKey keyId;
                     end else begin
-                        sigCheckState <= tagged AwaitingKeyAvailable keyId;
+                        newSigCheckState = tagged AwaitingKeyAvailable keyId;
                     end
                 end
             end
             tagged AwaitingKeyAvailable .keyId : begin
                 if (keyToKill == tagged Valid keyId) begin
-                    sigCheckState <= tagged SigCheckFailedEarly keyId;
+                    newSigCheckState = tagged SigCheckFailedEarly keyId;
                 end else if (keyResponse matches tagged Valid { .keyRespId, .maybeKeyData } &&& keyRespId == keyId) begin
                     if (getAuthFlit() matches tagged Valid .authFlit &&& isValid(maybeKeyData) && sigCheckIn.canPut()) begin
                         sigCheckIn.put(CapSigCheckIn {
@@ -288,28 +312,28 @@ module mkSimpleIOCapAxiChecker2#(
                             expectedSig: authFlit.sig,
                             secret: fromMaybe(?, maybeKeyData)
                         });
-                        sigCheckState <= tagged AwaitingSigCheck {
+                        newSigCheckState = tagged AwaitingSigCheck {
                             keyId: keyId,
                             keyInvalidatedDuringSigCheck: False
                         };
                     end else begin
                         if (isValid(maybeKeyData)) begin
-                            sigCheckState <= tagged AwaitingSigCheckStart {
+                            newSigCheckState = tagged AwaitingSigCheckStart {
                                 keyId: keyId,
                                 keyData: fromMaybe(?, maybeKeyData)
                             };
                         end else begin
-                            sigCheckState <= tagged SigCheckFailedEarly keyId;
+                            newSigCheckState = tagged SigCheckFailedEarly keyId;
                         end
                     end
                 end else if (keyRequest.canPut()) begin
                     keyRequest.put(keyId);
-                    sigCheckState <= tagged AwaitingKey keyId;
+                    newSigCheckState = tagged AwaitingKey keyId;
                 end
             end
             tagged AwaitingKey .keyId : begin
                 if (keyToKill == tagged Valid keyId) begin
-                    sigCheckState <= tagged SigCheckFailedEarly keyId;
+                    newSigCheckState = tagged SigCheckFailedEarly keyId;
                 end else if (keyResponse matches tagged Valid { .keyRespId, .maybeKeyData } &&& keyRespId == keyId) begin
                     if (getAuthFlit() matches tagged Valid .authFlit &&& isValid(maybeKeyData) && sigCheckIn.canPut()) begin
                         sigCheckIn.put(CapSigCheckIn {
@@ -317,32 +341,33 @@ module mkSimpleIOCapAxiChecker2#(
                             expectedSig: authFlit.sig,
                             secret: fromMaybe(?, maybeKeyData)
                         });
-                        sigCheckState <= tagged AwaitingSigCheck {
+                        newSigCheckState = tagged AwaitingSigCheck {
                             keyId: keyId,
                             keyInvalidatedDuringSigCheck: False
                         };
                     end else begin
                         if (isValid(maybeKeyData)) begin
-                            sigCheckState <= tagged AwaitingSigCheckStart {
+                            newSigCheckState = tagged AwaitingSigCheckStart {
                                 keyId: keyId,
                                 keyData: fromMaybe(?, maybeKeyData)
                             };
                         end else begin
-                            sigCheckState <= tagged SigCheckFailedEarly keyId;
+                            newSigCheckState = tagged SigCheckFailedEarly keyId;
                         end
                     end
                 end
             end
             tagged AwaitingSigCheckStart { keyId: .keyId, keyData: .keyData } : begin
+                // $display(fshow(getAuthFlit()), fshow(sigCheckIn.canPut()));
                 if (keyToKill == tagged Valid keyId) begin
-                    sigCheckState <= tagged SigCheckFailedEarly keyId;
+                    newSigCheckState = tagged SigCheckFailedEarly keyId;
                 end else if (getAuthFlit() matches tagged Valid .authFlit &&& sigCheckIn.canPut()) begin
                     sigCheckIn.put(CapSigCheckIn {
                         cap: authFlit.cap,
                         expectedSig: authFlit.sig,
                         secret: keyData
                     });
-                    sigCheckState <= tagged AwaitingSigCheck {
+                    newSigCheckState = tagged AwaitingSigCheck {
                         keyId: keyId,
                         keyInvalidatedDuringSigCheck: False
                     };
@@ -352,15 +377,19 @@ module mkSimpleIOCapAxiChecker2#(
                 // We already know we failed, don't need to keep checking
                 // We don't need to forward if we transition to Decoded *this cycle*, because
                 // we don't care about the latency of failed transactions as much.
+                // if (decodeState matches tagged Decoded .decodeFailed &&&
+                //     currentFlit matches tagged DecodingAndSigChecking .authFlit)
+                //     $display("Waiting to SigCheckFailedEarly");
                 if (decodeState matches tagged Decoded .decodeFailed &&&
                     currentFlit matches tagged DecodingAndSigChecking .authFlit &&& 
                     resps.canPut()) begin
 
                     let failed = True;
 
+                    $display("flitCompleted on early fail");
                     resps.put(tuple3(authFlit.flit, keyId, !failed));
                     flitCompleted.send();
-                    sigCheckState <= tagged SigCheckIdle;
+                    newSigCheckState = tagged SigCheckIdle;
                 end
             end
             tagged AwaitingSigCheck { keyId: .keyId, keyInvalidatedDuringSigCheck: .keyInvalidatedDuringSigCheck } : begin
@@ -370,6 +399,11 @@ module mkSimpleIOCapAxiChecker2#(
                     // - don't want to leave a spare entry in the output FIFO
                     failed = True;
                 end
+
+                if (sigCheckOut.canPeek() && !resps.canPut()) begin
+                    $display("AwaitingSigCheck waiting on resps");
+                end
+
                 // Assume decodeState == Decoded by this point, and currentFlit == DecodingAndSigChecking.
                 // We don't need to forward if we transition to Decoded *this cycle*, because we just won't.
                 // AES is that much slower.
@@ -387,22 +421,29 @@ module mkSimpleIOCapAxiChecker2#(
                     end
 
                     resps.put(tuple3(currentFlit.DecodingAndSigChecking.flit, keyId, !failed));
+                    $display("flitCompleted from AwaitingSigCheck");
                     flitCompleted.send();
-                    sigCheckState <= tagged SigCheckIdle;
+                    newSigCheckState = tagged SigCheckIdle;
                 end else begin
-                    sigCheckState <= tagged AwaitingSigCheck {
+                    newSigCheckState = tagged AwaitingSigCheck {
                         keyId: keyId,
                         keyInvalidatedDuringSigCheck: keyInvalidatedDuringSigCheck
                     };
                 end
             end
+            default: noAction;
         endcase
+
+        if (sigCheckState != newSigCheckState)
+            $display("-> ", fshow(newSigCheckState));
+        sigCheckState <= newSigCheckState;
     endrule
 
     rule tick_decode;
         case (decodeState) matches
             tagged DecodeIdle : begin
                 if (getAuthFlit() matches tagged Valid .authFlit &&& decodeIn.canPut()) begin
+                    // $display("-> AwaitingFlitBounds");
                     decodeIn.put(authFlit.cap);
                     decodeState <= tagged AwaitingFlitBounds;
                 end
@@ -452,6 +493,7 @@ module mkSimpleIOCapAxiChecker2#(
                 if (bounds_failed) begin
                     $display("IOCap - flit failed Bounds ", fshow(flit));
                 end
+                // $display("-> AwaitingIOCapDecode");
                 decodeState <= tagged AwaitingIOCapDecode {
                     flitMin: min_addr,
                     flitMax: max_addr,
@@ -486,6 +528,7 @@ module mkSimpleIOCapAxiChecker2#(
                     if (failed) begin
                         $display("IOCap - flit failed Decode ", fshow(flit), " - ", fshow(decodeRes));
                     end
+                    // $display("-> Decoded");
                     decodeState <= tagged Decoded {
                         failed: failed
                     };
@@ -493,6 +536,7 @@ module mkSimpleIOCapAxiChecker2#(
             end
             tagged Decoded .failed : begin
                 if (flitCompleted) begin
+                    // $display("-> DecodeIdle");
                     decodeState <= tagged DecodeIdle;
                 end
             end

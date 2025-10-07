@@ -1,10 +1,10 @@
 #include <verilated.h>
-#include "VmkSimpleIOCapExposerV4_noblock_Tb.h"
+#include "VmkSimpleIOCapExposerV5_noblock_Tb.h"
 
 #include "exposer_tests_uvm.h"
 #include "exposer_tests_legacy.h"
 
-using TheDUT = VmkSimpleIOCapExposerV4_noblock_Tb;
+using TheDUT = VmkSimpleIOCapExposerV5_noblock_Tb;
 constexpr bool expectPassthroughInvalidTransactions = true;
 
 int main(int argc, char** argv) {

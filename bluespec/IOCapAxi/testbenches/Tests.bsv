@@ -86,11 +86,11 @@ interface KeyStore2Shim;
     interface ReadOnly#(Bool) bumpedPerfCounterBadRead;
 
     // The C++ can receive keyRequests from the exposer
-    interface Source#(KeyId) checker_keyRequest;
+    interface Source#(KeyId) keyRequests;
     // The C++ can send keyResponses to the exposer
-    interface Sink#(Tuple2#(KeyId, Maybe#(Key))) checker_keyResponse;
+    interface Sink#(Tuple2#(KeyId, Maybe#(Key))) keyResponses;
     // The C++ can send killKeyMessages to the exposer
-    interface WriteOnly#(KeyId) checker_killKeyMessage;
+    interface WriteOnly#(KeyId) killKeyMessage;
 
     // The C++ can receive increment/decrement refcount requests from the exposer
     interface Source#(KeyId) rValve_Increment;
@@ -122,9 +122,9 @@ module mkKeyStore2Shim(Tuple2#(KeyStore2Shim, IOCapAxi_KeyManager2_ExposerIfc));
         interface bumpedPerfCounterGoodRead = pulseWireToReadOnly(reqGoodRead);
         interface bumpedPerfCounterBadRead = pulseWireToReadOnly(reqBadRead);
 
-        interface checker_keyRequest = toSource(keyReqFF);
-        interface checker_keyResponse = toSink(keyRespFF);
-        interface checker_killKeyMessage = rwireToWriteOnly(checker_killKeyMessageRWire);
+        interface keyRequests = toSource(keyReqFF);
+        interface keyResponses = toSink(keyRespFF);
+        interface killKeyMessage = rwireToWriteOnly(checker_killKeyMessageRWire);
 
         interface rValve_Increment = toSource(rValve_Increment);
         interface rValve_Decrement = toSource(rValve_Decrement);
@@ -144,8 +144,14 @@ module mkKeyStore2Shim(Tuple2#(KeyStore2Shim, IOCapAxi_KeyManager2_ExposerIfc));
                 interface keyDecrementRefcountRequest = toSink(rValve_Decrement);
             endinterface;
             interface perf = interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc;
-                method Action bumpPerfCounterGood() = reqGoodRead.send();
-                method Action bumpPerfCounterBad() = reqBadRead.send();
+                method Action bumpPerfCounterGood(); 
+                    reqGoodRead.send();
+                    $display("read bump perf good");
+                endmethod
+                method Action bumpPerfCounterBad(); 
+                    reqBadRead.send();
+                    $display("read bump perf bad");
+                endmethod
             endinterface;
         endinterface;
         interface wValve = interface IOCapAxi_KeyManager2_ValveIfc;
@@ -154,8 +160,14 @@ module mkKeyStore2Shim(Tuple2#(KeyStore2Shim, IOCapAxi_KeyManager2_ExposerIfc));
                 interface keyDecrementRefcountRequest = toSink(wValve_Decrement);
             endinterface;
             interface perf = interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc;
-                method Action bumpPerfCounterGood() = reqGoodWrite.send();
-                method Action bumpPerfCounterBad() = reqBadWrite.send();
+                method Action bumpPerfCounterGood(); 
+                    reqGoodWrite.send();
+                    $display("write bump perf good");
+                endmethod
+                method Action bumpPerfCounterBad(); 
+                    reqBadWrite.send();
+                    $display("write bump perf bad");
+                endmethod
             endinterface;
         endinterface;
     endinterface;

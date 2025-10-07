@@ -12,15 +12,15 @@ import IOCapAxi_Types :: *;
 import IOCapAxi_KeyManager2_Types :: *;
 import IOCapAxi_KeyManager2_KeyStatePipe :: *;
 
-interface IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc;
+interface IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc#(numeric type t_data, numeric type log_128_over_t_data);
     // Methods for the KeyManager2 to call from MMIO.
     // These methods return True if they have initiated an event that will be successful, otherwise False if the event would not be successful and has not been initiated.
     // They may cause backpressure, but do not return False, if the event would only be unsuccessful because of other backpressure.
-    method ActionValue#(Bool) tryWriteKeyWord(KeyId id, Bit#(64) data, Bit#(1) word);
+    method ActionValue#(Bool) tryWriteKeyWord(KeyId id, Bit#(t_data) data, Bit#(log_128_over_t_data) word);
 endinterface
 
-interface IOCapAxi_KeyManager2_KeyDataPipe#(numeric type n_lanes);
-    interface IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc mmio;
+interface IOCapAxi_KeyManager2_KeyDataPipe#(numeric type t_data, numeric type log_128_over_t_data, numeric type n_lanes);
+    interface IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc#(t_data, log_128_over_t_data) mmio;
 
     // Used by the lane checkers to request key data
     interface Vector#(n_lanes, Sink#(KeyId)) checkerKeyRequest;
@@ -28,7 +28,8 @@ interface IOCapAxi_KeyManager2_KeyDataPipe#(numeric type n_lanes);
     interface Vector#(n_lanes, Source#(Tuple2#(KeyId, Maybe#(Key)))) checkerKeyResponse;
 endinterface
 
-module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort#(IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc keyState, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_KeyDataPipe#(1));
+// TODO make this for (32, 2, 1)
+module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort#(IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc keyState, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_KeyDataPipe#(64, 1, 1));
     // ===============================================
     // KEY DATA PIPELINE
     // ===============================================

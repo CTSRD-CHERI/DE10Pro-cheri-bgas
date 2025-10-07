@@ -149,6 +149,8 @@ struct MaybeValidCapWithRange {
     assert(dut.RDY_## from ##_drop); \
     dut.EN_## from ##_drop = 1; \
     into = dut. from ##_peek;
+#define NOPOP_OUTPUT(from) \
+    dut.EN_## from ##_drop = 0;
 
 /**
  * Generic stimulus generator for the key manager parts of ShimmedExposer DUTs.
@@ -203,6 +205,93 @@ public:
                     .key = std::nullopt
                 });
             }
+        }
+    }
+};
+
+template<class DUT>
+class BasicKeyManagerShimStimulus<DUT, KeyMngrV2>: public KeyManagerShimStimulus<DUT, KeyMngrV2> {
+    std::deque<key_manager::KeyResponse> keyResponses;
+    std::unordered_map<key_manager::KeyId, int64_t> refcounts;
+public:
+    BasicKeyManagerShimStimulus() : KeyManagerShimStimulus<DUT, KeyMngrV2>() {}
+    virtual void driveInputsForKeyMgr(DUT& dut, uint64_t tick) {
+        if (!keyResponses.empty() && CANPUT_INPUT(keyStoreShim_keyResponses)) {
+            auto keyResponse = keyResponses.front();
+            keyResponses.pop_front();
+            assert(key_manager::Tuple2_KeyId_MaybeKey::unpack(keyResponse.asBluespec().pack()) == keyResponse.asBluespec());
+            PUT_INPUT(keyStoreShim_keyResponses, verilate_array(keyResponse.asBluespec().pack()));
+        } else {
+            NOPUT_INPUT(keyStoreShim_keyResponses);
+        }
+
+        if (CANPEEK_OUTPUT(keyStoreShim_keyRequests)) {
+            key_manager::KeyId requested = 0;
+            POP_OUTPUT(keyStoreShim_keyRequests, requested);
+            if (this->secrets.contains(requested)) {
+                keyResponses.push_back(key_manager::KeyResponse {
+                    .keyId = requested,
+                    .key = this->secrets[requested]
+                });
+            } else {
+                keyResponses.push_back(key_manager::KeyResponse {
+                    .keyId = requested,
+                    .key = std::nullopt
+                });
+            }
+        } else {
+            NOPOP_OUTPUT(keyStoreShim_keyRequests);
+        }
+
+        if (CANPEEK_OUTPUT(keyStoreShim_rValve_Increment)) {
+            key_manager::KeyId requested = 0;
+            POP_OUTPUT(keyStoreShim_rValve_Increment, requested);
+            if (this->refcounts.contains(requested)) {
+                this->refcounts[requested] += 1;
+            } else {
+                this->refcounts[requested] = 1;
+            }
+        } else {
+            NOPOP_OUTPUT(keyStoreShim_rValve_Increment);
+        }
+        if (CANPEEK_OUTPUT(keyStoreShim_rValve_Decrement)) {
+            key_manager::KeyId requested = 0;
+            POP_OUTPUT(keyStoreShim_rValve_Decrement, requested);
+            if (this->refcounts.contains(requested)) {
+                this->refcounts[requested] -= 1;
+            } else {
+                this->refcounts[requested] = -1;
+            }
+            if (this->refcounts[requested] < 0) {
+                throw test_failure("Decremented a refcount below zero");
+            }
+        } else {
+            NOPOP_OUTPUT(keyStoreShim_rValve_Decrement);
+        }
+        if (CANPEEK_OUTPUT(keyStoreShim_wValve_Increment)) {
+            key_manager::KeyId requested = 0;
+            POP_OUTPUT(keyStoreShim_wValve_Increment, requested);
+            if (this->refcounts.contains(requested)) {
+                this->refcounts[requested] += 1;
+            } else {
+                this->refcounts[requested] = 1;
+            }
+        } else {
+            NOPOP_OUTPUT(keyStoreShim_wValve_Increment);
+        }
+        if (CANPEEK_OUTPUT(keyStoreShim_wValve_Decrement)) {
+            key_manager::KeyId requested = 0;
+            POP_OUTPUT(keyStoreShim_wValve_Decrement, requested);
+            if (this->refcounts.contains(requested)) {
+                this->refcounts[requested] -= 1;
+            } else {
+                this->refcounts[requested] = -1;
+            }
+            if (this->refcounts[requested] < 0) {
+                throw test_failure("Decremented a refcount below zero");
+            }
+        } else {
+            NOPOP_OUTPUT(keyStoreShim_wValve_Decrement);
         }
     }
 };
@@ -1151,6 +1240,117 @@ public:
             ));
         }
     }
+};
+
+template<class DUT, CapType ctype>
+class ExposerScoreboard<DUT, ctype, KeyMngrV2> : public BaseExposerScoreboard<DUT, ctype, KeyMngrV2> {
+protected:
+    // TODO test the rwValve_IncDecrement
+
+    // virtual void onKeyMngrNewEpoch(key_manager::Epoch nextEpoch) {
+    //     fmt::println(stderr, "Note - ExposerScoreboard<KeyMngrV1> base class doesn't automatically handle keys when getting new key epoch.");
+    //     expectedEpochCompletions.push_back((nextEpoch - 1) & 1);
+    // }
+    virtual void onKeyMngrKeyResponse(key_manager::KeyResponse response) {
+        std::optional<U128> expected = std::nullopt;
+        if (this->secrets.contains(response.keyId)) {
+            expected = this->secrets[response.keyId];
+        }
+        if (expected != response.key) {
+            throw test_failure(fmt::format("ExposerScoreboard<KeyMngrV2> base class saw a new value {} for key ID {} that doesn't match expected value {}", response.key, response.keyId, expected));
+        }
+    }
+
+    virtual void monitorAndScoreKeyManager(DUT& dut, uint64_t tick, KeyMngrShimInput<KeyMngrV2>& inputKeyManager, KeyMngrShimOutput<KeyMngrV2>& outputKeyManager) override {
+        /*if (outputKeyManager.finishedEpoch) {
+            if (expectedEpochCompletions.empty()) {
+                throw test_failure(fmt::format("ExposerScoreboard<KeyMngrV1> got unexpected finishedEpoch:\nexpected None\ngot: {}\n", outputKeyManager.finishedEpoch.value()));
+            } else {
+                auto expected = expectedEpochCompletions.front();
+                expectedEpochCompletions.pop_front();
+                if (outputKeyManager.finishedEpoch.value() != expected) {
+                    throw test_failure(fmt::format("ExposerScoreboard<KeyMngrV1> got unexpected finishedEpoch:\nexpected: {}\ngot: {}\n", expected, outputKeyManager.finishedEpoch.value()));
+                }
+            }
+        }*/
+
+        if (outputKeyManager.bumpPerfCounterGoodWrite) {
+            this->signalledGoodWrite++;
+        }
+        if (outputKeyManager.bumpPerfCounterBadWrite) {
+            this->signalledBadWrite++;
+        }
+        if (outputKeyManager.bumpPerfCounterGoodRead) {
+            this->signalledGoodRead++;
+        }
+        if (outputKeyManager.bumpPerfCounterBadRead) {
+            this->signalledBadRead++;
+        }
+
+        if (inputKeyManager.keyResponse) {
+            onKeyMngrKeyResponse(inputKeyManager.keyResponse.value());
+        }
+
+        
+    }
+public:
+    ExposerScoreboard(std::unordered_map<key_manager::KeyId, U128>& secrets, bool expectPassthroughInvalidTransactions = false) :
+        BaseExposerScoreboard<DUT, ctype, KeyMngrV2>(secrets, expectPassthroughInvalidTransactions)
+        {}
+    virtual ~ExposerScoreboard() override = default;
+    /*
+    // Should raise a test_failure on failure
+    virtual void endTest() override {
+        // TODO log inputs and outputs
+        if (
+            !expectedEpochCompletions.empty() ||
+            !this->awInProgress.empty() ||
+            !this->expectedAw.empty() ||
+            !this->wInProgress.empty() ||
+            !this->expectedW.empty() ||
+            !this->arInProgress.empty() ||
+            !this->expectedAr.empty() ||
+            // Check foreach ID in {B, R}
+            std::any_of(this->expectedB.begin(), this->expectedB.end(), [](auto& expectedForId) { return !expectedForId.empty(); }) ||
+            std::any_of(this->expectedR.begin(), this->expectedR.end(), [](auto& expectedForId) { return !expectedForId.empty(); }) ||
+            (this->expectedGoodWrite != this->signalledGoodWrite) ||
+            (this->expectedBadWrite != this->signalledBadWrite) ||
+            (this->expectedGoodRead != this->signalledGoodRead) ||
+            (this->expectedBadRead != this->signalledBadRead)
+        ) {
+            throw test_failure(fmt::format(
+                "BaseExposerScoreboard unexpected outcome:\n"
+                "epoch completions: {}\n"
+                "aw: {} in progress, {} expected\n"
+                "w: {} in progress, {} expected\n"
+                "ar: {} in progress, {} expected\n"
+                "b: {}\n"
+                "r: {}\n"
+                "perf counters exp/act:\n"
+                "good write {}/{}\n"
+                "bad write {}/{}\n"
+                "bad write bad cap {}\n"
+                "bad write good cap bad range {}\n"
+                "good read {}/{}\n"
+                "bad read {}/{}\n"
+                "bad read bad cap {}\n"
+                "bad read good cap bad range {}\n"
+                ,
+                expectedEpochCompletions,
+                this->awInProgress, this->expectedAw,
+                this->wInProgress, this->expectedW,
+                this->arInProgress, this->expectedAr,
+                this->expectedB,
+                this->expectedR,
+                this->expectedGoodWrite, this->signalledGoodWrite,
+                this->expectedBadWrite, this->signalledBadWrite,
+                this->expectedBadWriteBadCap, this->expectedBadWriteGoodCapBadRange,
+                this->expectedGoodRead, this->signalledGoodRead,
+                this->expectedBadRead, this->signalledBadRead,
+                this->expectedBadReadBadCap, this->expectedBadReadGoodCapBadRange
+            ));
+        }
+    }*/
 };
 
 template<class DUT, CapType ctype = CapType::Cap2024_02, KeyMngrVersion V = KeyMngrV1>

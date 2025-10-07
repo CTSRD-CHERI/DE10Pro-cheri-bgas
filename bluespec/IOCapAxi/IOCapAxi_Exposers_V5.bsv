@@ -143,7 +143,7 @@ module mkSimpleTxnKeyIdScoreboard(TxnKeyIdScoreboard#(t_id)) provisos (Add#(8, t
     method Bool canBeginTxn(Bit#(t_id) txnId) = txnsInProgress[txnId] == 0;
     // Use the implicit condition to force the caller to block if two trnasactions with the same id exist
     method Action beginTxn(Bit#(t_id) txnId, KeyId keyId, Bool isValid);
-        if (txnsInProgress[txnId] == 0) begin
+        if (txnsInProgress[txnId] == 1) begin
             // TODO some sort of error
             $display("beginTxn called when can't begin");
         end
@@ -219,7 +219,8 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         endmethod
     endinterface;
 
-    rule pump_keyResponse;
+    rule pump_keyResponse(keyStore.checker.keyResponse.canPeek());
+        $display("dropping from keyResponse");
         keyStore.checker.keyResponse.drop();
     endrule
 
@@ -492,6 +493,12 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         endcase
     endrule
 
+    rule print_ar;
+        if (arIn.checkResponse.canPeek()) begin
+            $display("AR ", fshow(arIn.checkResponse.peek()), " canBegin ", fshow(rScoreboard.canBeginTxn(tpl_1(arIn.checkResponse.peek).arid)));
+        end
+    endrule
+
     rule check_ar (rScoreboard.canBeginTxn(tpl_1(arIn.checkResponse.peek).arid));
         // Pull the AR check result out of the arIn
         let arResp <- get(arIn.checkResponse);
@@ -501,10 +508,13 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         case (arResp) matches
             { .flit, .keyId, .allowed } : begin
                 rScoreboard.beginTxn(flit.arid, keyId, allowed);
+                $display("ALLOWED ", fshow(allowed));
                 if (allowed) begin
                     keyStore.rValve.perf.bumpPerfCounterGood();
+                    $display("put out flit", fshow(flit));
                     // Pass through the valid AR flit
                     arOut.enq(flit);
+                    $display("incref ", fshow(keyId));
                     keyStore.rValve.refcount.keyIncrementRefcountRequest.put(keyId);
                 end else begin
                     keyStore.rValve.perf.bumpPerfCounterBad();

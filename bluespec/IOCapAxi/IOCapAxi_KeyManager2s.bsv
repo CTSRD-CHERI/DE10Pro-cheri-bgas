@@ -111,7 +111,7 @@ module mkIOCapAxi_KeyManager2_V1(IOCapAxi_KeyManager2#(64, 1));
     KeyManager2ErrorUnit error <- mkErrorUnit;
 
     IOCapAxi_KeyManager2_KeyStatePipe     keyState <- mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg(error);
-    IOCapAxi_KeyManager2_KeyDataPipe#(1)   keyData <- mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort(keyState.keydata, error);
+    IOCapAxi_KeyManager2_KeyDataPipe#(64, 1, 1)   keyData <- mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort(keyState.keydata, error);
     IOCapAxi_KeyManager2_RefCountPipe#(2) refcount <- mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve(keyState.refcount, error);
 
     IOCapAxi_KeyManager2_MMIO#(64, 1)         mmio <- mkIOCapAxi_KeyManager2_MMIO(keyState.mmio, keyData.mmio, error);
