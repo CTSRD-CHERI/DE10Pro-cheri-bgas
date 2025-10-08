@@ -38,9 +38,9 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort#(IOCapAxi_Ke
     BRAM_Configure keyDataMemConfig = BRAM_Configure {
         memorySize: 0, // Number of words is inferred from the KeyId parameter to BRAM1Port below.
         // Size of each word is determined by the Key parameter to BRAM1Port below.
-        latency: 2, // (address is registered, data is too because this isn't latency sensitive)
+        latency: 1, // (address is registered, data is not because it isn't latency sensitive - it goes directly into a FIFO)
         loadFormat: None,
-        outFIFODepth: 4, // latency+2
+        outFIFODepth: 3, // latency+2
         allowWriteResponseBypass: False // TODO check if this is fine
     };
     // Used to be single port so that reads are serialized with writes - see above - but now dual port.

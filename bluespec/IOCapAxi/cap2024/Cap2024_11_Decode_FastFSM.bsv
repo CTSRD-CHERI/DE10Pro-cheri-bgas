@@ -10,6 +10,7 @@ import GetPut::*;
 import StmtFSM::*;
 import LeftShift::*;
 import MattUtil::*;
+import ConfigReg::*;
 
 export mkFastFSMCapDecode_2024_11;
 export connectFastFSMCapDecode_2024_11;
@@ -264,9 +265,9 @@ module mkFastFSMCapDecode_2024_11#(Get#(Cap2024_11) in, Put#(CapCheckResult#(Tup
     InternalCalc calc <- mkInternalCalc;
 
     // Working registers for the state machine.
-    Reg#(Bool) working_zero_cav <- mkReg(?);
-    Reg#(Bool) working_one_cav <- mkReg(?);
-    Reg#(Bool) working_two_cav <- mkReg(?);
+    ConfigReg#(Bool) working_zero_cav <- mkReg(?);
+    ConfigReg#(Bool) working_one_cav <- mkReg(?);
+    ConfigReg#(Bool) working_two_cav <- mkReg(?);
 
     Reg#(CapPerms) working_perms <- mkReg(?);
 
