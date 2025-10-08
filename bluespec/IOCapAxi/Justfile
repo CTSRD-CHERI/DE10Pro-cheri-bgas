@@ -19,6 +19,11 @@ sim-v name:
     make ./build/{{name}}.vsim
     ./build/{{name}}.vsim
 
+test-cpp-encdec:
+    #!/bin/bash
+    clang++ -g -std=gnu++20 -I$(dirname $(which verilator))/../share/verilator/include -I./testbenches/include -I./testbenches/librust_caps_c ./testbenches/librust_caps_c/librust_caps_c.a ./testbenches/checkEncDec.cpp -o ./build/checkEncDec
+    ./build/checkEncDec
+
 test-keymgr: (sim-v "mkSimpleIOCapKeyManager_Tb")
 
 test-exposer-v1: (sim-v "mkSimpleIOCapExposerV1_Tb")

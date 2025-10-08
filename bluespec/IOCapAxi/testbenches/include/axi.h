@@ -104,8 +104,11 @@ namespace axi::IOCapAxi {
     is to treat the 128-bit capability text as the bottom 128-bits of the metadata,
     and the 128-bit capability signature as the top 128-bits.
     */
+    // Cap1 and Cap2 have been swapped for the purposes of finding the KeyId early.
+    // See IOCapAxi_Flits.bsv
 
-    void unpackCap1_ar(U128& cap, U128& sig, ARFlit_id4_addr64_user3& flit) {
+    // void unpackCap1_ar(U128& cap, U128& sig, ARFlit_id4_addr64_user3& flit) {
+    void unpackCap2_ar(U128& cap, U128& sig, ARFlit_id4_addr64_user3& flit) {
         cap.top |= uint64_t(flit.arqos & 0x1)   << 21;
         cap.top |= uint64_t(flit.arprot & 0x7)  << 18;
         cap.top |= uint64_t(flit.arcache & 0xf) << 14;
@@ -113,9 +116,10 @@ namespace axi::IOCapAxi {
         cap.top |= uint64_t(flit.arburst & 0x3) << 11;
         cap.top |= uint64_t(flit.arsize & 0x7)  << 8;
         cap.top |= uint64_t(flit.arlen & 0xff)  << 0;
-        cap.bottom = flit.araddr;
+        cap.bottom |= flit.araddr;
     }
-    void unpackCap2_ar(U128& cap, U128& sig, ARFlit_id4_addr64_user3& flit) {
+    // void unpackCap2_ar(U128& cap, U128& sig, ARFlit_id4_addr64_user3& flit) {
+    void unpackCap1_ar(U128& cap, U128& sig, ARFlit_id4_addr64_user3& flit) {
         sig.bottom |= uint64_t(flit.arqos & 0x1)   << 43;
         sig.bottom |= uint64_t(flit.arprot & 0x7)  << 40;
         sig.bottom |= uint64_t(flit.arcache & 0xf) << 36;
@@ -137,10 +141,12 @@ namespace axi::IOCapAxi {
         sig.bottom |= uint64_t(flit.araddr << 44);
     }
 
-    ARFlit_id4_addr64_user3 packCap1_ar(U128 cap, U128 sig) {
+    // ARFlit_id4_addr64_user3 packCap1_ar(U128 cap, U128 sig) {
+    ARFlit_id4_addr64_user3 packCap2_ar(U128 cap, U128 sig) {
         // READ THIS UPSIDE DOWN
         return ARFlit_id4_addr64_user3 {
-            .aruser   = uint8_t(IOCapAxi_User::Cap1),
+            // .aruser   = uint8_t(IOCapAxi_User::Cap1),
+            .aruser   = uint8_t(IOCapAxi_User::Cap2),
             .arregion = 0xac, // = not-set
             // have covered |-- cap.top[21:0] --|-- cap.bottom --|
             .arqos    = uint8_t((cap.top >> 21) & 0x1),
@@ -154,10 +160,12 @@ namespace axi::IOCapAxi {
             .arid = 0xac, // = not-set
         };
     }
-    ARFlit_id4_addr64_user3 packCap2_ar(U128 cap, U128 sig) {
+    // ARFlit_id4_addr64_user3 packCap2_ar(U128 cap, U128 sig) {
+    ARFlit_id4_addr64_user3 packCap1_ar(U128 cap, U128 sig) {
         // READ THIS UPSIDE DOWN
         return ARFlit_id4_addr64_user3 {
-            .aruser   = uint8_t(IOCapAxi_User::Cap2),
+            // .aruser   = uint8_t(IOCapAxi_User::Cap2),
+            .aruser   = uint8_t(IOCapAxi_User::Cap1),
             // have covered |-- sig.bottom[43:0] --|-- cap.top --|-- cap.bottom --|
             .arregion = 0xac, // = not-set
             .arqos    = uint8_t((sig.bottom >> 43) & 0x1),
@@ -193,7 +201,8 @@ namespace axi::IOCapAxi {
         };
     }
 
-    void unpackCap1_aw(U128& cap, U128& sig, AWFlit_id4_addr64_user3& flit) {
+    // void unpackCap1_aw(U128& cap, U128& sig, AWFlit_id4_addr64_user3& flit) {
+    void unpackCap2_aw(U128& cap, U128& sig, AWFlit_id4_addr64_user3& flit) {
         cap.top |= uint64_t(flit.awqos & 0x1)   << 21;
         cap.top |= uint64_t(flit.awprot & 0x7)  << 18;
         cap.top |= uint64_t(flit.awcache & 0xf) << 14;
@@ -201,9 +210,10 @@ namespace axi::IOCapAxi {
         cap.top |= uint64_t(flit.awburst & 0x3) << 11;
         cap.top |= uint64_t(flit.awsize & 0x7)  << 8;
         cap.top |= uint64_t(flit.awlen & 0xff)  << 0;
-        cap.bottom = flit.awaddr;
+        cap.bottom |= flit.awaddr;
     }
-    void unpackCap2_aw(U128& cap, U128& sig, AWFlit_id4_addr64_user3& flit) {
+    // void unpackCap2_aw(U128& cap, U128& sig, AWFlit_id4_addr64_user3& flit) {
+    void unpackCap1_aw(U128& cap, U128& sig, AWFlit_id4_addr64_user3& flit) {
         sig.bottom |= uint64_t(flit.awqos & 0x1)   << 43;
         sig.bottom |= uint64_t(flit.awprot & 0x7)  << 40;
         sig.bottom |= uint64_t(flit.awcache & 0xf) << 36;
@@ -224,9 +234,6 @@ namespace axi::IOCapAxi {
         sig.top |= uint64_t(flit.awaddr >> 20);
         sig.bottom |= uint64_t(flit.awaddr << 44);
     }
-
-    // Cap1 and Cap2 have been swapped for the purposes of finding the KeyId early.
-    // See IOCapAxi_Flits.bsv
 
     // AWFlit_id4_addr64_user3 packCap1_aw(U128 cap, U128 sig) {
     AWFlit_id4_addr64_user3 packCap2_aw(U128 cap, U128 sig) {

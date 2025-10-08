@@ -112,6 +112,8 @@ void push_input(DUT& dut, const key_manager2::refcountpipe::RefCountPipe_2Valves
     } while(0);
     #define NOWRITE(name) dut.EN_## name ##___05Fwrite = 0;
 
+    // TODO This doesn't reflect the change that keyToStartRevoking is no longer an input
+
     if (input.keyStatus.keyToStartRevoking) {
         WRITE(keyStatusShim_keyToStartRevoking, input.keyStatus.keyToStartRevoking.value());
     } else {
@@ -162,6 +164,8 @@ void pull_output(DUT& dut, key_manager2::refcountpipe::RefCountPipe_Output& outp
     #define READ(from, into) \
         assert(dut.RDY_## from ##___05Fread); \
         into = dut.from ##___05Fread;
+
+    // TODO This doesn't reflect the change that keyToStartRevoking is no longer an input
 
     if (CANREAD(keyStatusShim_tryConfirmingRevokeKey)) {
         uint16_t val;
