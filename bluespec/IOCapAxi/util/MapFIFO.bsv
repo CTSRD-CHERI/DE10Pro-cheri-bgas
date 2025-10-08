@@ -3,6 +3,7 @@
 import SourceSink :: *;
 import Vector :: *;
 import BlueBasics :: *;
+import Assert :: *;
 
 interface MapFIFO#(type t);
     interface Sink#(t) enq;
@@ -38,11 +39,13 @@ module mkSizedMapFIFO#(NumProxy#(depth) proxy, function t mapItem(t item))(MapFI
             // Push, no pop
             { tagged Valid .val, False } : begin
                 // assert oneHotEnqPtr[valueOf(depth)] == 1'b0;
+                dynamicAssert(oneHotEnqPtr[valueOf(depth)] == 1'b0, "Pushing too far in a MapFIFO");
                 newOneHotEnqPtr = oldOneHotEnqPtr << 1;
             end
             // Pop, no push
             { tagged Invalid,     True } : begin
                 // assert oneHotEnqPtr[0] == 1'b0;
+                dynamicAssert(oneHotEnqPtr[0] == 1'b0, "Popping too far in a MapFIFO");
                 newOneHotEnqPtr = oldOneHotEnqPtr >> 1;
             end
         endcase
