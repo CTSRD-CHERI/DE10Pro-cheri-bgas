@@ -204,7 +204,7 @@ module mkSimpleIOCapAxiChecker2#(
                     // This is possible because capBits1 is the MIDDLE.
                     // capBits1 covers a bottom part of the MAC and the top bits of the text,
                     // so unpack the pair. TODO CHECK PACKING ORDER
-                    Tuple2#(Bit#(128), tcap) partialCap = unpack({ 0, capBits1, 86'b0 });
+                    Tuple2#(Bit#(128), tcap) partialCap = unpack({ 84'b0, capBits1, 86'b0 });
                     let keyId = keyIdOf(tpl_2(partialCap));
                     keyIdForConstructingFlit.wset(keyId);
                     currentFlit <= tagged Building1 {

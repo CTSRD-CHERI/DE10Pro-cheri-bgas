@@ -41,7 +41,7 @@ interface IOCapAxi_KeyManager2_MMIO#(type t_data, numeric type n_checkers);
     interface Vector#(n_checkers, RWire#(KeyId)) checkerKillKeyMessages;
 endinterface
 
-module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc keyState, IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc#(t_data, TLog#(TDiv#(128, t_data))) keyData, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_MMIO#(t_data, n_checkers))  provisos (
+module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc keyState, IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc keyData, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_MMIO#(t_data, n_checkers))  provisos (
     // t_data must be divisible by 8
     // i.e. (t_data/8) * 8 == t_data
     Mul#(TDiv#(t_data, 8), 8, t_data),
@@ -198,7 +198,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
                     validWrite <- keyState.tryEnableKey(k);
                     // TODO error for this if it fails
                 end else begin
-                    validWrite <- keyState.tryRevokeKey(k);
+                    validWrite <- keyData.tryRevokeAndClearKey(k);
                     // TODO error for this if it fails
                 end
             end else begin
@@ -218,16 +218,16 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
             ) begin
                 // Move wstrb and wdata into the 128-bit space based on their offset within the key.
 
-                // // wstrb = TDiv#(t_data, 8) bits long
-                // // We've just checked that startByteWithinKey + TDiv#(t_data, 8) <= 16
-                // // => the top bit of wstrb will only ever go up to the top bit of Bit#(16), and won't be shifted out.
-                // Bit#(16) bramByteEnable = left_shift_comb(zeroExtend(w.wstrb), unpack(startByteWithinKey));
-                // // wdata = t_data bits long
-                // // We've just checked that startByteWithinKey + TDiv#(t_data, 8) <= 16
-                // // => (startByteWithinKey + t_data/8) * 8 <= 128
-                // // => (startByteWithinKey * 8) + t_data <= 128
-                // // => no bits will be shifted out
-                // Bit#(128) bramWriteData = left_shift_comb(zeroExtend(w.wdata), unpack({startByteWithinKey, 3'b0}));
+                // wstrb = TDiv#(t_data, 8) bits long
+                // We've just checked that startByteWithinKey + TDiv#(t_data, 8) <= 16
+                // => the top bit of wstrb will only ever go up to the top bit of Bit#(16), and won't be shifted out.
+                Bit#(16) bramByteEnable = left_shift_comb(zeroExtend(w.wstrb), unpack(startByteWithinKey));
+                // wdata = t_data bits long
+                // We've just checked that startByteWithinKey + TDiv#(t_data, 8) <= 16
+                // => (startByteWithinKey + t_data/8) * 8 <= 128
+                // => (startByteWithinKey * 8) + t_data <= 128
+                // => no bits will be shifted out
+                Bit#(128) bramWriteData = left_shift_comb(zeroExtend(w.wdata), unpack({startByteWithinKey, 3'b0}));
 
                 // keys.portA.request.put(BRAMRequestBE {
                 //     writeen: bramByteEnable,
@@ -237,7 +237,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
                 //     datain: bramWriteData
                 // });
                 
-                validWrite <- keyData.tryWriteKeyWord(k, w.wdata, startByteWithinKey[3]);
+                validWrite <- keyData.tryWriteKey(k, bramWriteData, bramByteEnable);
                 // TODO error for this if it fails
 
                 // TODO improve display

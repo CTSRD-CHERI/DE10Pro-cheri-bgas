@@ -205,8 +205,8 @@ endinterface
 
 // Generic interface for a KeyDataPipe testbench that provides C++ with the ability to control the KeyStatus pipeline interface
 interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc_Shim;
-    interface ReadOnly#(Maybe#(Tuple2#(KeyId, Bit#(1)))) tryWriteKeyWord;
-    interface WriteOnly#(KeyId) keyToStartRevoking;
+    interface ReadOnly#(Maybe#(KeyId)) tryWriteKey;
+    interface ReadOnly#(Maybe#(KeyId)) tryRevokeAndClearKey;
     interface WriteOnly#(Vector#(256, KeyStatus)) keyStatus;
 
     // Internal interface
@@ -215,27 +215,35 @@ endinterface
 
 
 module mkIOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc_Shim(IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc_Shim);
-    RWire#(Tuple2#(KeyId, Bit#(1))) triedWriteKeyWordRwire <- mkRWire;
-    let triedWriteKeyWordReadOnly <- mkRwireToReadOnlyDirect(triedWriteKeyWordRwire);
-    RWire#(KeyId) keyToStartRevokingRwire <- mkRWire;
+    RWire#(KeyId) triedWriteKeyRwire <- mkRWire;
+    let triedWriteKeyReadOnly <- mkRwireToReadOnlyDirect(triedWriteKeyRwire);
+    RWire#(KeyId) tryRevokeAndClearKeyRWire <- mkRWire;
+    let tryRevokeAndClearKeyReadOnly <- mkRwireToReadOnlyDirect(tryRevokeAndClearKeyRWire);
     Reg#(Vector#(256, KeyStatus)) keyStatusReg <- mkReg(replicate(KeyInvalidRevoked));
 
     // After cycle #n, this will be tagged Valid if it was written to during cycle #n
-    interface tryWriteKeyWord = triedWriteKeyWordReadOnly;
-    interface keyToStartRevoking = rwireToWriteOnly(keyToStartRevokingRwire);
+    interface tryWriteKey = triedWriteKeyReadOnly;
+    interface tryRevokeAndClearKey = tryRevokeAndClearKeyReadOnly;
     interface keyStatus = regToWriteOnly(keyStatusReg);
 
     interface keyDataFacing = interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc;
-        method ActionValue#(Bool) tryWriteKeyWord(KeyId id, Bit#(1) word);
+        method ActionValue#(Bool) tryWriteKey(KeyId id);
             if (keyStatusReg[id] != KeyInvalidRevoked) begin
                 return False;
             end else begin
-                triedWriteKeyWordRwire.wset(tuple2(id, word));
+                triedWriteKeyRwire.wset(id);
                 return True;
             end
         endmethod
 
-        interface keyToStartRevoking = keyToStartRevokingRwire;
+        method ActionValue#(Bool) tryRevokeAndClearKey(KeyId id);
+            if (keyStatusReg[id] != KeyValid) begin
+                return False;
+            end else begin
+                tryRevokeAndClearKeyRWire.wset(id);
+                return True;
+            end
+        endmethod
 
         method keyStatus(key) = keyStatusReg[key];
     endinterface;

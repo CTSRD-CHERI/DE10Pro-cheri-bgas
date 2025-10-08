@@ -107,16 +107,26 @@ endinterface
 // It's guaranteed to arrive after the key state was set to KeyInvalidPendingRevoke, so we can guarantee that the key will eventually be checked for revocation even if it never receives a Decrement message again.
 // Even if one or more events happen in-between, pushing the key state further through the cycle, CheckZero can only ever correctly transition a key to revoked after revocation was requested.
 
-module mkIOCapAxi_KeyManager2_V1(IOCapAxi_KeyManager2#(t_data, 2)) provisos (
-    Alias#(key_write_coverage_bits, TDiv#(128, t_data))
+module mkIOCapAxi_KeyManager2_V1(IOCapAxi_KeyManager2#(t_data, 1)) provisos (
+    // t_data must be divisible by 8
+    // i.e. (t_data/8) * 8 == t_data
+    Mul#(TDiv#(t_data, 8), 8, t_data),
+    // t_data must be smaller than or equal to 128 - the size of a key
+    Add#(t_data, a__, 128),
+    // t_data must be smaller than or equal to 64 - the size of a performance counter
+    Add#(t_data, b__, 64),
+    // Same thing for t_data/8 - ugh, why can't this be proven implicitly
+    Add#(TDiv#(t_data, 8), c__, 16),
+    // t_data must be greater than or equal to 2 - the size of keyStatus
+    Add#(2, d__, t_data)
 );
     KeyManager2ErrorUnit error <- mkErrorUnit;
 
-    IOCapAxi_KeyManager2_KeyStatePipe#(key_write_coverage_bits)     keyState <- mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg(error);
-    IOCapAxi_KeyManager2_KeyDataPipe#(t_data, key_write_coverage_bits, 1)   keyData <- mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort(keyState.keydata, error);
+    IOCapAxi_KeyManager2_KeyStatePipe     keyState <- mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg(error);
+    IOCapAxi_KeyManager2_KeyDataPipe#(1)   keyData <- mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort(keyState.keydata, error);
     IOCapAxi_KeyManager2_RefCountPipe#(2) refcount <- mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve(keyState.refcount, error);
 
-    IOCapAxi_KeyManager2_MMIO#(t_data, key_write_coverage_bits)         mmio <- mkIOCapAxi_KeyManager2_MMIO(keyState.mmio, keyData.mmio, error);
+    IOCapAxi_KeyManager2_MMIO#(t_data, 1)     mmio <- mkIOCapAxi_KeyManager2_MMIO(keyState.mmio, keyData.mmio, error);
 
     function IOCapAxi_KeyManager2_ValveIfc makeReadValvePort(Integer idx) = interface IOCapAxi_KeyManager2_ValveIfc;
         Integer valveIdx = idx * 2;
