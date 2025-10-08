@@ -29,7 +29,7 @@ interface IOCapAxi_KeyManager2_KeyDataPipe#(numeric type t_data, numeric type ke
 endinterface
 
 // TODO make this for (32, 2, 1)
-module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_64x2#(IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc keyState, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_KeyDataPipe#(64, 1, 1));
+module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_64x2#(IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc#(1) keyState, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_KeyDataPipe#(64, 1, 1));
     // ===============================================
     // KEY DATA PIPELINE
     // ===============================================
@@ -125,7 +125,7 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_64x2#(IOCapA
     let keyReqSink = toSink(keyReqFF);
     let keyRespSrc = toSource(keyRespFF);
 
-    interface mmio = interface IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc;
+    interface mmio = interface IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc#(64, 1);
         // This will never cause backpressure, because it's dual-port - there's no reason to be delayed.
         method ActionValue#(Bool) tryWriteKeyWord(KeyId id, Bit#(64) data, Bit#(1) word);
             if (keyState.keyStatus(id) != KeyInvalidRevoked) begin
@@ -161,8 +161,7 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_64x2#(IOCapA
     interface checkerKeyResponse = cons(keyRespSrc, nil);
 endmodule
 
-// TODO make this for (32, 2, 1)
-module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_32x4#(IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc keyState, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_KeyDataPipe#(32, 2, 1));
+module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_32x4#(IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc#(2) keyState, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_KeyDataPipe#(32, 2, 1));
     // ===============================================
     // KEY DATA PIPELINE
     // ===============================================
@@ -258,7 +257,7 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_32x4#(IOCapA
     let keyReqSink = toSink(keyReqFF);
     let keyRespSrc = toSource(keyRespFF);
 
-    interface mmio = interface IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc;
+    interface mmio = interface IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc#(32, 2);
         // This will never cause backpressure, because it's dual-port - there's no reason to be delayed.
         method ActionValue#(Bool) tryWriteKeyWord(KeyId id, Bit#(32) data, Bit#(2) word);
             if (keyState.keyStatus(id) != KeyInvalidRevoked) begin

@@ -45,7 +45,7 @@ interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc#(numeric type key_wri
     method KeyStatus keyStatus(KeyId key);
 endinterface
 
-interface IOCapAxi_KeyManager2_KeyStatePip#(numeric type key_write_coverage_bits);
+interface IOCapAxi_KeyManager2_KeyStatePipe#(numeric type key_write_coverage_bits);
     interface IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc mmio;
     interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc#(key_write_coverage_bits) keydata;
     interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc refcount;
@@ -66,7 +66,7 @@ module mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg#(KeyManager2ErrorUnit error
 
     (* no_implicit_conditions *)
     rule stepKeyFSMs;
-        Vector#(256, Tuple2#(KeyStatus, Bit#(2))) val = keyStates;
+        Vector#(256, Tuple2#(KeyStatus, Bit#(TExp#(key_write_coverage_bits)))) val = keyStates;
         for (Integer i = 0; i < 256; i = i + 1)
             case (keyStates[i]) matches
                 { KeyValid, .* } : if (keyToStartRevoking.wget() == (tagged Valid fromInteger(i))) begin
@@ -77,7 +77,7 @@ module mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg#(KeyManager2ErrorUnit error
                 ) begin
                     val[i] = tuple2(KeyInvalidRevoked, 0);
                 end
-                { KeyInvalidRevoked, .writeCov } if ((~writeCov) == 0): if (
+                { KeyInvalidRevoked, .writeCov } &&& ((~writeCov) == 0) : if (
                     keyToMakeValid.wget() == (tagged Valid fromInteger(i))
                 ) begin
                     val[i] = tuple2(KeyValid, writeCov);
@@ -117,7 +117,7 @@ module mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg#(KeyManager2ErrorUnit error
             if (tpl_1(keyStates[id]) != KeyInvalidRevoked) begin
                 return False;
             end else begin
-                Bit#(key_write_coverage_bits) oneHot = 1;
+                Bit#(TExp#(key_write_coverage_bits)) oneHot = 1;
                 oneHot = oneHot << word;
                 keyToEnqueueWriteFor.wset(tuple2(id, oneHot));
                 return True;

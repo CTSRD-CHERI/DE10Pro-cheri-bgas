@@ -50,7 +50,9 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
     // t_data must be smaller than or equal to 64 - the size of a performance counter
     Add#(t_data, b__, 64),
     // Same thing for t_data/8 - ugh, why can't this be proven implicitly
-    Add#(TDiv#(t_data, 8), c__, 16)
+    Add#(TDiv#(t_data, 8), c__, 16),
+    // t_data must be greater than or equal to 2 - the size of keyStatus
+    Add#(2, d__, t_data)
 );
     let axiShim <- mkAXI4LiteShimFF;
 

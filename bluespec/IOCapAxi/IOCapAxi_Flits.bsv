@@ -357,7 +357,7 @@ module mkSimpleAddressChannelCapUnwrapper#(Proxy#(tcap) _proxy)(AddressChannelCa
             flitInProgress <= tuple2(
                 flit,
                 // { 0, bits }
-                { 0, bits, 86'0 }
+                { 0, bits, 86'b0 }
             );
         end else begin
             $error("IOCap protocol error ", fshow(bitsFlit));
