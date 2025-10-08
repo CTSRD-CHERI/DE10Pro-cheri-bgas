@@ -224,9 +224,19 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         keyStore.checker.keyResponse.drop();
     endrule
 
+    NumProxy#(2) perAddrChannelPoolSize = ?;
+
     // AW transactions come in encoding an IOCap with a standard AW flit. The IOCap and flit are examined, and if verified they are passed on through awOut.
     // AddressChannelCapUnwrapper#(AXI4_AWFlit#(t_id, 64, 3), AXI4_AWFlit#(t_id, 64, 0), Cap2024_11) awIn <- mkSimpleAddressChannelCapUnwrapper(Proxy{});
-    IOCapAxiChecker2#(AXI4_AWFlit#(t_id, 64, 3), AXI4_AWFlit#(t_id, 64, 0)) awIn <- mkSimpleIOCapAxiChecker2(
+    // IOCapAxiChecker2#(AXI4_AWFlit#(t_id, 64, 3), AXI4_AWFlit#(t_id, 64, 0)) awIn <- mkSimpleIOCapAxiChecker2(
+    //     connectFastFSMCapDecode_2024_11,
+    //     awKeyReqIfc,
+    //     keyResponse,
+    //     keyStore.checker.killKeyMessage,
+    //     keyIdForFlit
+    // );
+    IOCapAxiChecker2#(AXI4_AWFlit#(t_id, 64, 3), AXI4_AWFlit#(t_id, 64, 0)) awIn <- mkInOrderIOCapAxiChecker2V1Pool(
+        perAddrChannelPoolSize,
         connectFastFSMCapDecode_2024_11,
         awKeyReqIfc,
         keyResponse,
@@ -249,7 +259,15 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
 
     // AR transactions come in encoding an IOCap with a standard AR flit. The IOCap and flit are examined, and if verified they are passed on through arOut.
     // AddressChannelCapUnwrapper#(AXI4_ARFlit#(t_id, 64, 3), AXI4_ARFlit#(t_id, 64, 0), Cap2024_11) arIn <- mkSimpleAddressChannelCapUnwrapper(Proxy{});
-    IOCapAxiChecker2#(AXI4_ARFlit#(t_id, 64, 3), AXI4_ARFlit#(t_id, 64, 0)) arIn <- mkSimpleIOCapAxiChecker2(
+    // IOCapAxiChecker2#(AXI4_ARFlit#(t_id, 64, 3), AXI4_ARFlit#(t_id, 64, 0)) arIn <- mkSimpleIOCapAxiChecker2(
+    //     connectFastFSMCapDecode_2024_11,
+    //     arKeyReqIfc,
+    //     keyResponse,
+    //     keyStore.checker.killKeyMessage,
+    //     keyIdForFlit
+    // );
+    IOCapAxiChecker2#(AXI4_ARFlit#(t_id, 64, 3), AXI4_ARFlit#(t_id, 64, 0)) arIn <- mkInOrderIOCapAxiChecker2V1Pool(
+        perAddrChannelPoolSize,
         connectFastFSMCapDecode_2024_11,
         arKeyReqIfc,
         keyResponse,
@@ -458,7 +476,8 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         && wScoreboard.canBeginTxn(tpl_1(awIn.checkResponse.peek).awid)
     ));
         // Pull the AW check result out of the awIn
-        let awResp <- get(awIn.checkResponse);
+        let awResp = awIn.checkResponse.peek();
+        awIn.checkResponse.drop();
         $display("IOCap - check_aw ", fshow(awResp));
         // If valid, pass on and increment send credits (if wDropCredited = True, don't dequeue - wait for wSendCredits == 0 so we can set it to False)
         // If invalid, drop the AW flit and increment drop credits
@@ -501,7 +520,8 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
 
     rule check_ar (rScoreboard.canBeginTxn(tpl_1(arIn.checkResponse.peek).arid));
         // Pull the AR check result out of the arIn
-        let arResp <- get(arIn.checkResponse);
+        let arResp = arIn.checkResponse.peek();
+        arIn.checkResponse.drop();
         $display("IOCap - check_ar ", fshow(arResp));
         // If valid, pass on
         // If invalid, send a failure response

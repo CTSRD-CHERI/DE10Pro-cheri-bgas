@@ -13,8 +13,8 @@ import IOCapAxi_Types :: *;
 import IOCapAxi_Flits :: *;
 
 import Cap2024 :: *;
-import Cap2024_02 :: *;
-import Cap2024_02_Decode_FastFSM :: *;
+import Cap2024_11 :: *;
+import Cap2024_11_Decode_FastFSM :: *;
 import Cap2024_SigCheck_Aes_1RoundPerCycle :: *; // Get CapSigCheckIn
 import Cap2024_SigCheck_Aes_2RoundPerCycleFast :: *;
 
@@ -86,9 +86,9 @@ typedef union tagged {
     //     Bit#(86) capBits2;
     //     Bit#(84) capBits3; 
     // } Building3;
-    // AuthenticatedFlit#(no_iocap_flit, tcap) Ready;
-    AuthenticatedFlit#(no_iocap_flit, tcap) DecodingAndSigChecking;
-} FlitState#(type no_iocap_flit, type tcap) deriving (Bits, FShow);
+    // AuthenticatedFlit#(no_iocap_flit, Cap2024_11) Ready;
+    AuthenticatedFlit#(no_iocap_flit, Cap2024_11) DecodingAndSigChecking;
+} FlitState#(type no_iocap_flit) deriving (Bits, FShow);
 
 // typedef  CurrentFlitState#(type no_iocap_flit) deriving (Bits, FShow);
 
@@ -135,21 +135,19 @@ typedef union tagged {
 //
 // Capabilities are decoded and signature-checked in parallel, and we can assume the decoder latency is always less than the signature check.
 // We add ~3 cycles of latency on top of the signature check with the various FIFO stages, so the maximum latency should be ~21 cycles.
-module mkSimpleIOCapAxiChecker2#(
-    function module#(Empty) makeDecoder(Get#(tcap) ins, Put#(CapCheckResult#(Tuple2#(CapPerms, CapRange))) outs),
+module mkSimpleIOCapAxiChecker2V1#(
+    function module#(Empty) makeDecoder(Get#(Cap2024_11) ins, Put#(CapCheckResult#(Tuple2#(CapPerms, CapRange))) outs),
     Sink#(KeyId) keyRequest,
     ReadOnly#(Maybe#(Tuple2#(KeyId, Maybe#(Key)))) keyResponse,
     ReadOnly#(Maybe#(KeyId)) keyToKill, 
-    function KeyId keyIdOf(tcap cap)
+    function KeyId keyIdOf(Cap2024_11 cap)
 )(IOCapAxiChecker2#(iocap_flit, no_iocap_flit)) provisos (
-    Bits#(AuthenticatedFlit#(no_iocap_flit, tcap), a__),
-    Bits#(FlitState#(no_iocap_flit, tcap), b__),
+    Bits#(AuthenticatedFlit#(no_iocap_flit, Cap2024_11), a__),
+    Bits#(FlitState#(no_iocap_flit), b__),
     Bits#(iocap_flit, c__),
-    Bits#(tcap, 128),
     AxiCtrlFlit64#(no_iocap_flit),
     FShow#(no_iocap_flit),
-    IOCapPackableFlit#(iocap_flit, no_iocap_flit),
-    Cap#(tcap)
+    IOCapPackableFlit#(iocap_flit, no_iocap_flit)
 );
     function Tuple3#(no_iocap_flit, KeyId, Bool) checkKeyNotKilled(Tuple3#(no_iocap_flit, KeyId, Bool) tup);
         if (keyToKill == tagged Valid tpl_2(tup)) begin
@@ -166,7 +164,7 @@ module mkSimpleIOCapAxiChecker2#(
     FIFOF#(iocap_flit) reqFlits <- mkFIFOF;
     let incomingFlits = toSource(reqFlits);
 
-    ConfigReg#(FlitState#(no_iocap_flit, tcap)) currentFlit <- mkConfigReg(tagged NoFlit);
+    ConfigReg#(FlitState#(no_iocap_flit)) currentFlit <- mkConfigReg(tagged NoFlit);
     // Reg#(Maybe#(CurrentFlitState#(no_iocap_flit))) currentFlit <- mkReg(tagged Invalid);
     ConfigReg#(DecodeState) decodeState <- mkConfigReg(tagged DecodeIdle);
     ConfigReg#(SigCheckState) sigCheckState <- mkConfigReg(tagged SigCheckIdle);
@@ -176,12 +174,12 @@ module mkSimpleIOCapAxiChecker2#(
     RWire#(KeyId) keyIdForConstructingFlit <- mkRWire;
     // The full AuthenticatedFlit we just extracted in the Building2 -> DecodingAndSigChecking transition.
     // Will NEVER be Valid at the same time as the keyIdForConstructingFlit
-    RWire#(AuthenticatedFlit#(no_iocap_flit, tcap)) completedFlit <- mkRWire;
+    RWire#(AuthenticatedFlit#(no_iocap_flit, Cap2024_11)) completedFlit <- mkRWire;
     // Pulses when the signature check finishes, triggering everything else to reset.
     PulseWire flitCompleted <- mkPulseWire;
 
     // TODO FIFOs are terrible for latency
-    FIFOF#(tcap) decodeInFIFO <- mkFIFOF; 
+    FIFOF#(Cap2024_11) decodeInFIFO <- mkFIFOF; 
     FIFOF#(CapCheckResult#(Tuple2#(CapPerms, CapRange))) decodeOutFIFO <- mkFIFOF;
     makeDecoder(toGet(decodeInFIFO), toPut(decodeOutFIFO));
     let decodeIn <- toUnguardedSink(decodeInFIFO);
@@ -192,7 +190,7 @@ module mkSimpleIOCapAxiChecker2#(
     // let sigCheckIn <- toUnguardedSink(sigCheckInFIFO);
     // let sigCheckOut <- toUnguardedSource(sigCheckOutFIFO, ?);
 
-    RWire#(CapSigCheckIn#(tcap)) sigCheckInRWire <- mkRWire;
+    RWire#(CapSigCheckIn#(Cap2024_11)) sigCheckInRWire <- mkRWire;
     RWire#(CapCheckResult#(Bit#(0))) sigCheckOutRWire <- mkRWire;
     mk2RoundPerCycleCapSigCheckFast(rwireToReadOnly(sigCheckInRWire), rwireToWriteOnly(sigCheckOutRWire));
     let sigCheckIn = interface Sink;
@@ -234,7 +232,7 @@ module mkSimpleIOCapAxiChecker2#(
                     // This is possible because capBits1 is the MIDDLE.
                     // capBits1 covers a bottom part of the MAC and the top bits of the text,
                     // so unpack the pair. TODO CHECK PACKING ORDER
-                    Tuple2#(Bit#(128), tcap) partialCap = unpack({ 84'b0, capBits1, 86'b0 });
+                    Tuple2#(Bit#(128), Cap2024_11) partialCap = unpack({ 84'b0, capBits1, 86'b0 });
                     let keyId = keyIdOf(tpl_2(partialCap));
                     keyIdForConstructingFlit.wset(keyId);
                     currentFlit <= tagged Building1 {
@@ -267,7 +265,7 @@ module mkSimpleIOCapAxiChecker2#(
                     // let combinedBits = { capBits3, capBits2, capBits1 };
                     // See IOCapAxi_Flits.bsv, capBits1 and capBits2 are swapped for an amazing reason
                     let combinedBits = { capBits3, capBits1, capBits2 };
-                    AuthenticatedFlit#(no_iocap_flit, tcap) authFlit = AuthenticatedFlit {
+                    AuthenticatedFlit#(no_iocap_flit, Cap2024_11) authFlit = AuthenticatedFlit {
                         flit: flit,
                         cap: unpack(combinedBits[127:0]),
                         sig: combinedBits[255:128]
@@ -282,7 +280,7 @@ module mkSimpleIOCapAxiChecker2#(
         endcase
     endrule
 
-    function Maybe#(AuthenticatedFlit#(no_iocap_flit, tcap)) getAuthFlit();
+    function Maybe#(AuthenticatedFlit#(no_iocap_flit, Cap2024_11)) getAuthFlit();
         if (completedFlit.wget() matches tagged Valid .authFlit) begin
             return tagged Valid authFlit;
         end else if (currentFlit matches tagged DecodingAndSigChecking .authFlit) begin 
@@ -416,7 +414,7 @@ module mkSimpleIOCapAxiChecker2#(
 
                     let failed = True;
 
-                    $display("flitCompleted on early fail");
+                    // $display("flitCompleted on early fail");
                     resps.put(tuple3(authFlit.flit, keyId, !failed));
                     flitCompleted.send();
                     newSigCheckState = tagged SigCheckIdle;
@@ -478,7 +476,7 @@ module mkSimpleIOCapAxiChecker2#(
                     flitCompleted.send();
                     newSigCheckState = tagged SigCheckIdle;
                 end else begin
-                    $display("AwaitingRespAvailable waiting on resps");
+                    // $display("AwaitingRespAvailable waiting on resps");
                     newSigCheckState = tagged AwaitingRespAvailable {
                         keyId: keyId,
                         failed: failed
@@ -607,7 +605,6 @@ module mkSimpleIOCapAxiChecker2#(
     interface checkResponse = respsMapFIFO.deq;
 endmodule
 
-/*
 
 // mkIOCapAxiCheckerPool#(n, flit) to make a Vector#(n, someChecker) and take the first available one.
 // Max input/output rate are still 1/cycle, n should be tuned such that n = ceil((x cycles for one check)/(y cycles to receive an authenticated IOCapAxiFlit))
@@ -619,43 +616,121 @@ endmodule
 
 // Can't use Integer for n because "Integer" != "numeric type"
 
-// TODO MAKE THIS WORK FOR CHECKER2
-module mkInOrderIOCapAxiChecker2Pool#(NumProxy#(n) n_proxy, module#(IOCapAxiChecker2#(no_iocap_flit, tcap)) toPool)(IOCapAxiChecker#(no_iocap_flit, tcap)) provisos (Bits#(AuthenticatedFlit#(no_iocap_flit, tcap), a__), AxiCtrlFlit64#(no_iocap_flit), FShow#(no_iocap_flit));    
-    Vector#(n, IOCapAxiChecker#(no_iocap_flit, tcap)) checkers <- replicateM(toPool);
-    // Separately track the insert and retrieve pointers.
+module mkInOrderIOCapAxiChecker2V1Pool#(
+    NumProxy#(n) n_proxy,
+    function module#(Empty) makeDecoder(Get#(Cap2024_11) ins, Put#(CapCheckResult#(Tuple2#(CapPerms, CapRange))) outs),
+    Sink#(KeyId) keyRequest,
+    ReadOnly#(Maybe#(Tuple2#(KeyId, Maybe#(Key)))) keyResponse,
+    ReadOnly#(Maybe#(KeyId)) keyToKill, 
+    function KeyId keyIdOf(Cap2024_11 cap)
+)(IOCapAxiChecker2#(iocap_flit, no_iocap_flit)) provisos (
+    Bits#(AuthenticatedFlit#(no_iocap_flit, Cap2024_11), a__),
+    Bits#(FlitState#(no_iocap_flit), b__),
+    Bits#(iocap_flit, c__),
+    AxiCtrlFlit64#(no_iocap_flit),
+    FShow#(no_iocap_flit),
+    IOCapPackableFlit#(iocap_flit, no_iocap_flit)
+);
+
+    // Separately track the insert, key request and retrieve pointers.
     // insertPointer is allowed to wrap around past retrievePointer multiple times
     // - although that likely isn't possible in normal cases -
     // because the baseChecker is expected to spit out checkResponses in the same order as checkRequests.
     // This could be done differently, TODO construct a mkOutOfOrderIOCapAxiCheckerPool?
     Reg#(Bit#(TLog#(n))) insertPointer <- mkReg(0);
     PulseWire incrementInsert <- mkPulseWire;
+    Reg#(Bit#(TLog#(n))) keyRequestPointer <- mkReg(0);
+    PulseWire incrementKeyRequest <- mkPulseWire;
     Reg#(Bit#(TLog#(n))) retrievePointer <- mkReg(0);
     PulseWire incrementRetrieve <- mkPulseWire;
 
     rule increment_counters;
         if (incrementInsert) begin
+            $display("tick incrementInsert ", fshow(insertPointer));
             let newInsertPointer = insertPointer + 1;
             if (inLiteralRange(insertPointer, valueOf(n)) && newInsertPointer >= fromInteger(valueOf(n)))
                 insertPointer <= 0;
             else
                 insertPointer <= newInsertPointer;
         end
+        if (incrementKeyRequest) begin
+            $display("tick incrementKeyRequest ", fshow(keyRequestPointer));
+            let newKeyRequestPointer = keyRequestPointer + 1;
+            if (inLiteralRange(keyRequestPointer, valueOf(n)) && newKeyRequestPointer >= fromInteger(valueOf(n)))
+                keyRequestPointer <= 0;
+            else
+                keyRequestPointer <= newKeyRequestPointer;
+        end
         if (incrementRetrieve) begin
+            $display("tick incrementRetrieve ", fshow(retrievePointer));
             let newRetrievePointer = retrievePointer + 1;
-            if (inLiteralRange(insertPointer, valueOf(n)) && newRetrievePointer >= fromInteger(valueOf(n)))
+            if (inLiteralRange(retrievePointer, valueOf(n)) && newRetrievePointer >= fromInteger(valueOf(n)))
                 retrievePointer <= 0;
             else
                 retrievePointer <= newRetrievePointer;
         end
     endrule
 
-    interface checkRequest = interface Sink;
+    Vector#(n, RWire#(KeyId)) keyRequests <- replicateM(mkRWire);
+
+    function UInt#(64) sumValidRequests(UInt#(64) i, RWire#(KeyId) w);
+        if (isValid(w.wget())) begin
+            return i + 1;
+        end else begin
+            return i;
+        end
+    endfunction
+
+    rule passthru_key_request(keyRequest.canPut());
+        if (foldl(sumValidRequests, 64'b0, keyRequests) > 1) begin
+            $error("TODO BIG ERROR TOO MANY KEY REQUESTS");
+            $finish();
+        end
+        if (keyRequests[keyRequestPointer].wget() matches tagged Valid .req) begin
+            keyRequest.put(req);
+            // Each pool member should send exactly one key request per flit group
+            incrementKeyRequest.send();
+        end
+    endrule
+
+    rule check_not_dropping_key_request(!keyRequest.canPut());
+        let nRequests = foldl(sumValidRequests, 64'b0, keyRequests);
+        if (nRequests > 1) begin
+            $error("TODO BIG ERROR TOO MANY KEY REQUESTS AND DROPPING");
+            $finish();
+        end else if (nRequests != 0) begin
+            $error("TODO BIG ERROR DROPPING KEY REQUEST");
+            $finish();
+        end
+    endrule
+
+    function module#(IOCapAxiChecker2#(iocap_flit, no_iocap_flit)) genChecker(Integer i);
+        let keyRequestIfc = interface Sink;
+            method Bool canPut = (keyRequestPointer == fromInteger(i) && keyRequest.canPut());
+            method Action put(x) = keyRequests[i].wset(x);
+        endinterface;
+        return mkSimpleIOCapAxiChecker2V1(
+            makeDecoder,
+            keyRequestIfc,
+            keyResponse,
+            keyToKill,
+            keyIdOf
+        );
+    endfunction
+
+    Vector#(n, IOCapAxiChecker2#(iocap_flit, no_iocap_flit)) checkers <- genWithM(genChecker);
+
+    interface in = interface Sink;
         method Bool canPut;
-            return checkers[insertPointer].checkRequest.canPut();
+            return checkers[insertPointer].in.canPut();
         endmethod
-        method Action put (Tuple3#(AuthenticatedFlit#(no_iocap_flit, tcap), KeyId, Maybe#(Key)) val);
-            checkers[insertPointer].checkRequest.put(val);
-            incrementInsert.send();
+        method Action put (iocap_flit val);
+            checkers[insertPointer].in.put(val);
+            // On the final flit, switch the pointer
+            IOCapFlitSpec#(no_iocap_flit) spec = unpackSpec(val);
+            if (spec matches tagged CapBits3 .*) begin
+                incrementInsert.send();
+            end
         endmethod
     endinterface;
     interface checkResponse = interface Source;
@@ -671,5 +746,3 @@ module mkInOrderIOCapAxiChecker2Pool#(NumProxy#(n) n_proxy, module#(IOCapAxiChec
         endmethod
     endinterface;
 endmodule
-
-*/
