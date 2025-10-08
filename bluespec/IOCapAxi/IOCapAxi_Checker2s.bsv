@@ -7,6 +7,7 @@ import Vector :: *;
 import BlueBasics :: *;
 import MapFIFO :: *;
 import ConfigReg :: *;
+import SamUtil :: *;
 
 import IOCapAxi_Types :: *;
 import IOCapAxi_Flits :: *;
@@ -15,7 +16,7 @@ import Cap2024 :: *;
 import Cap2024_02 :: *;
 import Cap2024_02_Decode_FastFSM :: *;
 import Cap2024_SigCheck_Aes_1RoundPerCycle :: *; // Get CapSigCheckIn
-import Cap2024_SigCheck_Aes_2RoundPerCycle :: *;
+import Cap2024_SigCheck_Aes_2RoundPerCycleFast :: *;
 
 interface IOCapAxiChecker2#(type iocap_flit, type no_iocap_flit);
     interface Sink#(iocap_flit) in;
@@ -52,11 +53,11 @@ typedef union tagged {
         Bool keyInvalidatedDuringSigCheck;
     } AwaitingSigCheck;
     // Once the signature check completes, we assume that everything else has completed.
-    // struct {
-    //     KeyId keyId;
-    //     // If the signature check failed or the key was invalid
-    //     Bool failed;
-    // } SigChecked;
+    struct {
+        KeyId keyId;
+        // If the signature check failed or the key was invalid
+        Bool failed;
+    } AwaitingRespAvailable;
 } SigCheckState deriving (Bits, FShow, Eq);
 
 typedef union tagged {
@@ -112,6 +113,24 @@ typedef union tagged {
 // |   1    |   12   |      6      |
 // |   2    |   18   |      8      |
 //
+// The Exposer testbenches measure AW->AW latency where Cycle 0 is the cycle where the last(!) flit is put into the unit
+// Cycle #-3 - testbench puts first flit into Exposer FIFO
+// Cycle #-2 - pull first flit, no IOCap data
+//  (-> Building0, SigCheckIdle, DecodeIdle)
+// Cycle #-1 - accumulate CapData1 flit, issue keyRequest into keyReqFF
+//  (-> Building1, -> AwaitingKey, DecodeIdle)
+// Cycle #0 - testbench inserts last flit, accumulate CapData2 flit, keyStore pulls out request
+// TODO could start decoding here, but it wouldn't help. AES dominates
+//  (-> Building2, AwaitingKey, DecodeIdle)
+// Cycle #1 - accumulate CapData3 flit, keyStore puts resp into keyRespFF, start decoding
+//  (-> DecodingAndSigChecking, AwaitingKey, -> AwaitingFlitBounds)
+// Cycle #2 - keyRequest arrives from keyRespFF, decoding continues, begin AES directly using the key
+//  (DecodingAndSigChecking, -> AwaitingSigCheck, -> AwaitingIOCapDecode)
+// Cycle #8(?) - signature completes, decode has since completed, enqueue result into FIFO
+// Cycle #9(?) - exposer sees result, pushes flit into output FIFO
+// Cycle #10(?) - testbench sees result
+
+//
 // TODO FIGURE OUT THE EXPECTED LATENCIES, THE BELOW IS OLD
 //
 // Capabilities are decoded and signature-checked in parallel, and we can assume the decoder latency is always less than the signature check.
@@ -161,19 +180,30 @@ module mkSimpleIOCapAxiChecker2#(
     // Pulses when the signature check finishes, triggering everything else to reset.
     PulseWire flitCompleted <- mkPulseWire;
 
-    // TODO dual-end FIFOs are terrible for latency
+    // TODO FIFOs are terrible for latency
     FIFOF#(tcap) decodeInFIFO <- mkFIFOF; 
     FIFOF#(CapCheckResult#(Tuple2#(CapPerms, CapRange))) decodeOutFIFO <- mkFIFOF;
     makeDecoder(toGet(decodeInFIFO), toPut(decodeOutFIFO));
     let decodeIn <- toUnguardedSink(decodeInFIFO);
     let decodeOut <- toUnguardedSource(decodeOutFIFO, ?);
 
-    // TODO dual-end FIFOs are terrible for latency
-    FIFOF#(CapSigCheckIn#(tcap)) sigCheckInFIFO <- mkFIFOF;
-    FIFOF#(CapCheckResult#(Bit#(0))) sigCheckOutFIFO <- mkFIFOF;
-    mk2RoundPerCycleCapSigCheck(toGet(sigCheckInFIFO), toPut(sigCheckOutFIFO));
-    let sigCheckIn <- toUnguardedSink(sigCheckInFIFO);
-    let sigCheckOut <- toUnguardedSource(sigCheckOutFIFO, ?);
+    // FIFOs are terrible for latency, this adds 2-cycles
+    // mk2RoundPerCycleCapSigCheck(toGet(sigCheckInFIFO), toPut(sigCheckOutFIFO));
+    // let sigCheckIn <- toUnguardedSink(sigCheckInFIFO);
+    // let sigCheckOut <- toUnguardedSource(sigCheckOutFIFO, ?);
+
+    RWire#(CapSigCheckIn#(tcap)) sigCheckInRWire <- mkRWire;
+    RWire#(CapCheckResult#(Bit#(0))) sigCheckOutRWire <- mkRWire;
+    mk2RoundPerCycleCapSigCheckFast(rwireToReadOnly(sigCheckInRWire), rwireToWriteOnly(sigCheckOutRWire));
+    let sigCheckIn = interface Sink;
+        method Bool canPut() = True;
+        method Action put(x) = sigCheckInRWire.wset(x);
+    endinterface;
+    let sigCheckOut = interface Source;
+        method Bool canPeek() = isValid(sigCheckOutRWire.wget());
+        method peek() = fromMaybe(?, sigCheckOutRWire.wget());
+        method Action drop() = noAction;
+    endinterface;
 
     function Bool canAccumFlit();
         if (currentFlit matches tagged DecodingAndSigChecking .*)
@@ -400,15 +430,10 @@ module mkSimpleIOCapAxiChecker2#(
                     failed = True;
                 end
 
-                if (sigCheckOut.canPeek() && !resps.canPut()) begin
-                    $display("AwaitingSigCheck waiting on resps");
-                end
-
                 // Assume decodeState == Decoded by this point, and currentFlit == DecodingAndSigChecking.
                 // We don't need to forward if we transition to Decoded *this cycle*, because we just won't.
                 // AES is that much slower.
-                if (resps.canPut() &&
-                    sigCheckOut.canPeek()) begin
+                if (sigCheckOut.canPeek()) begin
                     let sigCheckRes = sigCheckOut.peek();
                     sigCheckOut.drop();
 
@@ -420,14 +445,43 @@ module mkSimpleIOCapAxiChecker2#(
                         $display("IOCap - flit failed decode earlier");
                     end
 
-                    resps.put(tuple3(currentFlit.DecodingAndSigChecking.flit, keyId, !failed));
-                    $display("flitCompleted from AwaitingSigCheck");
-                    flitCompleted.send();
-                    newSigCheckState = tagged SigCheckIdle;
+                    if (resps.canPut()) begin
+                        resps.put(tuple3(currentFlit.DecodingAndSigChecking.flit, keyId, !failed));
+                        $display("flitCompleted from AwaitingSigCheck");
+                        flitCompleted.send();
+                        newSigCheckState = tagged SigCheckIdle;
+                    end else begin
+                        $display("AwaitingSigCheck waiting on resps");
+                        newSigCheckState = tagged AwaitingRespAvailable {
+                            keyId: keyId,
+                            failed: failed
+                        };
+                    end
                 end else begin
                     newSigCheckState = tagged AwaitingSigCheck {
                         keyId: keyId,
                         keyInvalidatedDuringSigCheck: keyInvalidatedDuringSigCheck
+                    };
+                end
+            end
+            tagged AwaitingRespAvailable { keyId: .keyId, failed: .failed1 } : begin
+                let failed = failed1;
+                if (keyToKill == tagged Valid keyId) begin
+                    // For now, don't skip ahead to SigChecked
+                    // - don't want to leave a spare entry in the output FIFO
+                    failed = True;
+                end
+
+                if (resps.canPut()) begin
+                    resps.put(tuple3(currentFlit.DecodingAndSigChecking.flit, keyId, !failed));
+                    $display("flitCompleted from AwaitingRespAvailable");
+                    flitCompleted.send();
+                    newSigCheckState = tagged SigCheckIdle;
+                end else begin
+                    $display("AwaitingRespAvailable waiting on resps");
+                    newSigCheckState = tagged AwaitingRespAvailable {
+                        keyId: keyId,
+                        failed: failed
                     };
                 end
             end

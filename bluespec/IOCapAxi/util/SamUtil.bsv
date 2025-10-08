@@ -13,6 +13,10 @@ function WriteOnly#(t) rwireToWriteOnly(RWire#(t) rwire) = interface WriteOnly;
     endmethod
 endinterface;
 
+function ReadOnly#(Maybe#(t)) rwireToReadOnly(RWire#(t) rwire) = interface ReadOnly;
+    method _read = rwire.wget();
+endinterface;
+
 function WriteOnly#(t) regToWriteOnly(Reg#(t) r) = interface WriteOnly;
     method _write = r._write;
 endinterface;
