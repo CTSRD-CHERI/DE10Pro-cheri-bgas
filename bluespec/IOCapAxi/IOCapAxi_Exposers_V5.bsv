@@ -182,8 +182,7 @@ endmodule
 // - compatability with KeyManagerV2, which requires...
 // - TODO (maybe done?) swapping out the checkers with versions that support in-situ invalidation by KeyId
 // - TODO (maybe done?) Support per-transaction KeyId tracking
-// - for now, swapping back to a single checker per lane
-module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool blockInvalid)(IOCapSingleExposer#(t_id, t_data)) provisos (
+module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool blockInvalid, NumProxy#(n_pool) perAddrChannelPoolSize)(IOCapSingleExposer#(t_id, t_data)) provisos (
 );
     // IOCapAxiChecker2 Doesn't support WRAP bursts right now
 
@@ -223,8 +222,6 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         $display("dropping from keyResponse");
         keyStore.checker.keyResponse.drop();
     endrule
-
-    NumProxy#(2) perAddrChannelPoolSize = ?;
 
     // AW transactions come in encoding an IOCap with a standard AW flit. The IOCap and flit are examined, and if verified they are passed on through awOut.
     // AddressChannelCapUnwrapper#(AXI4_AWFlit#(t_id, 64, 3), AXI4_AWFlit#(t_id, 64, 0), Cap2024_11) awIn <- mkSimpleAddressChannelCapUnwrapper(Proxy{});
