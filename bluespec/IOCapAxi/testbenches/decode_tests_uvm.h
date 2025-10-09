@@ -71,7 +71,7 @@ public:
     virtual bool shouldFinish(uint64_t tick) override {
         return (count == 0 && tick > end_tick);
     }
-    virtual void dump_stats() override {
+    virtual void dump_toml_stats() override {
         fmt::println(stderr, "throughput, {}", throughput.asDouble());
     }
 };
@@ -246,7 +246,7 @@ public:
     #define STRINGIFY(x) STRINGIFY2(x)
     #define STRINGIFY2(x) #x
     #define DUMP_MEAN_OF(x) fmt::println(stderr, STRINGIFY(x) ", {}", mean_of(x));
-    virtual void dump_stats() override {
+    virtual void dump_toml_stats() override {
         DUMP_MEAN_OF(latency);
         fmt::println(stderr, "valid caps, {}", n_valid);
         fmt::println(stderr, "invalid caps, {}", n_invalid);

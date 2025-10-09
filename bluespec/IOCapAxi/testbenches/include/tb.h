@@ -16,14 +16,26 @@
 
 #define DEFAULT_SEED 12398723198234ull
 
+const char* KONATA_HEADER = "Kanata\t0004";
+
+struct TestSetup {
+    // If true, stdout will contain valid konata traces that should be split into separate files on the header:
+    // ```Kanata	0004
+    // ``` i.e. "Kanata\t0004"
+    // The validity of the konata depends on the DUT producing valid konata via $display.
+    bool konata = false;
+    // If set, statistics will be printed in TOML form to this file.
+    FILE* toml_stats = NULL;
+};
+
 struct TestBase {
     virtual ~TestBase() = default;
 
     virtual std::string name() = 0;
     // Handle parameters which may be supplied post-initialization, like the random seed
-    virtual void setup(std::mt19937&& rng) {}
-    virtual bool run(int argc, char** argv) = 0;
-    virtual void dump_stats() {}
+    virtual void setup(std::mt19937&& rng, TestSetup& setup) {}
+    virtual bool run(int argc, char** argv, TestSetup& setup) = 0;
+    virtual void dump_toml_stats(FILE* stats) {}
 };
 
 int tb_main(std::vector<TestBase*> tests, int argc, char** argv) __attribute__ ((warn_unused_result));
@@ -34,20 +46,108 @@ int tb_main(std::vector<TestBase*> tests, int argc, char** argv) {
 
     // TODO parse some of the args to setup e.g. which tests to run, which seed to use
     uint64_t failures = 0;
+    TestSetup setup{};
+    bool strict = false;
+    uint64_t first_n = 0;
 
-    for (auto* test : tests) {
-        test->setup(std::move(std::mt19937(seed)));
-        if (!test->run(argc, argv)) {
+    // Save argv[0] so we can construct a sane vector of arguments to pass to verilator later
+    char* argv_0 = argv[0];
+    if (argc > 0) {
+        argc -= 1;
+    }
+    argv = argv + 1;
+
+    while (true) {
+        if (argc == 0) {
+            break;
+        } else if (strcmp(argv[0], "--") == 0){
+            argc -= 1;
+            argv = argv + 1;
+            break;
+        } else if (strcmp(argv[0], "--konata") == 0) {
+            setup.konata = true;
+            argc -= 1;
+            argv = argv + 1;
+        } else if (strcmp(argv[0], "--strict") == 0) {
+            strict = true;
+            argc -= 1;
+            argv = argv + 1;
+        } else if (strcmp(argv[0], "--toml") == 0) {
+            if (setup.toml_stats != NULL) {
+                throw std::runtime_error("Failed to parse command-line - --toml provided twice");
+            } else if (argc >= 2 && strcmp(argv[1], "--") != 0) {
+                fmt::println(stderr, "Saving output to {}", argv[1]);
+                setup.toml_stats = fopen(argv[1], "w");
+                argc -= 2;
+                argv = argv + 2;
+            } else {
+                throw std::runtime_error("Failed to parse command-line - --toml not given valid argument");
+            }
+        } else if (strcmp(argv[0], "--first") == 0) {
+            if (first_n != 0) {
+                throw std::runtime_error("Failed to parse command-line - --first provided twice");
+            } else if (argc >= 2 && strcmp(argv[1], "--") != 0) {
+                first_n = strtoull( argv[1], NULL, 10 );
+                fmt::println(stderr, "Running {} tests", first_n);
+                argc -= 2;
+                argv = argv + 2;
+            } else {
+                throw std::runtime_error("Failed to parse command-line - --first not given valid argument");
+            }
+        } else {
+            fmt::println(stderr, "Unknown argument '{}', passing to verilator.", argv[0]);
+            break;
+        }
+    }
+
+    std::vector<char*> arguments{};
+    arguments.push_back(argv_0);
+    while (argc > 0) {
+        arguments.push_back(argv[0]);
+        argc -= 1;
+        argv = argv + 1;
+    }
+
+    for (uint64_t i = 0; i < tests.size(); i++) {
+        if (first_n > 0 && i >= first_n) {
+            break;
+        }
+        auto test = tests[i];
+        test->setup(std::move(std::mt19937(seed)), setup);
+        if (!test->run(arguments.size(), arguments.data(), setup)) {
+            // Failure
             failures++;
             result = EXIT_FAILURE;
+
+            if (setup.toml_stats) {
+                fmt::println(setup.toml_stats, "[tests.\"{}\"]", test->name());
+                test->dump_toml_stats(setup.toml_stats);
+                fmt::println(setup.toml_stats, "");
+                fflush(setup.toml_stats);
+            }
+            if (strict) {
+                break;
+            }
+        } else {
+            // Success
+            if (setup.toml_stats) {
+                fmt::println(setup.toml_stats, "[tests.\"{}\"]", test->name());
+                test->dump_toml_stats(setup.toml_stats);
+                fmt::println(setup.toml_stats, "");
+                fflush(setup.toml_stats);
+            }
         }
-        // TODO only do this if a command-line option is set
-        test->dump_stats();
     }
 
     fmt::println(stderr, "\033[1;36mPass Rate {}/{} ({:3.1f}% pass)\033[0m", tests.size() - failures, tests.size(), (1 - (failures * 1.0 / tests.size())) * 100.0);
 
-    // return result;
+    if (setup.toml_stats) {
+        fclose(setup.toml_stats);
+    }
+
+    if (strict) {
+        return result;
+    }
     return 0; // To allow gathering results in batch
 }
 
@@ -78,7 +178,7 @@ struct CycleTest : TestBase {
     /**
      * Create and run a DUT using this test's parameters
      */
-    std::vector<TbOutput> execute(std::vector<TbInput> inputs, uint64_t end_time, int argc, char** argv) {
+    std::vector<TbOutput> execute(std::vector<TbInput> inputs, uint64_t end_time, int argc, char** argv, TestSetup& setup) {
         // Step through the input vector in order
         size_t input_idx = 0;
 
@@ -96,6 +196,11 @@ struct CycleTest : TestBase {
             dut.RST_N = 1;
             dut.CLK = 0;
 
+            if (setup.konata) {
+                fmt::println(stdout, "{}", KONATA_HEADER);
+                fmt::println(stdout, "// Test {}", this->name());
+            }
+
             while ((!ctx.gotFinish()) && (main_time <= end_time) ) { // $finish executed
                 if (main_time == 2) {
                     dut.RST_N = 0;    // assert reset
@@ -112,6 +217,11 @@ struct CycleTest : TestBase {
                 else if ((main_time % 10) == 0) {
                     dut.CLK = 0;
                     // ... and we set the inputs and pull outputs at this time too.
+
+                    // Tick one cycle along...
+                    if (setup.konata) {
+                        fmt::println(stdout, "C\t1");
+                    }
 
                     // Gather input. By default apply a null input.
                     TbInput input{};
@@ -158,7 +268,7 @@ struct CycleTest : TestBase {
      * Returns true if it did, false if it didn't.
      * Prints a diff of the outputs if it didn't match.
      */
-    virtual bool run(int argc, char** argv) override {
+    virtual bool run(int argc, char** argv, TestSetup& setup) override {
         fmt::println(stderr, "\033[1;33mTest: {}\033[0m", name());
 
         auto [inputs, expectedOutputs] = stimuli();
@@ -169,7 +279,7 @@ struct CycleTest : TestBase {
         if (expectedOutputs.size() > 0) {
             end_time = std::max(end_time, expectedOutputs[expectedOutputs.size() - 1].time);
         }
-        auto outputs = execute(inputs, end_time, argc, argv);
+        auto outputs = execute(inputs, end_time, argc, argv, setup);
 
         if (expectedOutputs == outputs) {
             fmt::println(stderr, "\033[1;32mTest-Success\033[0m");
@@ -248,7 +358,7 @@ public:
     virtual void setup(std::mt19937& rng) {}
     virtual void driveInputsForTick(std::mt19937& rng, DUT& dut, uint64_t tick) = 0;
     virtual bool shouldFinish(uint64_t tick) = 0;
-    virtual void dump_stats() {}
+    virtual void dump_toml_stats(FILE* stats) {}
 };
 
 using test_failure = std::logic_error;
@@ -261,7 +371,7 @@ public:
     virtual void monitorAndScore(DUT& dut, uint64_t tick) = 0;
     // Should raise a test_failure if the test should fail
     virtual void endTest() {}
-    virtual void dump_stats() {}
+    virtual void dump_toml_stats(FILE* stats) {}
 };
 
 template<class DUT>
@@ -271,17 +381,22 @@ protected:
     std::mt19937 rng;
     std::unique_ptr<Scoreboard<DUT>> scoreboard;
     std::unique_ptr<StimulusGenerator<DUT>> generator;
+    uint64_t ending_tick = 0;
 public:
     UVMishTest(Scoreboard<DUT>* scoreboard, StimulusGenerator<DUT>* generator) : rng(0), scoreboard(scoreboard), generator(generator) {}
     virtual ~UVMishTest() override = default;
     virtual std::string name() override {
         return generator->name();
     }
-    virtual void setup(std::mt19937&& rng) {
+    virtual void setup(std::mt19937&& rng, TestSetup& setup) {
         this->rng = rng;
         generator->setup(this->rng);
     }
-    virtual bool run(int argc, char** argv) override {
+    virtual bool run(int argc, char** argv, TestSetup& setup) override {
+        if (setup.konata) {
+            fmt::println(stdout, "{}", KONATA_HEADER);
+            fmt::println(stdout, "// Test {}", this->name());
+        }
         fmt::println(stderr, "\033[1;33mTest: {}\033[0m", name());
         uint64_t main_time = 0;
         try {
@@ -311,6 +426,11 @@ public:
                 else if ((main_time % 10) == 0) {
                     dut.CLK = 0;
                     
+                    // Tick one cycle along...
+                    if (setup.konata) {
+                        fmt::println(stdout, "C\t1");
+                    }
+
                     // Only start driving at 20 to let the reset status settle
                     if (main_time >= 20) {
                         generator->driveInputsForTick(this->rng, dut, main_time);
@@ -330,15 +450,18 @@ public:
             fmt::println(stderr, "\033[1;31mTest-Failure\033[0m");
             fmt::println(stderr, "{}", f.what());
             fmt::println(stderr, "Ending Tick: {}", main_time);
+            ending_tick = main_time;
             return false;
         }
         fmt::println(stderr, "\033[1;32mTest-Success\033[0m");
         fmt::println(stderr, "Ending Tick: {}", main_time);
+        ending_tick = main_time;
         return true;
     }
-    virtual void dump_stats() {
-        generator->dump_stats();
-        scoreboard->dump_stats();
+    virtual void dump_toml_stats(FILE* stats) {
+        fmt::println(stats, "ending_tick = {}", ending_tick);
+        generator->dump_toml_stats(stats);
+        scoreboard->dump_toml_stats(stats);
     }
 };
 

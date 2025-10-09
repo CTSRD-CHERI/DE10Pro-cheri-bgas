@@ -15,35 +15,35 @@ build-v name:
 build-sim-v name:
     make ./build/{{name}}.vsim
 
-sim-v name:
+sim-v name *args:
     make ./build/{{name}}.vsim
-    ./build/{{name}}.vsim
+    ./build/{{name}}.vsim {{args}}
 
 test-cpp-encdec:
     #!/bin/bash
     clang++ -g -std=gnu++20 -I$(dirname $(which verilator))/../share/verilator/include -I./testbenches/include -I./testbenches/librust_caps_c ./testbenches/librust_caps_c/librust_caps_c.a ./testbenches/checkEncDec.cpp -o ./build/checkEncDec
     ./build/checkEncDec
 
-test-keymgr: (sim-v "mkSimpleIOCapKeyManager_Tb")
+test-keymgr *args: (sim-v "mkSimpleIOCapKeyManager_Tb" args)
 
-test-exposer-v1: (sim-v "mkSimpleIOCapExposerV1_Tb")
-test-exposer-v2: (sim-v "mkSimpleIOCapExposerV2_Tb")
-test-exposer-v3: (sim-v "mkSimpleIOCapExposerV3_Tb")
-test-exposer-v4-noblock: (sim-v "mkSimpleIOCapExposerV4_noblock_Tb")
-test-exposer-v4: (sim-v "mkSimpleIOCapExposerV4_blockinvalid_Tb")
-test-exposer-v5-noblock: (sim-v "mkSimpleIOCapExposerV5_noblock_Tb")
-test-exposer-v5: (sim-v "mkSimpleIOCapExposerV5_blockinvalid_Tb")
-test-decoder-comb-11: (sim-v "mkCap2024_11_Decode_Comb_Tb")
-test-decoder-comb-02: (sim-v "mkCap2024_02_Decode_Comb_Tb")
-test-decoder-fsm-11: (sim-v "mkCap2024_11_Decode_FastFSM_Tb")
-test-decoder-fsm-02: (sim-v "mkCap2024_02_Decode_FastFSM_Tb")
+test-exposer-v1 *args: (sim-v "mkSimpleIOCapExposerV1_Tb" args)
+test-exposer-v2 *args: (sim-v "mkSimpleIOCapExposerV2_Tb" args)
+test-exposer-v3 *args: (sim-v "mkSimpleIOCapExposerV3_Tb" args)
+test-exposer-v4-noblock *args: (sim-v "mkSimpleIOCapExposerV4_noblock_Tb" args)
+test-exposer-v4 *args: (sim-v "mkSimpleIOCapExposerV4_blockinvalid_Tb" args)
+test-exposer-v5-noblock *args: (sim-v "mkSimpleIOCapExposerV5_noblock_Tb" args)
+test-exposer-v5 *args: (sim-v "mkSimpleIOCapExposerV5_blockinvalid_Tb" args)
+test-decoder-comb-11 *args: (sim-v "mkCap2024_11_Decode_Comb_Tb" args)
+test-decoder-comb-02 *args: (sim-v "mkCap2024_02_Decode_Comb_Tb" args)
+test-decoder-fsm-11 *args: (sim-v "mkCap2024_11_Decode_FastFSM_Tb" args)
+test-decoder-fsm-02 *args: (sim-v "mkCap2024_02_Decode_FastFSM_Tb" args)
 
 test-keymgr2-all: test-keymgr2-keydata-dualportsingle
 
-test-keymgr2-keydata-dualportsingle: (sim-v "mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_Tb")
-test-keymgr2-refcount-twovalve: (sim-v "mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve_Tb")
+test-keymgr2-keydata-dualportsingle *args: (sim-v "mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_Tb" args)
+test-keymgr2-refcount-twovalve *args: (sim-v "mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve_Tb" args)
 
-test-combined-v5-2v1: (sim-v "mkCombinedIOCapExposerV5_blockinvalid_KeyManager2V1_Tb")
+test-combined-v5-2v1 *args: (sim-v "mkCombinedIOCapExposerV5_blockinvalid_KeyManager2V1_Tb" args)
 
 build-all: \
     (build-sim-v "mkSimpleIOCapKeyManager_Tb") \

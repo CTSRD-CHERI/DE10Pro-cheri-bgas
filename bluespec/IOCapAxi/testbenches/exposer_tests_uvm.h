@@ -166,7 +166,7 @@ public:
     KeyManagerShimStimulus() : secrets() {}
     // Observe the key manager inputs (epoch fulfilments and key responses)
     virtual void driveInputsForKeyMgr(DUT& dut, uint64_t tick) = 0;
-    virtual void dump_stats(){}
+    virtual void dump_toml_stats(FILE* stats){}
 };
 
 /**
@@ -305,7 +305,7 @@ class SanitizedMemStimulus {
 public:
     // Observe the sanitized AW/W/AR outputs and drive the sanitize B/R inputs in response
     virtual void driveBAndRInputs(DUT& dut, uint64_t tick) = 0;
-    virtual void dump_stats(){}
+    virtual void dump_toml_stats(FILE* stats){}
 };
 
 /**
@@ -402,9 +402,9 @@ public:
             }
         }
     }
-    virtual void dump_stats() override {
-        fmt::println(stderr, "b_throughput, {}", b_throughput.asDouble());
-        fmt::println(stderr, "r_throughput, {}", r_throughput.asDouble());
+    virtual void dump_toml_stats(FILE* stats) override {
+        fmt::println(stats, "b_throughput = {}", b_throughput.asDouble());
+        fmt::println(stats, "r_throughput = {}", r_throughput.asDouble());
     }
 };
 
@@ -524,12 +524,12 @@ public:
             ar_throughput.trackCycleWithAvailableInput();
         }
     }
-    virtual void dump_stats() override {
-        fmt::println(stderr, "aw_throughput, {}", aw_throughput.asDouble());
-        fmt::println(stderr, "w_throughput, {}", w_throughput.asDouble());
-        fmt::println(stderr, "ar_throughput, {}", ar_throughput.asDouble());
-        sanitizedMem->dump_stats();
-        keyMgr->dump_stats();
+    virtual void dump_toml_stats(FILE* stats) override {
+        fmt::println(stats, "aw_throughput = {}", aw_throughput.asDouble());
+        fmt::println(stats, "w_throughput = {}", w_throughput.asDouble());
+        fmt::println(stats, "ar_throughput = {}", ar_throughput.asDouble());
+        sanitizedMem->dump_toml_stats(stats);
+        keyMgr->dump_toml_stats(stats);
     }
 };
 
@@ -1103,8 +1103,8 @@ public:
     }
     #define STRINGIFY(x) STRINGIFY2(x)
     #define STRINGIFY2(x) #x
-    #define DUMP_MEAN_OF(x) fmt::println(stderr, STRINGIFY(x) ", {}", mean_of(x));
-    virtual void dump_stats() override {
+    #define DUMP_MEAN_OF(x) fmt::println(stats, STRINGIFY(x) "_mean = {}", mean_of(x));
+    virtual void dump_toml_stats(FILE* stats) override {
         DUMP_MEAN_OF(aw_aw_latency);
         DUMP_MEAN_OF(aw_b_latency);
         DUMP_MEAN_OF(ar_ar_latency);
@@ -1112,15 +1112,15 @@ public:
         DUMP_MEAN_OF(w_w_latency);
         DUMP_MEAN_OF(b_b_latency);
         DUMP_MEAN_OF(r_r_latency);
-        fmt::println(stderr, "exp. valid write, {}", expectedGoodWrite);
-        fmt::println(stderr, "exp. invalid write, {}", expectedBadWrite);
-        fmt::println(stderr, "exp. invalid write bad cap, {}", expectedBadWriteBadCap);
-        fmt::println(stderr, "exp. invalid write good cap bad range, {}", expectedBadWriteGoodCapBadRange);
-        fmt::println(stderr, "exp. valid read, {}", expectedGoodRead);
-        fmt::println(stderr, "exp. invalid read, {}", expectedBadRead);
-        fmt::println(stderr, "exp. invalid read bad cap, {}", expectedBadReadBadCap);
-        fmt::println(stderr, "exp. invalid read good cap bad range, {}", expectedBadReadGoodCapBadRange);
-        fmt::println(stderr, "valid cap ratio, {}%", (double(expectedGoodWrite+expectedGoodRead))/(double(expectedGoodWrite+expectedGoodRead+expectedBadWrite+expectedBadRead))*100.0);
+        fmt::println(stats, "exp_valid_write = {}", expectedGoodWrite);
+        fmt::println(stats, "exp_invalid_write = {}", expectedBadWrite);
+        fmt::println(stats, "exp_invalid_write_bad_cap = {}", expectedBadWriteBadCap);
+        fmt::println(stats, "exp_invalid_write_good_cap_bad_range = {}", expectedBadWriteGoodCapBadRange);
+        fmt::println(stats, "exp_valid_read = {}", expectedGoodRead);
+        fmt::println(stats, "exp_invalid_read = {}", expectedBadRead);
+        fmt::println(stats, "exp_invalid_read_bad_cap = {}", expectedBadReadBadCap);
+        fmt::println(stats, "exp_invalid_read_good_cap_bad_range = {}", expectedBadReadGoodCapBadRange);
+        fmt::println(stats, "valid_cap_ratio = {}", (double(expectedGoodWrite+expectedGoodRead))/(double(expectedGoodWrite+expectedGoodRead+expectedBadWrite+expectedBadRead)));
     }
     #undef DUMP_MEAN_OF
     #undef STRINGIFY2
