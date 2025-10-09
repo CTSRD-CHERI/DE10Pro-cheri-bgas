@@ -282,7 +282,7 @@ module mkSimpleAddressChannelCapWrapper(AddressChannelCapWrapper#(iocap_flit, no
     rule st0 if (state == 0);
         let startFlitAndCap = inFlits.first;
         inFlits.deq();
-        $display("IOCap - Sending auth flitpack ", fshow(startFlitAndCap));
+        $display("// IOCap - Sending auth flitpack ", fshow(startFlitAndCap));
         outFlits.enq(packSpec(tagged Start (startFlitAndCap.flit)));
         state <= 1;
         cap <= { startFlitAndCap.sig, pack(startFlitAndCap.cap) };
@@ -397,8 +397,8 @@ module mkSimpleAddressChannelCapUnwrapper#(Proxy#(tcap) _proxy)(AddressChannelCa
                 cap: unpack(combinedBits[127:0]),
                 sig: combinedBits[255:128]
             };
-            $display("IOCap - Recevied bits ", fshow(combinedBits));
-            $display("IOCap - Received auth flitpack ", fshow(authFlit));
+            $display("// IOCap - Recevied bits ", fshow(combinedBits));
+            $display("// IOCap - Received auth flitpack ", fshow(authFlit));
             outFlits.enq(authFlit);
         end else begin
             $error("IOCap protocol error ", fshow(bitsFlit));
@@ -417,20 +417,23 @@ typeclass AxiCtrlFlit64#(type flit);
     function AXI4_Size burstSize(flit f);
     function AXI4_Burst burstKind(flit f);
     function Bool isBurstRead(flit f);
+    function Bit#(64) burstTid(flit f);
 endtypeclass
 
-instance AxiCtrlFlit64#(AXI4_AWFlit#(t_id, 64, t_data));
+instance AxiCtrlFlit64#(AXI4_AWFlit#(t_id, 64, t_data)) provisos (Add#(t_id, __a, 64));
     function Bit#(64) burstAddr(AXI4_AWFlit#(t_id, 64, t_data) f) = f.awaddr;
     function AXI4_Len burstLen(AXI4_AWFlit#(t_id, 64, t_data) f) = f.awlen;
     function AXI4_Size burstSize(AXI4_AWFlit#(t_id, 64, t_data) f) = f.awsize;
     function AXI4_Burst burstKind(AXI4_AWFlit#(t_id, 64, t_data) f) = f.awburst;
     function Bool isBurstRead(AXI4_AWFlit#(t_id, 64, t_data) f) = False;
+    function Bit#(64) burstTid(AXI4_AWFlit#(t_id, 64, t_data) f) = zeroExtend(f.awid);
 endinstance
 
-instance AxiCtrlFlit64#(AXI4_ARFlit#(t_id, 64, t_data));
+instance AxiCtrlFlit64#(AXI4_ARFlit#(t_id, 64, t_data)) provisos (Add#(t_id, __a, 64));
     function Bit#(64) burstAddr(AXI4_ARFlit#(t_id, 64, t_data) f) = f.araddr;
     function AXI4_Len burstLen(AXI4_ARFlit#(t_id, 64, t_data) f) = f.arlen;
     function AXI4_Size burstSize(AXI4_ARFlit#(t_id, 64, t_data) f) = f.arsize;
     function AXI4_Burst burstKind(AXI4_ARFlit#(t_id, 64, t_data) f) = f.arburst;
     function Bool isBurstRead(AXI4_ARFlit#(t_id, 64, t_data) f) = True;
+    function Bit#(64) burstTid(AXI4_ARFlit#(t_id, 64, t_data) f) = zeroExtend(f.arid);
 endinstance

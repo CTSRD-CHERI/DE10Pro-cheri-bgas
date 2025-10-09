@@ -27,7 +27,8 @@ import Cap2024_02_Decode_FastFSM :: *;
 module mkSimpleIOCapExposerV3#(IOCap_KeyManager#(t_keystore_data) keyStore)(IOCapSingleExposer#(t_id, t_data)) provisos (
     Mul#(TDiv#(t_keystore_data, 8), 8, t_keystore_data),
     Add#(t_keystore_data, a__, 128),
-    Add#(TDiv#(t_keystore_data, 8), b__, 16)
+    Add#(TDiv#(t_keystore_data, 8), b__, 16),
+    Add#(t_id, c__, 64)
 );
     // Doesn't support WRAP bursts right now
 

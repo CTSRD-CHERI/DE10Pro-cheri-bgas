@@ -8,9 +8,11 @@ import BlueBasics :: *;
 import MapFIFO :: *;
 import ConfigReg :: *;
 import SamUtil :: *;
+import Assert :: *;
 
 import IOCapAxi_Types :: *;
 import IOCapAxi_Flits :: *;
+import IOCapAxi_Konata :: *;
 
 import Cap2024 :: *;
 import Cap2024_11 :: *;
@@ -19,8 +21,9 @@ import Cap2024_SigCheck_Aes_1RoundPerCycle :: *; // Get CapSigCheckIn
 import Cap2024_SigCheck_Aes_2RoundPerCycleFast :: *;
 
 interface IOCapAxiChecker2#(type iocap_flit, type no_iocap_flit);
-    interface Sink#(iocap_flit) in;
-    interface Source#(Tuple3#(no_iocap_flit, KeyId, Bool)) checkResponse;
+    interface Sink#(Tuple2#(iocap_flit, KFlitId)) in;
+    interface Source#(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool)) checkResponse;
+    interface ReadOnly#(UInt#(64)) insertKThreadId;
 endinterface
 
 typedef union tagged {
@@ -149,19 +152,21 @@ module mkSimpleIOCapAxiChecker2V1#(
     FShow#(no_iocap_flit),
     IOCapPackableFlit#(iocap_flit, no_iocap_flit)
 );
-    function Tuple3#(no_iocap_flit, KeyId, Bool) checkKeyNotKilled(Tuple3#(no_iocap_flit, KeyId, Bool) tup);
-        if (keyToKill == tagged Valid tpl_2(tup)) begin
-            return tuple3(tpl_1(tup), tpl_2(tup), False);
+    function Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool) checkKeyNotKilled(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool) tup);
+        if (keyToKill == tagged Valid tpl_3(tup)) begin
+            return tuple4(tpl_1(tup), tpl_2(tup), tpl_3(tup), False);
         end else begin
             return tup;
         end
     endfunction
 
     NumProxy#(3) respsMapFIFOSize = ?;
-    MapFIFO#(Tuple3#(no_iocap_flit, KeyId, Bool)) respsMapFIFO <- mkSizedMapFIFO(respsMapFIFOSize, checkKeyNotKilled);
+    MapFIFO#(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool)) respsMapFIFO <- mkSizedMapFIFO(respsMapFIFOSize, checkKeyNotKilled);
     let resps = respsMapFIFO.enq;
 
-    FIFOF#(iocap_flit) reqFlits <- mkFIFOF;
+    ConfigReg#(KFlitId) flitId <- mkConfigReg(?);
+
+    FIFOF#(Tuple2#(iocap_flit, KFlitId)) reqFlits <- mkFIFOF;
     let incomingFlits = toSource(reqFlits);
 
     ConfigReg#(FlitState#(no_iocap_flit)) currentFlit <- mkConfigReg(tagged NoFlit);
@@ -214,54 +219,64 @@ module mkSimpleIOCapAxiChecker2V1#(
     rule accumulate_flit(canAccumFlit() && incomingFlits.canPeek());
         case (currentFlit) matches
             tagged NoFlit : if (incomingFlits.canPeek()) begin
-                // $display("-> Building0");
-                IOCapFlitSpec#(no_iocap_flit) capFlit = unpackSpec(incomingFlits.peek());
-                if (capFlit matches tagged Start .flit) begin
+                match { .iocapFlit, .iocapFlitId } = incomingFlits.peek();
+                IOCapFlitSpec#(no_iocap_flit) flitSpec = unpackSpec(iocapFlit);
+                if (flitSpec matches tagged Start .flit) begin
                     currentFlit <= tagged Building0 {
                         flit: flit
                     };
+                    $display("S\t", fshow(iocapFlitId), "\t10\tBuilding0");
                 end else begin
                     $display("TODO BIG ERROR");
                 end
+                flitId <= iocapFlitId;
                 incomingFlits.drop();
             end
             tagged Building0 { flit: .flit } : if (incomingFlits.canPeek()) begin
-                // $display("-> Building1");
-                IOCapFlitSpec#(no_iocap_flit) capBits = unpackSpec(incomingFlits.peek());
-                if (capBits matches tagged CapBits1 .capBits1) begin
+                match { .iocapFlit, .iocapFlitId } = incomingFlits.peek();
+                dynamicAssert(flitId == iocapFlitId, "Got new mismatching flit while building");
+                IOCapFlitSpec#(no_iocap_flit) flitSpec = unpackSpec(iocapFlit);
+                if (flitSpec matches tagged CapBits1 .capBits1) begin
                     // This is possible because capBits1 is the MIDDLE.
                     // capBits1 covers a bottom part of the MAC and the top bits of the text,
                     // so unpack the pair. TODO CHECK PACKING ORDER
                     Tuple2#(Bit#(128), Cap2024_11) partialCap = unpack({ 84'b0, capBits1, 86'b0 });
                     let keyId = keyIdOf(tpl_2(partialCap));
                     keyIdForConstructingFlit.wset(keyId);
+                    $display("L\t", fshow(flitId), "\t1\tkeyId ", fshow(keyId));
                     currentFlit <= tagged Building1 {
                         flit: flit,
                         capBits1: capBits1
                     };
+                    $display("S\t", fshow(flitId), "\t10\tBuilding1");
                 end else begin
-                    $display("TODO BIG ERROR");
+                    $error("TODO BIG ERROR");
+                    $finish();
                 end
                 incomingFlits.drop();
             end
             tagged Building1 { flit: .flit, capBits1: .capBits1 } : if (incomingFlits.canPeek()) begin
-                // $display("-> Building2");
-                IOCapFlitSpec#(no_iocap_flit) capBits = unpackSpec(incomingFlits.peek());
-                if (capBits matches tagged CapBits2 .capBits2) begin
+                match { .iocapFlit, .iocapFlitId } = incomingFlits.peek();
+                dynamicAssert(flitId == iocapFlitId, "Got new mismatching flit while building");
+                IOCapFlitSpec#(no_iocap_flit) flitSpec = unpackSpec(iocapFlit);
+                if (flitSpec matches tagged CapBits2 .capBits2) begin
                     currentFlit <= tagged Building2 {
                         flit: flit,
                         capBits1: capBits1,
                         capBits2: capBits2
                     };
+                    $display("S\t", fshow(flitId), "\t10\tBuilding2");
                 end else begin
-                    $display("TODO BIG ERROR");
+                    $error("TODO BIG ERROR");
+                    $finish();
                 end
                 incomingFlits.drop();
             end
             tagged Building2 { flit: .flit, capBits1: .capBits1, capBits2: .capBits2 } : if (incomingFlits.canPeek()) begin
-                // $display("-> DecodingAndSigChecking");
-                IOCapFlitSpec#(no_iocap_flit) capBits = unpackSpec(incomingFlits.peek());
-                if (capBits matches tagged CapBits3 .capBits3) begin
+                match { .iocapFlit, .iocapFlitId } = incomingFlits.peek();
+                dynamicAssert(flitId == iocapFlitId, "Got new mismatching flit while building");
+                IOCapFlitSpec#(no_iocap_flit) flitSpec = unpackSpec(iocapFlit);
+                if (flitSpec matches tagged CapBits3 .capBits3) begin
                     // let combinedBits = { capBits3, capBits2, capBits1 };
                     // See IOCapAxi_Flits.bsv, capBits1 and capBits2 are swapped for an amazing reason
                     let combinedBits = { capBits3, capBits1, capBits2 };
@@ -271,8 +286,10 @@ module mkSimpleIOCapAxiChecker2V1#(
                         sig: combinedBits[255:128]
                     };
                     currentFlit <= tagged DecodingAndSigChecking authFlit;
+                    $display("S\t", fshow(flitId), "\t10\tDecodingAndSigChecking");
                 end else begin
-                    $display("TODO BIG ERROR");
+                    $error("TODO BIG ERROR");
+                    $finish();
                 end
                 incomingFlits.drop();
             end
@@ -415,7 +432,7 @@ module mkSimpleIOCapAxiChecker2V1#(
                     let failed = True;
 
                     // $display("flitCompleted on early fail");
-                    resps.put(tuple3(authFlit.flit, keyId, !failed));
+                    resps.put(tuple4(authFlit.flit, flitId, keyId, !failed));
                     flitCompleted.send();
                     newSigCheckState = tagged SigCheckIdle;
                 end
@@ -437,19 +454,19 @@ module mkSimpleIOCapAxiChecker2V1#(
 
                     if (sigCheckRes matches tagged Fail .*) begin
                         failed = True;
-                        $display("IOCap - flit failed sigcheck");
+                        $display("// IOCap - flit failed sigcheck");
                     end else if (decodeState.Decoded.failed) begin
                         failed = True;
-                        $display("IOCap - flit failed decode earlier");
+                        $display("// IOCap - flit failed decode earlier");
                     end
 
                     if (resps.canPut()) begin
-                        resps.put(tuple3(currentFlit.DecodingAndSigChecking.flit, keyId, !failed));
-                        $display("flitCompleted from AwaitingSigCheck");
+                        resps.put(tuple4(currentFlit.DecodingAndSigChecking.flit, flitId, keyId, !failed));
+                        $display("// flitCompleted from AwaitingSigCheck");
                         flitCompleted.send();
                         newSigCheckState = tagged SigCheckIdle;
                     end else begin
-                        $display("AwaitingSigCheck waiting on resps");
+                        $display("// AwaitingSigCheck waiting on resps");
                         newSigCheckState = tagged AwaitingRespAvailable {
                             keyId: keyId,
                             failed: failed
@@ -471,8 +488,8 @@ module mkSimpleIOCapAxiChecker2V1#(
                 end
 
                 if (resps.canPut()) begin
-                    resps.put(tuple3(currentFlit.DecodingAndSigChecking.flit, keyId, !failed));
-                    $display("flitCompleted from AwaitingRespAvailable");
+                    resps.put(tuple4(currentFlit.DecodingAndSigChecking.flit, flitId, keyId, !failed));
+                    $display("// flitCompleted from AwaitingRespAvailable");
                     flitCompleted.send();
                     newSigCheckState = tagged SigCheckIdle;
                 end else begin
@@ -483,11 +500,20 @@ module mkSimpleIOCapAxiChecker2V1#(
                     };
                 end
             end
-            default: noAction;
         endcase
 
-        if (sigCheckState != newSigCheckState)
-            $display("-> ", fshow(newSigCheckState));
+        if (sigCheckState != newSigCheckState) begin
+            case (newSigCheckState) matches
+                // Start and end SigCheckIdle to show that this flit is being finished
+                tagged SigCheckIdle : $display("S\t", fshow(flitId), "\t12\tSigCheckIdle\nE\t", fshow(flitId), "\t12\tSigCheckIdle");
+                tagged AwaitingKeyAvailable .* : $display("S\t", fshow(flitId), "\t12\tAwaitingKeyAvailable");
+                tagged AwaitingKey .* :  $display("S\t", fshow(flitId), "\t12\tAwaitingKey");
+                tagged AwaitingSigCheckStart .* : $display("S\t", fshow(flitId), "\t12\tAwaitingSigCheckStart");
+                tagged SigCheckFailedEarly .* : $display("S\t", fshow(flitId), "\t12\tSigCheckFailedEarly");
+                tagged AwaitingSigCheck {} : $display("S\t", fshow(flitId), "\t12\tAwaitingSigCheck");
+                tagged AwaitingRespAvailable {} : $display("S\t", fshow(flitId), "\t12\tAwaitingRespAvailable");
+            endcase
+        end
         sigCheckState <= newSigCheckState;
     endrule
 
@@ -498,6 +524,7 @@ module mkSimpleIOCapAxiChecker2V1#(
                     // $display("-> AwaitingFlitBounds");
                     decodeIn.put(authFlit.cap);
                     decodeState <= tagged AwaitingFlitBounds;
+                    $display("S\t", fshow(flitId), "\t13\tAwaitingFlitBounds");
                 end
             end
             tagged AwaitingFlitBounds : begin
@@ -545,12 +572,12 @@ module mkSimpleIOCapAxiChecker2V1#(
                 if (bounds_failed) begin
                     $display("IOCap - flit failed Bounds ", fshow(flit));
                 end
-                // $display("-> AwaitingIOCapDecode");
                 decodeState <= tagged AwaitingIOCapDecode {
                     flitMin: min_addr,
                     flitMax: max_addr,
                     boundsFailed: bounds_failed
                 };
+                $display("S\t", fshow(flitId), "\t13\tAwaitingIOCapDecode");
             end
             tagged AwaitingIOCapDecode { flitMin: .flitMin, flitMax: .flitMax, boundsFailed: .boundsFailed } : begin
                 if (decodeOut.canPeek()) begin
@@ -578,9 +605,9 @@ module mkSimpleIOCapAxiChecker2V1#(
                     endcase
 
                     if (failed) begin
-                        $display("IOCap - flit failed Decode ", fshow(flit), " - ", fshow(decodeRes));
+                        $display("// IOCap - flit failed Decode ", fshow(flit), " - ", fshow(decodeRes));
                     end
-                    // $display("-> Decoded");
+                    $display("S\t", fshow(flitId), "\t13\tDecoded");
                     decodeState <= tagged Decoded {
                         failed: failed
                     };
@@ -588,7 +615,7 @@ module mkSimpleIOCapAxiChecker2V1#(
             end
             tagged Decoded .failed : begin
                 if (flitCompleted) begin
-                    // $display("-> DecodeIdle");
+                    $display("E\t", fshow(flitId), "\t13\tDecoded");
                     decodeState <= tagged DecodeIdle;
                 end
             end
@@ -597,12 +624,16 @@ module mkSimpleIOCapAxiChecker2V1#(
 
     rule complete_flit(currentFlit matches tagged DecodingAndSigChecking .*);
         if (flitCompleted) begin
+            $display("E\t", fshow(flitId), "\t10\tDecodingAndSigChecking");
             currentFlit <= tagged NoFlit;
         end
     endrule
 
     interface in = toSink(reqFlits);
     interface checkResponse = respsMapFIFO.deq;
+    interface insertKThreadId = interface ReadOnly;
+        method UInt#(64) _read = 0;
+    endinterface;
 endmodule
 
 
@@ -629,7 +660,8 @@ module mkInOrderIOCapAxiChecker2V1Pool#(
     Bits#(iocap_flit, c__),
     AxiCtrlFlit64#(no_iocap_flit),
     FShow#(no_iocap_flit),
-    IOCapPackableFlit#(iocap_flit, no_iocap_flit)
+    IOCapPackableFlit#(iocap_flit, no_iocap_flit),
+    Add#(n__, TLog#(n), 64)
 );
 
     // Separately track the insert, key request and retrieve pointers.
@@ -646,7 +678,7 @@ module mkInOrderIOCapAxiChecker2V1Pool#(
 
     rule increment_counters;
         if (incrementInsert) begin
-            $display("tick incrementInsert ", fshow(insertPointer));
+            $display("// tick incrementInsert ", fshow(insertPointer));
             let newInsertPointer = insertPointer + 1;
             if (inLiteralRange(insertPointer, valueOf(n)) && newInsertPointer >= fromInteger(valueOf(n)))
                 insertPointer <= 0;
@@ -654,7 +686,7 @@ module mkInOrderIOCapAxiChecker2V1Pool#(
                 insertPointer <= newInsertPointer;
         end
         if (incrementKeyRequest) begin
-            $display("tick incrementKeyRequest ", fshow(keyRequestPointer));
+            $display("// tick incrementKeyRequest ", fshow(keyRequestPointer));
             let newKeyRequestPointer = keyRequestPointer + 1;
             if (inLiteralRange(keyRequestPointer, valueOf(n)) && newKeyRequestPointer >= fromInteger(valueOf(n)))
                 keyRequestPointer <= 0;
@@ -662,7 +694,7 @@ module mkInOrderIOCapAxiChecker2V1Pool#(
                 keyRequestPointer <= newKeyRequestPointer;
         end
         if (incrementRetrieve) begin
-            $display("tick incrementRetrieve ", fshow(retrievePointer));
+            $display("// tick incrementRetrieve ", fshow(retrievePointer));
             let newRetrievePointer = retrievePointer + 1;
             if (inLiteralRange(retrievePointer, valueOf(n)) && newRetrievePointer >= fromInteger(valueOf(n)))
                 retrievePointer <= 0;
@@ -724,10 +756,10 @@ module mkInOrderIOCapAxiChecker2V1Pool#(
         method Bool canPut;
             return checkers[insertPointer].in.canPut();
         endmethod
-        method Action put (iocap_flit val);
+        method Action put (Tuple2#(iocap_flit, KFlitId) val);
             checkers[insertPointer].in.put(val);
             // On the final flit, switch the pointer
-            IOCapFlitSpec#(no_iocap_flit) spec = unpackSpec(val);
+            IOCapFlitSpec#(no_iocap_flit) spec = unpackSpec(tpl_1(val));
             if (spec matches tagged CapBits3 .*) begin
                 incrementInsert.send();
             end
@@ -737,12 +769,15 @@ module mkInOrderIOCapAxiChecker2V1Pool#(
         method Bool canPeek;
             return checkers[retrievePointer].checkResponse.canPeek();
         endmethod
-        method Tuple3#(no_iocap_flit, KeyId, Bool) peek;
+        method Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool) peek;
             return checkers[retrievePointer].checkResponse.peek();
         endmethod
         method Action drop;
             checkers[retrievePointer].checkResponse.drop();
             incrementRetrieve.send();
         endmethod
+    endinterface;
+    interface insertKThreadId = interface ReadOnly;
+        method UInt#(64) _read = zeroExtend(unpack(insertPointer));
     endinterface;
 endmodule

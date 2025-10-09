@@ -124,7 +124,7 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort#(IOCapAxi_Ke
             address: keyId,
             datain: ?
         });
-        $display("IOCap - key manager cache - start retrieve key ", fshow(keyId), " - ", fshow(keyState.keyStatus(keyId)));
+        $display("// IOCap - key manager cache - start retrieve key ", fshow(keyId), " - ", fshow(keyState.keyStatus(keyId)));
     endrule
 
     // Push reads from the BRAM directly into the keyRespFF (start_retrieve_key is the only rule that starts BRAM reads)
@@ -146,7 +146,7 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort#(IOCapAxi_Ke
             keyRespFF.enq(tuple2(keyId, tagged Invalid));
         end
 
-        $display("IOCap - key manager cache - receive_key_from_bram ", fshow(keyId), " - ", fshow(key), " - ", fshow(valid));
+        $display("// IOCap - key manager cache - receive_key_from_bram ", fshow(keyId), " - ", fshow(key), " - ", fshow(valid));
     endrule
 
     // TODO instead of mutually_exclusive, which just generates a runtime assertion, make my own rule which checks them and ties into ErrorUnit

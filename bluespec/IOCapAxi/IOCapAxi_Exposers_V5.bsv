@@ -14,22 +14,23 @@ import IOCapAxi_KeyManager2_MMIO :: *;
 import IOCapAxi_KeyManager2_RefCountPipe :: *;
 import IOCapAxi_CreditValve :: *;
 import IOCapAxi_Checker2s :: *;
+import IOCapAxi_Konata :: *;
 
 import Cap2024_11 :: *;
 import Cap2024_11_Decode_FastFSM :: *;
 
-// The Scoreboard tracks which TxnIds for outstanding valid transactions are associated with which KeyIds for the purposes of reference counting.
+// The Scoreboard tracks which TxnIds for outstanding valid transactions are associated with which KeyIds (generalized to t_meta) for the purposes of reference counting.
 // It also tracks which TxnIds currently have outstanding valid transactions, which means it can help avoid out-of-order completions for a TxnId
 // when there's an invalid transaction while there's a currently outstanding valid transaction - the completion for the invalid transaction
 // should fire after the completion for the valid one.
 //
 // 
-interface TxnKeyIdScoreboard#(numeric type t_id);
+interface TxnKeyIdScoreboard#(numeric type t_id, type t_meta);
     method Bool canBeginTxn(Bit#(t_id) txnId);
-    method Action beginTxn(Bit#(t_id) txnId, KeyId keyId, Bool isValid);
+    method Action beginTxn(Bit#(t_id) txnId, t_meta meta, Bool isValid);
     method Action completeValidTxn(Bit#(t_id) txnId);
-    interface Source#(KeyId) completedValidTxnKeys;
-    interface Source#(Bit#(t_id)) invalidTxnsToComplete;
+    interface Source#(t_meta) completedValidTxnMeta;
+    interface Source#(Tuple2#(Bit#(t_id), t_meta)) invalidTxnsToComplete;
 endinterface
 
 
@@ -38,7 +39,9 @@ endinterface
 // and doesn't allow you to begin new txns with the same id as a currently outstanding one.
 // This coarsely adheres to the AXI spec - transactions with the same ID are ordered relative to each other - but 
 // doesn't adhere to the intent, that trasnactions with the same ID can be pipelined together.
-module mkSimpleTxnKeyIdScoreboard(TxnKeyIdScoreboard#(t_id)) provisos (Add#(8, t_id, __a));
+//
+// TODO how do we handle blockInvalid=False here?
+module mkSimpleTxnKeyIdScoreboard(TxnKeyIdScoreboard#(t_id, t_meta)) provisos (Add#(8, t_id, __a), Bits#(t_meta, __b));
     // Reg#(Bool) hasClearedBram <- mkReg(False);
     // Reg#(Bit#(t_id)) nextTxnIdToClear <- mkReg(0);
     BRAM_Configure bramConfig = BRAM_Configure {
@@ -51,9 +54,9 @@ module mkSimpleTxnKeyIdScoreboard(TxnKeyIdScoreboard#(t_id)) provisos (Add#(8, t
     };
     // Single bank
     // Addressed by Bit#(t_id)
-    // Holds items of type KeyId
+    // Holds items of type t_meta
     // 2 ports - one read, one write
-    BRAM2Port#(Bit#(t_id), KeyId) bram <- mkBRAM2Server(bramConfig);
+    BRAM2Port#(Bit#(t_id), t_meta) bram <- mkBRAM2Server(bramConfig);
 
     // rule clear_bram(!hasClearedBram);
     //     KeyId newNextTxnIdToClear = nextTxnIdToClear + 2;
@@ -79,23 +82,23 @@ module mkSimpleTxnKeyIdScoreboard(TxnKeyIdScoreboard#(t_id)) provisos (Add#(8, t
     // Because this is here, we don't need to zero out the bram
     Reg#(Bit#(TExp#(t_id))) txnsInProgress <- mkReg(0);
 
-    FIFOF#(KeyId) completedValidTxnKeysImpl <- mkFIFOF;
-    FIFOF#(Bit#(t_id)) invalidTxnsToCompleteImpl <- mkFIFOF;
+    FIFOF#(t_meta) completedValidTxnMetaImpl <- mkFIFOF;
+    FIFOF#(Tuple2#(Bit#(t_id), t_meta)) invalidTxnsToCompleteImpl <- mkFIFOF;
 
-    RWire#(Tuple2#(Bit#(t_id), KeyId)) toWriteToBram <- mkRWire;
+    RWire#(Tuple2#(Bit#(t_id), t_meta)) toWriteToBram <- mkRWire;
     RWire#(Bit#(t_id)) toComplete <- mkRWire;
 
     rule handle_txnsInProgress;
         let newTxnsInProgress = txnsInProgress;
         case (tuple2(toWriteToBram.wget(), toComplete.wget())) matches
             { tagged Invalid,                  tagged Invalid } : noAction;
-            { tagged Valid { .txnId, .keyId }, tagged Invalid } : begin
+            { tagged Valid { .txnId, .meta }, tagged Invalid } : begin
                 newTxnsInProgress[txnId] = 1;
             end
             { tagged Invalid, tagged Valid .txnId } : begin
                 newTxnsInProgress[txnId] = 0;
             end
-            { tagged Valid { .txnIdEnq, .keyId }, tagged Valid .txnIdDeq } : begin
+            { tagged Valid { .txnIdEnq, .meta }, tagged Valid .txnIdDeq } : begin
                 if (txnIdEnq == txnIdDeq) begin
                     // TODO assert error
                 end else begin
@@ -110,12 +113,12 @@ module mkSimpleTxnKeyIdScoreboard(TxnKeyIdScoreboard#(t_id)) provisos (Add#(8, t
     rule enq_new_transaction;
         case (toWriteToBram.wget()) matches
             tagged Invalid : noAction;
-            tagged Valid { .txnId, .keyId } : begin
+            tagged Valid { .txnId, .meta } : begin
                 bram.portA.request.put(BRAMRequest {
                     write: True,
                     responseOnWrite: False,
                     address: txnId,
-                    datain: keyId
+                    datain: meta
                 });
             end
         endcase
@@ -136,31 +139,33 @@ module mkSimpleTxnKeyIdScoreboard(TxnKeyIdScoreboard#(t_id)) provisos (Add#(8, t
     endrule
 
     rule get_completed_keyid;
-        let keyId <- bram.portB.response.get();
-        completedValidTxnKeysImpl.enq(keyId);
+        let meta <- bram.portB.response.get();
+        completedValidTxnMetaImpl.enq(meta);
     endrule
     
     method Bool canBeginTxn(Bit#(t_id) txnId) = txnsInProgress[txnId] == 0;
     // Use the implicit condition to force the caller to block if two trnasactions with the same id exist
-    method Action beginTxn(Bit#(t_id) txnId, KeyId keyId, Bool isValid);
+    method Action beginTxn(Bit#(t_id) txnId, t_meta meta, Bool isValid);
         if (txnsInProgress[txnId] == 1) begin
             // TODO some sort of error
-            $display("beginTxn called when can't begin");
+            $error("beginTxn called when can't begin");
+            $finish();
         end
         if (isValid) begin
-            toWriteToBram.wset(tuple2(txnId, keyId));
+            toWriteToBram.wset(tuple2(txnId, meta));
         end else begin
-            invalidTxnsToCompleteImpl.enq(txnId);
+            invalidTxnsToCompleteImpl.enq(tuple2(txnId, meta));
         end
     endmethod
     method Action completeValidTxn(Bit#(t_id) txnId); // if (txnsInProgress[txnId] == 1)
         if (txnsInProgress[txnId] == 0) begin
             // TODO some sort of error
-            $display("completeValidTxn called when wasn't begun");
+            $error("completeValidTxn called when wasn't begun");
+            $finish();
         end
         toComplete.wset(txnId);
     endmethod
-    interface completedValidTxnKeys = toSource(completedValidTxnKeysImpl);
+    interface completedValidTxnMeta = toSource(completedValidTxnMetaImpl);
     interface invalidTxnsToComplete = toSource(invalidTxnsToCompleteImpl);
 endmodule
 
@@ -182,7 +187,13 @@ endmodule
 // - compatability with KeyManagerV2, which requires...
 // - TODO (maybe done?) swapping out the checkers with versions that support in-situ invalidation by KeyId
 // - TODO (maybe done?) Support per-transaction KeyId tracking
-module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool blockInvalid, NumProxy#(n_pool) perAddrChannelPoolSize)(IOCapSingleExposer#(t_id, t_data)) provisos (
+module mkSimpleIOCapExposerV5#(
+    IOCapAxi_KeyManager2_ExposerIfc keyStore,
+    Bool blockInvalid,
+    NumProxy#(n_pool) perAddrChannelPoolSize
+)(IOCapSingleExposer#(t_id, t_data)) provisos (
+    Add#(t_id, a__, 64),
+    Add#(b__, TLog#(n_pool), 64)
 );
     // IOCapAxiChecker2 Doesn't support WRAP bursts right now
 
@@ -219,7 +230,7 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
     endinterface;
 
     rule pump_keyResponse(keyStore.checker.keyResponse.canPeek());
-        $display("dropping from keyResponse");
+        // $display(" // dropping from keyResponse");
         keyStore.checker.keyResponse.drop();
     endrule
 
@@ -247,7 +258,7 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
     // This is managed by a credit system in wValve.
     FIFOF#(AXI4_WFlit#(t_data, 0)) wIn <- mkSizedFIFOF(50); // TODO figure out the correct size
     CreditValve#(AXI4_WFlit#(t_data, 0), 32) wValve <- mkSimpleCreditValve(toSource(wIn));
-    TxnKeyIdScoreboard#(t_id) wScoreboard <- mkSimpleTxnKeyIdScoreboard;
+    TxnKeyIdScoreboard#(t_id, Tuple2#(KFlitId, KeyId)) wScoreboard <- mkSimpleTxnKeyIdScoreboard;
 
     // B responses from the subordinate (de facto for *valid* requests) are sent through to the master, interleaved with responses from invalid requests.
     // These invalid responses are taken from the wScoreboard, and are prioritized over any pending responses from valid requests to ensure ordering.
@@ -275,7 +286,7 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
 
     // R responses from the subordinate (de facto for *valid* requests) are sent through to the master, interleaved with responses from invalid requests.
     // These invalid responses are taken from the rScoreboard, and are prioritized over any pending responses from valid requests to ensure ordering.
-    TxnKeyIdScoreboard#(t_id) rScoreboard <- mkSimpleTxnKeyIdScoreboard;
+    TxnKeyIdScoreboard#(t_id, Tuple2#(KFlitId, KeyId)) rScoreboard <- mkSimpleTxnKeyIdScoreboard;
     FIFOF#(AXI4_RFlit#(t_id, t_data, 0)) rIn <- mkFIFOF;
     FIFOF#(AXI4_RFlit#(t_id, t_data, 0)) rOut <- mkFIFOF;
 
@@ -295,195 +306,29 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         let completed = (completedRead ? 1 : 0) + (completedWrite ? 1 : 0);
 
         if (initiatedRead || initiatedWrite || completedRead || completedWrite) begin
-            $display("IOCap - track_epoch - initiated = ", initiated, " completed = ", completed, " init r/w ", fshow(initiatedRead), fshow(initiatedWrite), " comp r/w ", fshow(completedRead), fshow(completedWrite));
+            $display("// IOCap - track_epoch - initiated = ", initiated, " completed = ", completed, " init r/w ", fshow(initiatedRead), fshow(initiatedWrite), " comp r/w ", fshow(completedRead), fshow(completedWrite));
         end
     endrule
 
     function Bool canInitiateTransaction() = True;
 
-    /*
-
-    // // Once a write transaction has been checked, then and only then can we pass through the write flits for that transaction.
-    // // This manifests as a credit system: when a write transaction is valid, increment the credit count, and that many w flits will be passed on.
-    // // If a write transaction is *invalid*, those flits need to be dropped instead. In that case, wait for "valid credit" to expire, set wDropCredited <= True and increment the credit count.
-    // // Same applies for valid transactions. Wait for "drop credit" to expire, set wDropCredited <= False and increment the credit count.
-    // // Blocking all transactions on a switch between send/drop sucks, but should be uncommon as invalid transactions are not expected.
-    // // After a few invalid transactions, it would be good to block the sender.
-    // Reg#(UInt#(64)) wSendCredits <- mkReg(0);
-    // Reg#(Bool) wDropCredited <- mkReg(False);
-
-    FIFOF#(AuthenticatedFlit#(AXI4_AWFlit#(t_id, 64, 0), Cap2024_11)) awPreCheckBuffer <- mkFIFOF;
-    FIFOF#(AuthenticatedFlit#(AXI4_ARFlit#(t_id, 64, 0), Cap2024_11)) arPreCheckBuffer <- mkFIFOF;
-
-    // Each AW and AR AuthenticatedFlit takes 4 cycles to receive
-    // => we need the checker pool on each of the {AW, AR} ports to be able to receive a new request every 4 cycles
-    // Latencies for 0, 1, 2 caveat checking are ~9, ~15, ~21 cycles respectively
-    // In worst case if constantly receiving requests with ~21 cycle latency every 4 cycles, need ceil(~21/4) = 6 checkers per pool
-    // => in total, 12 checker units
-    // 2 AES rounds per cycle => in total, 12*2 = 24 AES round evaluators (which are the big parts)
-    // if you had a naive fully pipelined impl you'd have 30 round evaluators per port or 60 overall, and each would have 1/4 occupancy (or 30 with 1/2 occupancy)
-    // we use 2/5 of that :)
-    // but interestingly, we prob have too much decoder hardware.
-    // decoding is much shorter than sigcheck, so a fully pipelined ver would have at most 8 sets of arithmetic, so either (1/port = 16 total with 1/4 occupancy)
-    // or (1 shared = 8 total with 1/2 occupancy) vs the 12 we use.
-    NumProxy#(6) poolSize = ?;
-    // TODO test throughput of these vs non-pooled
-    IOCapAxiChecker#(AXI4_AWFlit#(t_id, 64, 0), Cap2024_11) awIn <- mkInOrderIOCapAxiCheckerPool(poolSize, mkSimpleIOCapAxiChecker(connectFastFSMCapDecode_2024_11));
-    // TODO could do out-of-order for ar
-    IOCapAxiChecker#(AXI4_ARFlit#(t_id, 64, 0), Cap2024_11) arIn <- mkInOrderIOCapAxiCheckerPool(poolSize, mkSimpleIOCapAxiChecker(connectFastFSMCapDecode_2024_11));
-
-    */
-
-    // There are two possible strategies for epoch counting.
-    // 1. Count transactions as "initiated" when they move into the preCheck buffer, as we ask the keyStore to retrieve the relevant key.
-    // 2. Count transactions as "initiated" when they move into the checker, *out* of the preCheck buffer, after the keyStore responds with the relevant key.
-    //
-    // What's the purpose of counting "initiated" transactions?
-    // It's to count the transactions that might be authenticated based on data from the current epoch, rather than the new one we're trying to move to.
-    // In that case 2. is wrong, because the response from keyStore is *buffered*. A keyStore response from a previous epoch may be buffered
-    // past an epoch transition (where there are zero "initiated" transactions), and in that case a new transaction could be "initiated" using stale data from the *old* epoch.
-
-    /*
-    (* descending_urgency = "recv_aw, recv_ar" *)
-    // Conflict with recv_ar because they both request keys
-    rule recv_aw(canInitiateTransaction());
-        // Put the AW flit into a buffer, and ask to retrieve the key from the keystore
-        // Retrieve the key from the keystore
-        // TODO could optimize key retrieval by caching the key here - for now be simple and re-request it every time.
-        let awFlit <- get(awIn.out);
-        awPreCheckBuffer.enq(awFlit);
-        keyStore.checker.keyRequest.put(keyIdForFlit(awFlit));
-        initiatedWrite.send();
-        $display("IOCap - recv_aw ", fshow(awFlit));
-    endrule
-
-    rule recv_ar(canInitiateTransaction());
-        // Put the AR flit into a buffer, and ask to retrieve the key from the keystore
-        // NOTE: this will conflict with recv_aw, because there's only one "key request" port right now.
-        // TODO could optimize key retrieval by caching the key here - for now be simple and re-request it every time.
-        let arFlit <- get(arIn.out);
-        arPreCheckBuffer.enq(arFlit);
-        keyStore.checker.keyRequest.put(keyIdForFlit(arFlit));
-        initiatedRead.send();
-        $display("IOCap - recv_ar ", fshow(arFlit));
-    endrule
-    */
-
-    /*
-    // After requesting a key, it will eventually arrive at the keyStore.checker.keyResponse Source.
-    // There is exactly one keyStore.checker.keyResponse item for each AW and AR request, 
-    // but if an AW and AR request use the same keyId there's no reason not to use a single response for both.
-    // TODO reason about how that works with epochs?
-    // If we use a single response for two transactions (a single response is *split* across AW and AR), the second response needs to be discarded.
-    // The situation can be modelled with three queues: the AW request queue, the AR request queue, and the key request-response queue.
-    // Each of these queues are ordered.
-    // AW requests are enqueued into the AW request queue in the same order as their key requests are enqueued into the key queue.
-    // Ditto for AR requests.
-    // Key responses arrive in the same order as key requests.
-    // Thus the key queue is an *interleaving* of the AW and AR request queues *with the relative order between AR and between AW requests maintained*.
-    // This means if we *don't* have split key responses, every key response received will either be for the head of the AR queue or the head of the AW queue.
-    // If we *do* have split key responses, every key response received will either be for the head of the AR or AW queue *or for a transaction that has been popped off either queue*.
-    // Thus we can tell if a key request should be discarded if its key ID does *not* match the key ID for the AR queue head or AW queue head - it must be for a transaction that has been popped off recently, it can't be for a request that's *farther behind in the queue*.
-    // However, if a key *does* match but *can't* be used - i.e. if it matches the head of the AW request, but the AW checker is busy - then we should still block.
-    // Thus, we always peek the key. If it is used to start checking an AW or AR queue head transaction, dequeue it.
-    // If it isn't, but it *does* match either the AW or AR queue head transaction, keep it in the queue - it will be relevant once those checkers become unblocked.
-    // If it doesn't match the AW or AR queue head transactions, dequeue it - it must be the remnant of a split response.
-    Wire#(Tuple2#(KeyId, Maybe#(Key))) peekedKey <- mkWire;
-    PulseWire keyMatchedAw <- mkPulseWire;
-    PulseWire usedPeekedKeyForAw <- mkPulseWire;
-
-    PulseWire keyMatchedAr <- mkPulseWire;
-    PulseWire usedPeekedKeyForAr <- mkPulseWire;
-
-    rule peek_key(keyStore.checker.keyResponse.canPeek);
-        // Retrieve the latest key request, check against the buffered AW and AR flits, and if they're good then send them into their respective checkers.
-        let resp = keyStore.checker.keyResponse.peek;
-        $display("IOCap - peek_key ", fshow(resp));
-        peekedKey <= resp;
-    endrule
-
-    rule start_aw_with_key(awPreCheckBuffer.notEmpty);
-        // Important - aggressive conditions required to split canPut from cantPut
-        if (awIn.checkRequest.canPut) begin
-            // We can start a new check!
-            let keyId = tpl_1(peekedKey);
-            let key = tpl_2(peekedKey); // May be tagged Invalid if the key is Invalid
-
-            if (keyIdForFlit(awPreCheckBuffer.first) == keyId) begin
-                awPreCheckBuffer.deq();
-                awIn.checkRequest.put(tuple3(awPreCheckBuffer.first, keyId, key));
-                keyMatchedAw.send();
-                usedPeekedKeyForAw.send();
-                $display("IOCap - start_aw_with_key awIn.checkRequest.put ", fshow(awPreCheckBuffer.first));
-            end
-        end else begin
-            // We can't start a new check - still see if the key matches the head of the AW queue, because in that case we may need to stop it from dropping
-            let keyId = tpl_1(peekedKey);
-            let key = tpl_2(peekedKey); // May be tagged Invalid if the key is Invalid
-
-            if (keyIdForFlit(awPreCheckBuffer.first) == keyId) begin
-                keyMatchedAw.send();
-                $display("IOCap - start_aw_with_key blocked ", fshow(awPreCheckBuffer.first));
-            end
-        end
-    endrule
-
-    rule start_ar_with_key;
-        // Important - aggressive conditions required to split canPut from cantPut
-        if (arIn.checkRequest.canPut) begin
-            // We can start a new check!
-            let keyId = tpl_1(peekedKey);
-            let key = tpl_2(peekedKey); // May be tagged Invalid if the key is Invalid
-
-            if (keyIdForFlit(arPreCheckBuffer.first) == keyId) begin
-                arPreCheckBuffer.deq();
-                arIn.checkRequest.put(tuple3(arPreCheckBuffer.first, keyId, key));
-                keyMatchedAr.send();
-                usedPeekedKeyForAr.send();
-                $display("IOCap - start_ar_with_key arIn.checkRequest.put ", fshow(arPreCheckBuffer.first));
-            end
-        end else begin
-            // We can't start a new check - still see if the key matches the head of the AR queue, because in that case we may need to stop it from dropping
-            let keyId = tpl_1(peekedKey);
-            let key = tpl_2(peekedKey); // May be tagged Invalid if the key is Invalid
-
-            if (keyIdForFlit(arPreCheckBuffer.first) == keyId) begin
-                keyMatchedAr.send();
-                $display("IOCap - start_ar_with_key blocked ", fshow(arPreCheckBuffer.first));
-            end
-        end
-    endrule
-
-    rule deq_peeked_key(keyStore.checker.keyResponse.canPeek);
-        if ((usedPeekedKeyForAw || usedPeekedKeyForAr)) begin
-            keyStore.checker.keyResponse.drop();
-            $display("IOCap - deq_peeked_key dequeued ", fshow(peekedKey));
-        end else if (!keyMatchedAr && !keyMatchedAw) begin
-            keyStore.checker.keyResponse.drop();
-            $display("IOCap - deq_peeked_key dequeued ", fshow(peekedKey));
-        end else begin
-            $display("IOCap - deq_peeked_key wasn't dequeued ", fshow(peekedKey));
-        end
-    endrule
-    */
-
     rule check_aw if (awIn.checkResponse.canPeek && (
         // If !blockInvalid, we will always be in Pass mode.
-        ((tpl_3(awIn.checkResponse.peek) == True && wValve.canUpdateCredits(Pass)) || (tpl_3(awIn.checkResponse.peek) == False && wValve.canUpdateCredits(Drop)) || !blockInvalid)
+        ((tpl_4(awIn.checkResponse.peek) == True && wValve.canUpdateCredits(Pass)) || (tpl_4(awIn.checkResponse.peek) == False && wValve.canUpdateCredits(Drop)) || !blockInvalid)
         && wScoreboard.canBeginTxn(tpl_1(awIn.checkResponse.peek).awid)
     ));
         // Pull the AW check result out of the awIn
         let awResp = awIn.checkResponse.peek();
         awIn.checkResponse.drop();
-        $display("IOCap - check_aw ", fshow(awResp));
+        $display("// IOCap - check_aw ", fshow(awResp));
         // If valid, pass on and increment send credits (if wDropCredited = True, don't dequeue - wait for wSendCredits == 0 so we can set it to False)
         // If invalid, drop the AW flit and increment drop credits
         
         case (awResp) matches
-            { .flit, .keyId, .allowed } : begin
+            { .flit, .flitId, .keyId, .allowed } : begin
                 Bit#(8) awlen = flit.awlen;
                 Bit#(9) nCredits = zeroExtend(awlen) + 1;
-                wScoreboard.beginTxn(flit.awid, keyId, allowed);
+                wScoreboard.beginTxn(flit.awid, tuple2(flitId, keyId), allowed);
                 if (allowed) begin
                     keyStore.wValve.perf.bumpPerfCounterGood();
                     // Pass through the valid write
@@ -492,17 +337,21 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
                     wValve.updateCredits(Pass, extend(unpack(nCredits)));
                     // Tell the key manager that we're using a keyId
                     keyStore.wValve.refcount.keyIncrementRefcountRequest.put(keyId);
+                    $display("S\t", fshow(flitId), "\t20\tSendValid");
                 end else begin
                     keyStore.wValve.perf.bumpPerfCounterBad();
                     if (blockInvalid) begin
                         // We will send the invalid-write-response once it passes through the scoreboard
                         // Tell the W valve to drop the right number of flits
                         wValve.updateCredits(Drop, extend(unpack(nCredits)));
+                        $display("S\t", fshow(flitId), "\t20\tBlockInvalid");
                     end else begin
                         // Pass through the invalid write
                         awOut.enq(flit);
                         // Tell the W valve to let through the right number of flits
                         wValve.updateCredits(Pass, extend(unpack(nCredits)));
+                        $display("S\t", fshow(flitId), "\t20\tSendInvalid");
+                        $display("R\t", fshow(flitId), "\t", fshow(flitId), "\t0");
                     end
                 end
             end
@@ -511,7 +360,7 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
 
     rule print_ar;
         if (arIn.checkResponse.canPeek()) begin
-            $display("AR ", fshow(arIn.checkResponse.peek()), " canBegin ", fshow(rScoreboard.canBeginTxn(tpl_1(arIn.checkResponse.peek).arid)));
+            $display("// AR ", fshow(arIn.checkResponse.peek()), " canBegin ", fshow(rScoreboard.canBeginTxn(tpl_1(arIn.checkResponse.peek).arid)));
         end
     endrule
 
@@ -519,27 +368,31 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         // Pull the AR check result out of the arIn
         let arResp = arIn.checkResponse.peek();
         arIn.checkResponse.drop();
-        $display("IOCap - check_ar ", fshow(arResp));
+        $display("// IOCap - check_ar ", fshow(arResp));
         // If valid, pass on
         // If invalid, send a failure response
         case (arResp) matches
-            { .flit, .keyId, .allowed } : begin
-                rScoreboard.beginTxn(flit.arid, keyId, allowed);
-                $display("ALLOWED ", fshow(allowed));
+            { .flit, .flitId, .keyId, .allowed } : begin
+                rScoreboard.beginTxn(flit.arid, tuple2(flitId, keyId), allowed);
+                $display("// ALLOWED ", fshow(allowed));
                 if (allowed) begin
                     keyStore.rValve.perf.bumpPerfCounterGood();
-                    $display("put out flit", fshow(flit));
+                    // $display("// put out flit", fshow(flit));
                     // Pass through the valid AR flit
                     arOut.enq(flit);
-                    $display("incref ", fshow(keyId));
+                    // $display("// incref ", fshow(keyId));
+                    $display("S\t", fshow(flitId), "\t20\tSendValid");
                     keyStore.rValve.refcount.keyIncrementRefcountRequest.put(keyId);
                 end else begin
                     keyStore.rValve.perf.bumpPerfCounterBad();
                     if (blockInvalid) begin
                         // We will send the invalid-read-response once it passes through the scoreboard
+                        $display("S\t", fshow(flitId), "\t20\tBlockInvalid");
                     end else begin
                         // Pass through the invalid AR flit
                         arOut.enq(flit);
+                        $display("S\t", fshow(flitId), "\t20\tSendInvalid");
+                        $display("R\t", fshow(flitId), "\t", fshow(flitId), "\t0");
                     end
                 end
             end
@@ -558,14 +411,20 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
     endrule
 
     rule inform_wValve_keyid_completed;
-        wScoreboard.completedValidTxnKeys.drop();
-        keyStore.wValve.refcount.keyDecrementRefcountRequest.put(wScoreboard.completedValidTxnKeys.peek());
+        match { .flitId, .keyId } = wScoreboard.completedValidTxnMeta.peek();
+        $display("S\t", fshow(flitId), "\t20\tScoreboardCompleted");
+        $display("R\t", fshow(flitId), "\t", fshow(flitId), "\t0");
+        wScoreboard.completedValidTxnMeta.drop();
+        keyStore.wValve.refcount.keyDecrementRefcountRequest.put(keyId);
     endrule
 
     rule insert_invalid_b if (wScoreboard.invalidTxnsToComplete.canPeek());
+        match { .txnId, { .flitId, .keyId } } = wScoreboard.invalidTxnsToComplete.peek();
+        $display("S\t", fshow(flitId), "\t20\tScoreboardCompleted");
+        $display("R\t", fshow(flitId), "\t", fshow(flitId), "\t0");
         // Insert the b into the stream
         bOut.enq(AXI4_BFlit {
-            bid: wScoreboard.invalidTxnsToComplete.peek(),
+            bid: txnId,
             bresp: SLVERR,
             buser: ?
         });
@@ -588,14 +447,20 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
     endrule
 
     rule inform_rValve_keyid_completed;
-        rScoreboard.completedValidTxnKeys.drop();
-        keyStore.rValve.refcount.keyDecrementRefcountRequest.put(rScoreboard.completedValidTxnKeys.peek());
+        match { .flitId, .keyId } = rScoreboard.completedValidTxnMeta.peek();
+        $display("S\t", fshow(flitId), "\t20\tScoreboardCompleted");
+        $display("R\t", fshow(flitId), "\t", fshow(flitId), "\t0");
+        rScoreboard.completedValidTxnMeta.drop();
+        keyStore.rValve.refcount.keyDecrementRefcountRequest.put(keyId);
     endrule
 
     rule insert_invalid_r if (rScoreboard.invalidTxnsToComplete.canPeek());
+        match { .txnId, { .flitId, .keyId } } = rScoreboard.invalidTxnsToComplete.peek();
+        $display("S\t", fshow(flitId), "\t20\tScoreboardCompleted");
+        $display("R\t", fshow(flitId), "\t", fshow(flitId), "\t0");
         // Insert the r into the stream
         rOut.enq(AXI4_RFlit {
-            rid: rScoreboard.invalidTxnsToComplete.peek(),
+            rid: txnId,
             rresp: SLVERR,
             ruser: ?,
             rdata: ?,
@@ -605,12 +470,18 @@ module mkSimpleIOCapExposerV5#(IOCapAxi_KeyManager2_ExposerIfc keyStore, Bool bl
         completedRead.send();
     endrule
 
+    AXI4_AWFlit#(t_id, 64, 0) awNoIOCapFlitProxy = ?;
+    let awLabeller <- mkIOCapAxiFlitLabeller(awIn.in, awIn.insertKThreadId, awNoIOCapFlitProxy);
+
+    AXI4_ARFlit#(t_id, 64, 0) arNoIOCapFlitProxy = ?;
+    let arLabeller <- mkIOCapAxiFlitLabeller(arIn.in, arIn.insertKThreadId, arNoIOCapFlitProxy);
+
     interface iocapsIn = interface IOCapAXI4_Slave;
         interface axiSignals = interface AXI4_Slave;
-            interface aw = awIn.in;
+            interface aw = awLabeller;
             interface  w = toSink(wIn);
             interface  b = toSource(bOut);
-            interface ar = arIn.in;
+            interface ar = arLabeller;
             interface  r = toSource(rOut);
         endinterface;
     endinterface;

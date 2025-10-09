@@ -139,7 +139,8 @@ int tb_main(std::vector<TestBase*> tests, int argc, char** argv) {
         }
     }
 
-    fmt::println(stderr, "\033[1;36mPass Rate {}/{} ({:3.1f}% pass)\033[0m", tests.size() - failures, tests.size(), (1 - (failures * 1.0 / tests.size())) * 100.0);
+    size_t tests_completed = (first_n > 0) ? first_n : tests.size();
+    fmt::println(stderr, "\033[1;36mPass Rate {}/{} ({:3.1f}% pass)\033[0m", tests_completed - failures, tests_completed, (1 - (failures * 1.0 / tests_completed)) * 100.0);
 
     if (setup.toml_stats) {
         fclose(setup.toml_stats);

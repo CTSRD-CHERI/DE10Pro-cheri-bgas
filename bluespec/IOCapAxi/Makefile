@@ -8,7 +8,7 @@ BLUESTUFFDIR = ../Toooba/libs/BlueStuff
 include $(BLUESTUFFDIR)/bluestuff.inc.mk
 BSVPATH = +:$(BLUESTUFF_DIRS):./aes:./cap2024:./testbenches:./util:../AxiWindow
 
-BSCFLAGS = -bdir $(BUILDDIR) -info-dir $(BUILDDIR) -simdir $(BUILDDIR) -vdir $(BUILDDIR)/verilog -p $(BSVPATH) -u -aggressive-conditions +RTS -K512M -RTS
+BSCFLAGS = -bdir $(BUILDDIR) -info-dir $(BUILDDIR) -simdir $(BUILDDIR) -vdir $(BUILDDIR)/verilog -p $(BSVPATH) -u -aggressive-conditions -D KANATA +RTS -K512M -RTS 
 
 BSCDIR = $(dir $(shell which bsc))../
 

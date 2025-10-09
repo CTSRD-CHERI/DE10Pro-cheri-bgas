@@ -146,11 +146,11 @@ module mkKeyStore2Shim(Tuple2#(KeyStore2Shim, IOCapAxi_KeyManager2_ExposerIfc));
             interface perf = interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc;
                 method Action bumpPerfCounterGood(); 
                     reqGoodRead.send();
-                    $display("read bump perf good");
+                    $display("// read bump perf good");
                 endmethod
                 method Action bumpPerfCounterBad(); 
                     reqBadRead.send();
-                    $display("read bump perf bad");
+                    $display(" // read bump perf bad");
                 endmethod
             endinterface;
         endinterface;
@@ -162,11 +162,11 @@ module mkKeyStore2Shim(Tuple2#(KeyStore2Shim, IOCapAxi_KeyManager2_ExposerIfc));
             interface perf = interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc;
                 method Action bumpPerfCounterGood(); 
                     reqGoodWrite.send();
-                    $display("write bump perf good");
+                    $display("// write bump perf good");
                 endmethod
                 method Action bumpPerfCounterBad(); 
                     reqBadWrite.send();
-                    $display("write bump perf bad");
+                    $display("// write bump perf bad");
                 endmethod
             endinterface;
         endinterface;
