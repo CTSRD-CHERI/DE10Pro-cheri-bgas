@@ -686,7 +686,7 @@ module mkInOrderIOCapAxiChecker2V1Pool#(
                 insertPointer <= newInsertPointer;
         end
         if (incrementKeyRequest) begin
-            $display("// tick incrementKeyRequest ", fshow(keyRequestPointer));
+            $display("V\tIncKeyReq\t", fshow(keyRequestPointer));
             let newKeyRequestPointer = keyRequestPointer + 1;
             if (inLiteralRange(keyRequestPointer, valueOf(n)) && newKeyRequestPointer >= fromInteger(valueOf(n)))
                 keyRequestPointer <= 0;
@@ -739,7 +739,10 @@ module mkInOrderIOCapAxiChecker2V1Pool#(
     function module#(IOCapAxiChecker2#(iocap_flit, no_iocap_flit)) genChecker(Integer i);
         let keyRequestIfc = interface Sink;
             method Bool canPut = (keyRequestPointer == fromInteger(i) && keyRequest.canPut());
-            method Action put(x) = keyRequests[i].wset(x);
+            method Action put(x);
+                $display("V\tPutKeyReq\t", fshow(keyRequestPointer));
+                keyRequests[i].wset(x);
+            endmethod
         endinterface;
         return mkSimpleIOCapAxiChecker2V1(
             makeDecoder,
