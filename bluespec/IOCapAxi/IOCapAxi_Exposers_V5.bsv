@@ -41,7 +41,7 @@ endinterface
 // doesn't adhere to the intent, that trasnactions with the same ID can be pipelined together.
 //
 // TODO how do we handle blockInvalid=False here?
-module mkSimpleTxnKeyIdScoreboard(TxnKeyIdScoreboard#(t_id, t_meta)) provisos (Add#(8, t_id, __a), Bits#(t_meta, __b));
+module mkSimpleTxnKeyIdScoreboard(TxnKeyIdScoreboard#(t_id, t_meta)) provisos (Add#(8, t_id, __a), Bits#(t_meta, __b), FShow#(t_meta));
     // Reg#(Bool) hasClearedBram <- mkReg(False);
     // Reg#(Bit#(t_id)) nextTxnIdToClear <- mkReg(0);
     BRAM_Configure bramConfig = BRAM_Configure {
@@ -91,7 +91,7 @@ module mkSimpleTxnKeyIdScoreboard(TxnKeyIdScoreboard#(t_id, t_meta)) provisos (A
     rule handle_txnsInProgress;
         let newTxnsInProgress = txnsInProgress;
         case (tuple2(toWriteToBram.wget(), toComplete.wget())) matches
-            { tagged Invalid,                  tagged Invalid } : noAction;
+            { tagged Invalid,                 tagged Invalid } : noAction;
             { tagged Valid { .txnId, .meta }, tagged Invalid } : begin
                 newTxnsInProgress[txnId] = 1;
             end
@@ -114,6 +114,7 @@ module mkSimpleTxnKeyIdScoreboard(TxnKeyIdScoreboard#(t_id, t_meta)) provisos (A
         case (toWriteToBram.wget()) matches
             tagged Invalid : noAction;
             tagged Valid { .txnId, .meta } : begin
+                $display("V\tScoreboardWrite\t", fshow(meta));
                 bram.portA.request.put(BRAMRequest {
                     write: True,
                     responseOnWrite: False,
@@ -134,12 +135,14 @@ module mkSimpleTxnKeyIdScoreboard(TxnKeyIdScoreboard#(t_id, t_meta)) provisos (A
                     address: txnId,
                     datain: ?
                 });
+                $display("V\tScoreboardSearch\t ");
             end
         endcase
     endrule
 
     rule get_completed_keyid;
         let meta <- bram.portB.response.get();
+        $display("V\tScoreboardFindComplete\t", fshow(meta));
         completedValidTxnMetaImpl.enq(meta);
     endrule
     
@@ -185,7 +188,7 @@ endmodule
 // - increased checker pool size to handle 2-cav iocaps with full throughput
 // Changes from V4
 // - compatability with KeyManagerV2, which requires...
-// - TODO (maybe done?) swapping out the checkers with versions that support in-situ invalidation by KeyId
+// - TODO (maybe done?) Swapping out the checkers with versions that support in-situ invalidation by KeyId
 // - TODO (maybe done?) Support per-transaction KeyId tracking
 module mkSimpleIOCapExposerV5#(
     IOCapAxi_KeyManager2_ExposerIfc keyStore,
@@ -358,6 +361,33 @@ module mkSimpleIOCapExposerV5#(
         endcase
     endrule
 
+    Reg#(Maybe#(Tuple3#(KFlitId, Bool, Bool))) lastAwBlocked <- mkReg(tagged Invalid);
+    rule check_aw_blocked if (awIn.checkResponse.canPeek && !(
+        // If !blockInvalid, we will always be in Pass mode.
+        ((tpl_4(awIn.checkResponse.peek) == True && wValve.canUpdateCredits(Pass)) || (tpl_4(awIn.checkResponse.peek) == False && wValve.canUpdateCredits(Drop)) || !blockInvalid)
+        && wScoreboard.canBeginTxn(tpl_1(awIn.checkResponse.peek).awid)
+    ));
+        let awResp = awIn.checkResponse.peek();
+        case (awResp) matches
+            { .flit, .flitId, .keyId, .allowed } : begin
+                let valveBlocked = !((tpl_4(awIn.checkResponse.peek) == True && wValve.canUpdateCredits(Pass)) || (tpl_4(awIn.checkResponse.peek) == False && wValve.canUpdateCredits(Drop)) || !blockInvalid);
+                let scoreboardBlocked = !wScoreboard.canBeginTxn(tpl_1(awIn.checkResponse.peek).awid);
+
+                let newAwBlocked = tagged Valid tuple3(flitId, valveBlocked, scoreboardBlocked);
+                if (lastAwBlocked != newAwBlocked) begin
+
+                    if (valveBlocked && scoreboardBlocked)
+                        $display("S\t", fshow(flitId), "\t20\tVSBlocked");
+                    else if (valveBlocked)
+                        $display("S\t", fshow(flitId), "\t20\tVBlocked");
+                    else if (scoreboardBlocked)
+                        $display("S\t", fshow(flitId), "\t20\tSBlocked");
+                end
+                lastAwBlocked <= newAwBlocked;
+            end
+        endcase
+    endrule
+
     rule print_ar;
         if (arIn.checkResponse.canPeek()) begin
             $display("// AR ", fshow(arIn.checkResponse.peek()), " canBegin ", fshow(rScoreboard.canBeginTxn(tpl_1(arIn.checkResponse.peek).arid)));
@@ -395,6 +425,18 @@ module mkSimpleIOCapExposerV5#(
                         $display("R\t", fshow(flitId), "\t", fshow(flitId), "\t0");
                     end
                 end
+            end
+        endcase
+    endrule
+
+    Reg#(Maybe#(KFlitId)) lastArSblocked <- mkReg(tagged Invalid);
+    rule check_ar_blocked if (arIn.checkResponse.canPeek && !rScoreboard.canBeginTxn(tpl_1(arIn.checkResponse.peek).arid));
+        let arResp = arIn.checkResponse.peek();
+        case (arResp) matches
+            { .flit, .flitId, .keyId, .allowed } : begin
+                if (lastArSblocked != tagged Valid flitId)
+                    $display("S\t", fshow(flitId), "\t20\tSBlocked");
+                lastArSblocked <= tagged Valid flitId;
             end
         endcase
     endrule
@@ -441,8 +483,11 @@ module mkSimpleIOCapExposerV5#(
         // The read is only completed once the last flit in the burst has been sent
         if (rIn.first.rlast) begin
             completedRead.send();
+            $display("V\tValuePassRComplete\tR#", fshow(rIn.first.rid));
             // Figure out what key that was so we can tell the Valve
             rScoreboard.completeValidTxn(rIn.first.rid);
+        end else begin
+            $display("V\tValuePassR\tR#", fshow(rIn.first.rid));
         end
     endrule
 

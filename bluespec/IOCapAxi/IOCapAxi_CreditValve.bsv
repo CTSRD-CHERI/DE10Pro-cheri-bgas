@@ -79,6 +79,7 @@ module mkSimpleCreditValve#(Source#(t) in)(CreditValve#(t, count_n));
             return in.peek;
         endmethod
         method Action drop if (allowPeek());
+            $display("V\tValuePassW\t ");
             wantDrop.send();
         endmethod
     endinterface;
