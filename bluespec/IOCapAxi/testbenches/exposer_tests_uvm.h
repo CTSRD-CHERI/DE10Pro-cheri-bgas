@@ -1635,7 +1635,7 @@ public:
         for (uint64_t i = 0; i < n_transactions; i++) {
             uint8_t axi_id = i & 0xF;
             auto cap_data = this->test_legacy_random_initial_resource_cap(rng, secret_id, perms);
-            auto axi_params = cap_data.valid_transfer_params(32, 20);
+            auto axi_params = cap_data.valid_transfer_params(32, 4);
             if (perms & CCapPerms_Read) {
                 this->enqueueReadBurst(cap_data.cap, axi_params, axi_id);
             }
