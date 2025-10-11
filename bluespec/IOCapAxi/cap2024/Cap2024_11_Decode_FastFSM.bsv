@@ -265,9 +265,9 @@ module mkFastFSMCapDecode_2024_11#(Get#(Cap2024_11) in, Put#(CapCheckResult#(Tup
     InternalCalc calc <- mkInternalCalc;
 
     // Working registers for the state machine.
-    ConfigReg#(Bool) working_zero_cav <- mkReg(?);
-    ConfigReg#(Bool) working_one_cav <- mkReg(?);
-    ConfigReg#(Bool) working_two_cav <- mkReg(?);
+    ConfigReg#(Bool) working_zero_cav <- mkConfigReg(?);
+    ConfigReg#(Bool) working_one_cav <- mkConfigReg(?);
+    ConfigReg#(Bool) working_two_cav <- mkConfigReg(?);
 
     Reg#(CapPerms) working_perms <- mkReg(?);
 
@@ -295,7 +295,7 @@ module mkFastFSMCapDecode_2024_11#(Get#(Cap2024_11) in, Put#(CapCheckResult#(Tup
     // I don't think there's a convenient way to bail out in the middle of a state machine.
     Reg#(Maybe#(CapFailReason)) working_fail <- mkReg(?);
 
-    Reg#(Bool) fsmWorking <- mkReg(False);
+    ConfigReg#(Bool) fsmWorking <- mkConfigReg(False);
 
     Stmt backendStmt = seq
         if (working_zero_cav) seq
