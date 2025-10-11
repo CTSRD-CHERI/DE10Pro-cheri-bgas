@@ -19,12 +19,14 @@ import IOCapAxi_Exposers_V2 :: *;
 import IOCapAxi_Exposers_V3 :: *;
 import IOCapAxi_Exposers_V4 :: *;
 import IOCapAxi_Exposers_V5 :: *;
+import IOCapAxi_Exposers_V6 :: *;
 
 export IOCapAxi_Exposers_V1 :: *;
 export IOCapAxi_Exposers_V2 :: *;
 export IOCapAxi_Exposers_V3 :: *;
 export IOCapAxi_Exposers_V4 :: *;
 export IOCapAxi_Exposers_V5 :: *;
+export IOCapAxi_Exposers_V6 :: *;
 
 export mkStrippingIOCapExposer;
 

@@ -13,13 +13,13 @@ import IOCapAxi_KeyManager2s :: *;
 import IOCapAxi_KeyManager2_MMIO :: *;
 import IOCapAxi_KeyManager2_RefCountPipe :: *;
 import IOCapAxi_CreditValve :: *;
-import IOCapAxi_Checker2s :: *;
+import IOCapAxi_Checker3s :: *;
 import IOCapAxi_Konata :: *;
 
 import Cap2024_11 :: *;
 import Cap2024_11_Decode_FastFSM :: *;
 
-export mkSimpleIOCapExposerV5;
+export mkSimpleIOCapExposerV6;
 
 // The Scoreboard tracks which TxnIds for outstanding valid transactions are associated with which KeyIds (generalized to t_meta) for the purposes of reference counting.
 // It also tracks which TxnIds currently have outstanding valid transactions, which means it can help avoid out-of-order completions for a TxnId
@@ -192,7 +192,10 @@ endmodule
 // - compatability with KeyManagerV2, which requires...
 // - TODO (maybe done?) Swapping out the checkers with versions that support in-situ invalidation by KeyId
 // - TODO (maybe done?) Support per-transaction KeyId tracking
-module mkSimpleIOCapExposerV5#(
+// Changes from V5
+// - Use Checker3, reverting to the style where the Exposer handles finding keys before dispatching to the pool.
+// - See Revocation notes 2025-10-10
+module mkSimpleIOCapExposerV6#(
     IOCapAxi_KeyManager2_ExposerIfc keyStore,
     Bool blockInvalid,
     NumProxy#(n_pool) perAddrChannelPoolSize
@@ -238,9 +241,13 @@ module mkSimpleIOCapExposerV5#(
         // $display(" // dropping from keyResponse");
         keyStore.checker.keyResponse.drop();
     endrule
+    
 
     // AW transactions come in encoding an IOCap with a standard AW flit. The IOCap and flit are examined, and if verified they are passed on through awOut.
-    // AddressChannelCapUnwrapper#(AXI4_AWFlit#(t_id, 64, 3), AXI4_AWFlit#(t_id, 64, 0), Cap2024_11) awIn <- mkSimpleAddressChannelCapUnwrapper(Proxy{});
+    // AddressChannelCapKeyIdUnwrapper#(AXI4_AWFlit#(t_id, 64, 3), AXI4_AWFlit#(t_id, 64, 0), Cap2024_11) awIn <- mkSimpleAddressChannelCapKeyIdUnwrapper(
+    //     Proxy{},
+    //     keyIdForFlit
+    // );
     // IOCapAxiChecker2#(AXI4_AWFlit#(t_id, 64, 3), AXI4_AWFlit#(t_id, 64, 0)) awIn <- mkSimpleIOCapAxiChecker2(
     //     connectFastFSMCapDecode_2024_11,
     //     awKeyReqIfc,
@@ -248,9 +255,21 @@ module mkSimpleIOCapExposerV5#(
     //     keyStore.checker.killKeyMessage,
     //     keyIdForFlit
     // );
-    IOCapAxiChecker2#(AXI4_AWFlit#(t_id, 64, 3), AXI4_AWFlit#(t_id, 64, 0)) awIn <- mkInOrderIOCapAxiChecker2V1Pool(
+    // IOCapAxiChecker2#(AXI4_AWFlit#(t_id, 64, 3), AXI4_AWFlit#(t_id, 64, 0)) awIn <- mkInOrderIOCapAxiChecker2V1Pool(
+    //     perAddrChannelPoolSize,
+    //     connectFastFSMCapDecode_2024_11,
+    //     awKeyReqIfc,
+    //     keyResponse,
+    //     keyStore.checker.killKeyMessage,
+    //     keyIdForFlit
+    // );
+    IOCapAxiChecker3#(AXI4_AWFlit#(t_id, 64, 0)) awChecker <- mkInOrderIOCapAxiChecker3V1Pool(
         perAddrChannelPoolSize,
         connectFastFSMCapDecode_2024_11,
+        keyStore.checker.killKeyMessage
+    );
+    Sink#(Tuple2#(AXI4_AWFlit#(t_id, 64, 3), KFlitId)) awIn <- mkChecker3CombinedPipelinedFrontend(
+        awChecker.in,
         awKeyReqIfc,
         keyResponse,
         keyStore.checker.killKeyMessage,
@@ -271,7 +290,10 @@ module mkSimpleIOCapExposerV5#(
     FIFOF#(AXI4_BFlit#(t_id, 0)) bOut <- mkFIFOF;
 
     // AR transactions come in encoding an IOCap with a standard AR flit. The IOCap and flit are examined, and if verified they are passed on through arOut.
-    // AddressChannelCapUnwrapper#(AXI4_ARFlit#(t_id, 64, 3), AXI4_ARFlit#(t_id, 64, 0), Cap2024_11) arIn <- mkSimpleAddressChannelCapUnwrapper(Proxy{});
+    // AddressChannelCapKeyIdUnwrapper#(AXI4_ARFlit#(t_id, 64, 3), AXI4_ARFlit#(t_id, 64, 0), Cap2024_11) arIn <- mkSimpleAddressChannelCapKeyIdUnwrapper(
+    //     Proxy{},
+    //     keyIdForFlit
+    // );
     // IOCapAxiChecker2#(AXI4_ARFlit#(t_id, 64, 3), AXI4_ARFlit#(t_id, 64, 0)) arIn <- mkSimpleIOCapAxiChecker2(
     //     connectFastFSMCapDecode_2024_11,
     //     arKeyReqIfc,
@@ -279,9 +301,21 @@ module mkSimpleIOCapExposerV5#(
     //     keyStore.checker.killKeyMessage,
     //     keyIdForFlit
     // );
-    IOCapAxiChecker2#(AXI4_ARFlit#(t_id, 64, 3), AXI4_ARFlit#(t_id, 64, 0)) arIn <- mkInOrderIOCapAxiChecker2V1Pool(
+    // IOCapAxiChecker2#(AXI4_ARFlit#(t_id, 64, 3), AXI4_ARFlit#(t_id, 64, 0)) arIn <- mkInOrderIOCapAxiChecker2V1Pool(
+    //     perAddrChannelPoolSize,
+    //     connectFastFSMCapDecode_2024_11,
+    //     arKeyReqIfc,
+    //     keyResponse,
+    //     keyStore.checker.killKeyMessage,
+    //     keyIdForFlit
+    // );
+    IOCapAxiChecker3#(AXI4_ARFlit#(t_id, 64, 0)) arChecker <- mkInOrderIOCapAxiChecker3V1Pool(
         perAddrChannelPoolSize,
         connectFastFSMCapDecode_2024_11,
+        keyStore.checker.killKeyMessage
+    );
+    Sink#(Tuple2#(AXI4_ARFlit#(t_id, 64, 3), KFlitId)) arIn <- mkChecker3CombinedPipelinedFrontend(
+        arChecker.in,
         arKeyReqIfc,
         keyResponse,
         keyStore.checker.killKeyMessage,
@@ -295,36 +329,14 @@ module mkSimpleIOCapExposerV5#(
     FIFOF#(AXI4_RFlit#(t_id, t_data, 0)) rIn <- mkFIFOF;
     FIFOF#(AXI4_RFlit#(t_id, t_data, 0)) rOut <- mkFIFOF;
 
-    // Track the initiated and completed transactions for each cycle
-    // These are all initiated/completed *valid* transactions - ones which were correctly authenticated with an IOcap.
-    // TODO rename these pulsewires to reflect that!
-    PulseWire initiatedWrite <- mkPulseWire;
-    PulseWire initiatedRead <- mkPulseWire;
-    PulseWire completedWrite <- mkPulseWire;
-    PulseWire completedRead <- mkPulseWire;
-
-    rule track_epoch;
-        // Get PulseWires from recv_aw, recv_ar, recv_b, recv_r and tally them to determine the change in outstanding accesses.
-        // Use that to step the epoch forward if needed.
-        
-        let initiated = (initiatedRead ? 1 : 0) + (initiatedWrite ? 1 : 0);
-        let completed = (completedRead ? 1 : 0) + (completedWrite ? 1 : 0);
-
-        if (initiatedRead || initiatedWrite || completedRead || completedWrite) begin
-            $display("// IOCap - track_epoch - initiated = ", initiated, " completed = ", completed, " init r/w ", fshow(initiatedRead), fshow(initiatedWrite), " comp r/w ", fshow(completedRead), fshow(completedWrite));
-        end
-    endrule
-
-    function Bool canInitiateTransaction() = True;
-
-    rule check_aw if (awIn.checkResponse.canPeek && (
+    rule check_aw if (awChecker.checkResponse.canPeek && (
         // If !blockInvalid, we will always be in Pass mode.
-        ((tpl_4(awIn.checkResponse.peek) == True && wValve.canUpdateCredits(Pass)) || (tpl_4(awIn.checkResponse.peek) == False && wValve.canUpdateCredits(Drop)) || !blockInvalid)
-        && wScoreboard.canBeginTxn(tpl_1(awIn.checkResponse.peek).awid)
+        ((tpl_4(awChecker.checkResponse.peek) == True && wValve.canUpdateCredits(Pass)) || (tpl_4(awChecker.checkResponse.peek) == False && wValve.canUpdateCredits(Drop)) || !blockInvalid)
+        && wScoreboard.canBeginTxn(tpl_1(awChecker.checkResponse.peek).awid)
     ));
         // Pull the AW check result out of the awIn
-        let awResp = awIn.checkResponse.peek();
-        awIn.checkResponse.drop();
+        let awResp = awChecker.checkResponse.peek();
+        awChecker.checkResponse.drop();
         $display("// IOCap - check_aw ", fshow(awResp));
         // If valid, pass on and increment send credits (if wDropCredited = True, don't dequeue - wait for wSendCredits == 0 so we can set it to False)
         // If invalid, drop the AW flit and increment drop credits
@@ -364,16 +376,16 @@ module mkSimpleIOCapExposerV5#(
     endrule
 
     Reg#(Maybe#(Tuple3#(KFlitId, Bool, Bool))) lastAwBlocked <- mkReg(tagged Invalid);
-    rule check_aw_blocked if (awIn.checkResponse.canPeek && !(
+    rule check_aw_blocked if (awChecker.checkResponse.canPeek && !(
         // If !blockInvalid, we will always be in Pass mode.
-        ((tpl_4(awIn.checkResponse.peek) == True && wValve.canUpdateCredits(Pass)) || (tpl_4(awIn.checkResponse.peek) == False && wValve.canUpdateCredits(Drop)) || !blockInvalid)
-        && wScoreboard.canBeginTxn(tpl_1(awIn.checkResponse.peek).awid)
+        ((tpl_4(awChecker.checkResponse.peek) == True && wValve.canUpdateCredits(Pass)) || (tpl_4(awChecker.checkResponse.peek) == False && wValve.canUpdateCredits(Drop)) || !blockInvalid)
+        && wScoreboard.canBeginTxn(tpl_1(awChecker.checkResponse.peek).awid)
     ));
-        let awResp = awIn.checkResponse.peek();
+        let awResp = awChecker.checkResponse.peek();
         case (awResp) matches
             { .flit, .flitId, .keyId, .allowed } : begin
-                let valveBlocked = !((tpl_4(awIn.checkResponse.peek) == True && wValve.canUpdateCredits(Pass)) || (tpl_4(awIn.checkResponse.peek) == False && wValve.canUpdateCredits(Drop)) || !blockInvalid);
-                let scoreboardBlocked = !wScoreboard.canBeginTxn(tpl_1(awIn.checkResponse.peek).awid);
+                let valveBlocked = !((tpl_4(awChecker.checkResponse.peek) == True && wValve.canUpdateCredits(Pass)) || (tpl_4(awChecker.checkResponse.peek) == False && wValve.canUpdateCredits(Drop)) || !blockInvalid);
+                let scoreboardBlocked = !wScoreboard.canBeginTxn(tpl_1(awChecker.checkResponse.peek).awid);
 
                 let newAwBlocked = tagged Valid tuple3(flitId, valveBlocked, scoreboardBlocked);
                 if (lastAwBlocked != newAwBlocked) begin
@@ -391,15 +403,15 @@ module mkSimpleIOCapExposerV5#(
     endrule
 
     rule print_ar;
-        if (arIn.checkResponse.canPeek()) begin
-            $display("// AR ", fshow(arIn.checkResponse.peek()), " canBegin ", fshow(rScoreboard.canBeginTxn(tpl_1(arIn.checkResponse.peek).arid)));
+        if (arChecker.checkResponse.canPeek()) begin
+            $display("// AR ", fshow(arChecker.checkResponse.peek()), " canBegin ", fshow(rScoreboard.canBeginTxn(tpl_1(arChecker.checkResponse.peek).arid)));
         end
     endrule
 
-    rule check_ar (rScoreboard.canBeginTxn(tpl_1(arIn.checkResponse.peek).arid));
+    rule check_ar (rScoreboard.canBeginTxn(tpl_1(arChecker.checkResponse.peek).arid));
         // Pull the AR check result out of the arIn
-        let arResp = arIn.checkResponse.peek();
-        arIn.checkResponse.drop();
+        let arResp = arChecker.checkResponse.peek();
+        arChecker.checkResponse.drop();
         $display("// IOCap - check_ar ", fshow(arResp));
         // If valid, pass on
         // If invalid, send a failure response
@@ -432,8 +444,8 @@ module mkSimpleIOCapExposerV5#(
     endrule
 
     Reg#(Maybe#(KFlitId)) lastArSblocked <- mkReg(tagged Invalid);
-    rule check_ar_blocked if (arIn.checkResponse.canPeek && !rScoreboard.canBeginTxn(tpl_1(arIn.checkResponse.peek).arid));
-        let arResp = arIn.checkResponse.peek();
+    rule check_ar_blocked if (arChecker.checkResponse.canPeek && !rScoreboard.canBeginTxn(tpl_1(arChecker.checkResponse.peek).arid));
+        let arResp = arChecker.checkResponse.peek();
         case (arResp) matches
             { .flit, .flitId, .keyId, .allowed } : begin
                 if (lastArSblocked != tagged Valid flitId)
@@ -449,7 +461,6 @@ module mkSimpleIOCapExposerV5#(
         bOut.enq(bIn.first);
         bIn.deq();
         // Each B flit signals the end of a write transaction we received an AW for - valid or not
-        completedWrite.send();
         // Figure out what key that was so we can tell the Valve
         wScoreboard.completeValidTxn(bIn.first.bid);
     endrule
@@ -473,7 +484,6 @@ module mkSimpleIOCapExposerV5#(
             buser: ?
         });
         wScoreboard.invalidTxnsToComplete.drop();
-        completedWrite.send();
     endrule
 
     // If there isn't an invalid-r-flit to insert, just pass through valid completions from rIn to rOut
@@ -484,7 +494,6 @@ module mkSimpleIOCapExposerV5#(
         // Each R flit signals the end of a read transaction we received an AR for - valid or not
         // The read is only completed once the last flit in the burst has been sent
         if (rIn.first.rlast) begin
-            completedRead.send();
             $display("V\tValuePassRComplete\tR#", fshow(rIn.first.rid));
             // Figure out what key that was so we can tell the Valve
             rScoreboard.completeValidTxn(rIn.first.rid);
@@ -514,14 +523,17 @@ module mkSimpleIOCapExposerV5#(
             rlast: True
         });
         rScoreboard.invalidTxnsToComplete.drop();
-        completedRead.send();
     endrule
 
+    ReadOnly#(UInt#(64)) fakeThreadId = interface ReadOnly;
+        method _read() = 0;
+    endinterface;
+
     AXI4_AWFlit#(t_id, 64, 0) awNoIOCapFlitProxy = ?;
-    let awLabeller <- mkIOCapAxiFlitLabeller(awIn.in, awIn.insertKThreadId, awNoIOCapFlitProxy);
+    let awLabeller <- mkIOCapAxiFlitLabeller(awIn, fakeThreadId, awNoIOCapFlitProxy);
 
     AXI4_ARFlit#(t_id, 64, 0) arNoIOCapFlitProxy = ?;
-    let arLabeller <- mkIOCapAxiFlitLabeller(arIn.in, arIn.insertKThreadId, arNoIOCapFlitProxy);
+    let arLabeller <- mkIOCapAxiFlitLabeller(arIn, fakeThreadId, arNoIOCapFlitProxy);
 
     interface iocapsIn = interface IOCapAXI4_Slave;
         interface axiSignals = interface AXI4_Slave;

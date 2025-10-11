@@ -2,7 +2,7 @@
 import sys
 import re
 
-replace = re.compile(r"([RW]#)[ ]*(\d+)")
+replace = re.compile(r"([RW]#|<|,)[ ]*(\d+)")
 
 kanata_n = 0
 kanata_file = None
