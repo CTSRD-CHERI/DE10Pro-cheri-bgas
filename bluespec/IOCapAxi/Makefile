@@ -24,7 +24,7 @@ $(BUILDDIR)/verilog/%.v: ./testbenches/%.bsv alwaysRemake
 	bsc $(BSCFLAGS) -verilog -g $* -u $<
 
 $(BUILDDIR)/%.vsim: $(BUILDDIR)/verilog/%.v ./testbenches/%.cpp ./testbenches/librust_caps_c/librust_caps_c.a alwaysRemake
-	verilator --Mdir $(BUILDDIR) --no-timing --trace --top-module $* --cc --build --exe -CFLAGS -g -CFLAGS -std=gnu++20 -CFLAGS -I../testbenches/include -CFLAGS -I../testbenches/librust_caps_c -o $*.vsim -I$(BSCDIR)lib/Verilog/ $(BSCDIR)lib/Verilator/verilator_config.vlt $(shell echo $(BUILDDIR)/verilog/*.v) ./testbenches/$*.cpp $(shell pwd)/testbenches/librust_caps_c/librust_caps_c.a
+	verilator --Mdir $(BUILDDIR) --no-timing --trace --top-module $* --cc --build --exe -CFLAGS -g -CFLAGS -std=gnu++20 -CFLAGS -I../testbenches/include -CFLAGS -I../testbenches/librust_caps_c -CFLAGS -fno-var-tracking-assignments -o $*.vsim -I$(BSCDIR)lib/Verilog/ $(BSCDIR)lib/Verilator/verilator_config.vlt $(shell echo $(BUILDDIR)/verilog/*.v) ./testbenches/$*.cpp $(shell pwd)/testbenches/librust_caps_c/librust_caps_c.a
 	mkdir -p $(BUILDDIR_NOTABLEHEADERS)
 	cp $(BUILDDIR)/V$*.h $(BUILDDIR_NOTABLEHEADERS)
 
