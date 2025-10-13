@@ -198,8 +198,7 @@ struct CycleTest : TestBase {
             dut.CLK = 0;
 
             if (setup.konata) {
-                fmt::println(stdout, "{}", KONATA_HEADER);
-                fmt::println(stdout, "// Test {}", this->name());
+                fmt::println(stdout, "{} // Test {}", KONATA_HEADER, this->name());
             }
 
             while ((!ctx.gotFinish()) && (main_time <= end_time) ) { // $finish executed
@@ -395,8 +394,7 @@ public:
     }
     virtual bool run(int argc, char** argv, TestSetup& setup) override {
         if (setup.konata) {
-            fmt::println(stdout, "{}", KONATA_HEADER);
-            fmt::println(stdout, "// Test {}", this->name());
+            fmt::println(stdout, "{} // Test {}", KONATA_HEADER, this->name());
         }
         fmt::println(stderr, "\033[1;33mTest: {}\033[0m", name());
         uint64_t main_time = 0;

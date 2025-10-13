@@ -17,7 +17,7 @@ build-sim-v name:
 
 sim-v name *args:
     make ./build/{{name}}.vsim
-    ./build/{{name}}.vsim {{args}}
+    ./build/{{name}}.vsim --toml ./testbenches/results/{{name}}.toml {{args}}
 
 test-cpp-encdec:
     #!/bin/bash
@@ -63,3 +63,6 @@ build-all: \
     (build-sim-v "mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_Tb") \
     (build-sim-v "mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve_Tb") \
     (build-sim-v "mkCombinedIOCapExposerV5_blockinvalid_KeyManager2V1_Tb")
+
+konatify name pattern *args:
+    just {{name}} --konata {{args}} | python sanitize_konata.py ./testbenches/results/konata/{{name}} --pattern "{{pattern}}"
