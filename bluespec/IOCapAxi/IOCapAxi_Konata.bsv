@@ -1,6 +1,12 @@
 import IOCapAxi_Flits :: *;
 import SourceSink :: *;
 
+export KFlitId;
+export KonataMode(..);
+export konataEvent;
+export konataFlit;
+export mkIOCapAxiFlitLabeller;
+
 typedef struct {
 `ifdef KANATA
     UInt#(63) sequentialId; 
@@ -19,8 +25,37 @@ instance FShow#(KFlitId);
     function Fmt fshow(KFlitId value) = fshowAsUint(pack(value));
 endinstance
 
+typedef enum {
+    KONATA_OFF
+`ifdef KANATA
+    , KONATA_FLIT
+    , KONATA_KEY
+`endif
+} KonataMode deriving (Bits, Eq, FShow);
+
+function Action konataEvent(KonataMode kMode, String eventType, Fmt eventData) = action
+`ifdef KANATA
+    if (kMode != KONATA_OFF) begin
+        $display("V\t", fshow(eventType), "\t", eventData);
+    end
+`endif
+endaction;
+
+function Action konataFlit(KonataMode kMode, Fmt data) = action
+`ifdef KANATA
+    if (kMode == KONATA_FLIT) begin
+        $display(data);
+    end
+`endif
+endaction;
+
 // Wrap a Sink#((iocap_flit, KFlitId)) with something that takes in iocap_flit, figures out the KFlitId and attaches it.
-module mkIOCapAxiFlitLabeller#(Sink#(Tuple2#(iocap_flit, KFlitId)) sink, ReadOnly#(UInt#(n)) threadId, no_iocap_flit flitProxy)(Sink#(iocap_flit)) provisos (
+module mkIOCapAxiFlitLabeller#(
+    KonataMode kMode,
+    Sink#(Tuple2#(iocap_flit, KFlitId)) sink,
+    ReadOnly#(UInt#(n)) threadId,
+    no_iocap_flit flitProxy
+)(Sink#(iocap_flit)) provisos (
     IOCapPackableFlit#(iocap_flit, no_iocap_flit),
     AxiCtrlFlit64#(iocap_flit)
 );
@@ -45,8 +80,12 @@ module mkIOCapAxiFlitLabeller#(Sink#(Tuple2#(iocap_flit, KFlitId)) sink, ReadOnl
         if (spec matches tagged CapBits3 .*) begin
             incrementId.send();
         end else if (spec matches tagged Start .*) begin
-            $display("I\t", fshow(flitId), "\t", fshowAsUint(burstTid(f)), "\t", fshow(threadId));
-            $display("L\t", fshow(flitId), "\t0\t", fshow(burstAddr(f)), " ", (flitId.isRead ? "R" : "W"), "#", fshowAsUint(burstTid(f)));
+            konataFlit(kMode,
+                $format("I\t") + fshow(flitId) + fshow("\t") + fshowAsUint(burstTid(f)) + fshow("\t") + fshow(threadId)
+            );
+            konataFlit(kMode,
+                $format("L\t") + fshow(flitId) + $format("\t0\t") + fshow(burstAddr(f)) + $format(" %s#", (flitId.isRead ? "R" : "W")) + fshowAsUint(burstTid(f))
+            );
         end
         sink.put(tuple2(f, flitId));
     endmethod

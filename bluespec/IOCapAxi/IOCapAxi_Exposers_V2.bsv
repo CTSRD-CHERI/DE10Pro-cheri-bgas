@@ -11,6 +11,7 @@ import IOCapAxi_Flits :: *;
 import IOCapAxi_KeyManagers :: *;
 import IOCapAxi_CreditValve :: *;
 import IOCapAxi_Checkers :: *;
+import IOCapAxi_Konata :: *; // Purely for KONATA_OFF
 
 import Cap2024_02 :: *;
 import Cap2024_02_Decode_FastFSM :: *;
@@ -37,7 +38,7 @@ module mkSimpleIOCapExposerV2#(IOCap_KeyManager#(t_keystore_data) keyStore)(IOCa
     // If the AW transaction is invalid, the w flits are dropped.
     // This is managed by a credit system in wValve.
     FIFOF#(AXI4_WFlit#(t_data, 0)) wIn <- mkSizedFIFOF(2); // TODO figure out the correct size
-    CreditValve#(AXI4_WFlit#(t_data, 0), 32) wValve <- mkSimpleCreditValve(toSource(wIn));
+    CreditValve#(AXI4_WFlit#(t_data, 0), 32) wValve <- mkSimpleCreditValve(KONATA_OFF, toSource(wIn));
 
     // B responses from the subordinate (de facto for *valid* requests) are sent through to the master, interleaved with responses from invalid requests.
     // This interleaving is currently done without considering order.

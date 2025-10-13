@@ -139,6 +139,7 @@ typedef union tagged {
 // Capabilities are decoded and signature-checked in parallel, and we can assume the decoder latency is always less than the signature check.
 // We add ~3 cycles of latency on top of the signature check with the various FIFO stages, so the maximum latency should be ~21 cycles.
 module mkSimpleIOCapAxiChecker2V1#(
+    KonataMode kMode,
     function module#(Empty) makeDecoder(Get#(Cap2024_11) ins, Put#(CapCheckResult#(Tuple2#(CapPerms, CapRange))) outs),
     Sink#(KeyId) keyRequest,
     ReadOnly#(Maybe#(Tuple2#(KeyId, Maybe#(Key)))) keyResponse,
@@ -225,9 +226,10 @@ module mkSimpleIOCapAxiChecker2V1#(
                     currentFlit <= tagged Building0 {
                         flit: flit
                     };
-                    $display("S\t", fshow(iocapFlitId), "\t10\tBuilding0");
+                    konataFlit(kMode, $format("S\t") + fshow(iocapFlitId) + $format("\t10\tBuilding0"));
                 end else begin
-                    $display("TODO BIG ERROR");
+                    $error("TODO BIG ERROR");
+                    $finish();
                 end
                 flitId <= iocapFlitId;
                 incomingFlits.drop();
@@ -243,12 +245,12 @@ module mkSimpleIOCapAxiChecker2V1#(
                     Tuple2#(Bit#(128), Cap2024_11) partialCap = unpack({ 84'b0, capBits1, 86'b0 });
                     let keyId = keyIdOf(tpl_2(partialCap));
                     keyIdForConstructingFlit.wset(keyId);
-                    $display("L\t", fshow(flitId), "\t1\tkeyId ", fshow(keyId));
                     currentFlit <= tagged Building1 {
                         flit: flit,
                         capBits1: capBits1
                     };
-                    $display("S\t", fshow(flitId), "\t10\tBuilding1");
+                    konataFlit(kMode, $format("L\t") + fshow(iocapFlitId) + $format("\t1\tkeyId ") + fshow(keyId));
+                    konataFlit(kMode, $format("S\t") + fshow(iocapFlitId) + $format("\t10\tBuilding1"));
                 end else begin
                     $error("TODO BIG ERROR");
                     $finish();
@@ -265,7 +267,7 @@ module mkSimpleIOCapAxiChecker2V1#(
                         capBits1: capBits1,
                         capBits2: capBits2
                     };
-                    $display("S\t", fshow(flitId), "\t10\tBuilding2");
+                    konataFlit(kMode, $format("S\t") + fshow(iocapFlitId) + $format("\t10\tBuilding2"));
                 end else begin
                     $error("TODO BIG ERROR");
                     $finish();
@@ -286,7 +288,7 @@ module mkSimpleIOCapAxiChecker2V1#(
                         sig: combinedBits[255:128]
                     };
                     currentFlit <= tagged DecodingAndSigChecking authFlit;
-                    $display("S\t", fshow(flitId), "\t10\tDecodingAndSigChecking");
+                    konataFlit(kMode, $format("S\t") + fshow(iocapFlitId) + $format("\t10\tDecodingAndSigChecking"));
                 end else begin
                     $error("TODO BIG ERROR");
                     $finish();
@@ -505,13 +507,27 @@ module mkSimpleIOCapAxiChecker2V1#(
         if (sigCheckState != newSigCheckState) begin
             case (newSigCheckState) matches
                 // Start and end SigCheckIdle to show that this flit is being finished
-                tagged SigCheckIdle : $display("S\t", fshow(flitId), "\t12\tSigCheckIdle\nE\t", fshow(flitId), "\t12\tSigCheckIdle");
-                tagged AwaitingKeyAvailable .* : $display("S\t", fshow(flitId), "\t12\tAwaitingKeyAvailable");
-                tagged AwaitingKey .* :  $display("S\t", fshow(flitId), "\t12\tAwaitingKey");
-                tagged AwaitingSigCheckStart .* : $display("S\t", fshow(flitId), "\t12\tAwaitingSigCheckStart");
-                tagged SigCheckFailedEarly .* : $display("S\t", fshow(flitId), "\t12\tSigCheckFailedEarly");
-                tagged AwaitingSigCheck {} : $display("S\t", fshow(flitId), "\t12\tAwaitingSigCheck");
-                tagged AwaitingRespAvailable {} : $display("S\t", fshow(flitId), "\t12\tAwaitingRespAvailable");
+                tagged SigCheckIdle : konataFlit(kMode,
+                    $format("S\t") + fshow(flitId) + $format("\t12\tSigCheckIdle\nE\t") + fshow(flitId) + $format("\t12\tSigCheckIdle")
+                );
+                tagged AwaitingKeyAvailable .* : konataFlit(kMode,
+                    $format("S\t") + fshow(flitId) + $format("\t12\tAwaitingKeyAvailable")
+                );
+                tagged AwaitingKey .* : konataFlit(kMode,
+                    $format("S\t") + fshow(flitId) + $format("\t12\tAwaitingKey")
+                );
+                tagged AwaitingSigCheckStart .* : konataFlit(kMode,
+                    $format("S\t") + fshow(flitId) + $format("\t12\tAwaitingSigCheckStart")
+                );
+                tagged SigCheckFailedEarly .* : konataFlit(kMode,
+                    $format("S\t") + fshow(flitId) + $format("\t12\tSigCheckFailedEarly")
+                );
+                tagged AwaitingSigCheck {} : konataFlit(kMode,
+                    $format("S\t") + fshow(flitId) + $format("\t12\tAwaitingSigCheck")
+                );
+                tagged AwaitingRespAvailable {} : konataFlit(kMode,
+                    $format("S\t") + fshow(flitId) + $format("\t12\tAwaitingRespAvailable")
+                );
             endcase
         end
         sigCheckState <= newSigCheckState;
@@ -524,7 +540,9 @@ module mkSimpleIOCapAxiChecker2V1#(
                     // $display("-> AwaitingFlitBounds");
                     decodeIn.put(authFlit.cap);
                     decodeState <= tagged AwaitingFlitBounds;
-                    $display("S\t", fshow(flitId), "\t13\tAwaitingFlitBounds");
+                    konataFlit(kMode,
+                        $format("S\t") + fshow(flitId) + $format("\t13\tAwaitingFlitBounds")
+                    );
                 end
             end
             tagged AwaitingFlitBounds : begin
@@ -570,14 +588,16 @@ module mkSimpleIOCapAxiChecker2V1#(
                 end
 
                 if (bounds_failed) begin
-                    $display("IOCap - flit failed Bounds ", fshow(flit));
+                    $display("// IOCap - flit failed Bounds ", fshow(flit));
                 end
                 decodeState <= tagged AwaitingIOCapDecode {
                     flitMin: min_addr,
                     flitMax: max_addr,
                     boundsFailed: bounds_failed
                 };
-                $display("S\t", fshow(flitId), "\t13\tAwaitingIOCapDecode");
+                konataFlit(kMode,
+                    $format("S\t") + fshow(flitId) + $format("\t13\tAwaitingIOCapDecode")
+                );
             end
             tagged AwaitingIOCapDecode { flitMin: .flitMin, flitMax: .flitMax, boundsFailed: .boundsFailed } : begin
                 if (decodeOut.canPeek()) begin
@@ -607,7 +627,9 @@ module mkSimpleIOCapAxiChecker2V1#(
                     if (failed) begin
                         $display("// IOCap - flit failed Decode ", fshow(flit), " - ", fshow(decodeRes));
                     end
-                    $display("S\t", fshow(flitId), "\t13\tDecoded");
+                    konataFlit(kMode,
+                        $format("S\t") + fshow(flitId) + $format("\t13\tDecoded")
+                    );
                     decodeState <= tagged Decoded {
                         failed: failed
                     };
@@ -615,7 +637,9 @@ module mkSimpleIOCapAxiChecker2V1#(
             end
             tagged Decoded .failed : begin
                 if (flitCompleted) begin
-                    $display("E\t", fshow(flitId), "\t13\tDecoded");
+                    konataFlit(kMode,
+                        $format("E\t") + fshow(flitId) + $format("\t13\tDecoded")
+                    );
                     decodeState <= tagged DecodeIdle;
                 end
             end
@@ -624,7 +648,9 @@ module mkSimpleIOCapAxiChecker2V1#(
 
     rule complete_flit(currentFlit matches tagged DecodingAndSigChecking .*);
         if (flitCompleted) begin
-            $display("E\t", fshow(flitId), "\t10\tDecodingAndSigChecking");
+            konataFlit(kMode,
+                $format("S\t") + fshow(flitId) + $format("\t10\tDecodingAndSigChecking")
+            );
             currentFlit <= tagged NoFlit;
         end
     endrule
@@ -648,6 +674,7 @@ endmodule
 // Can't use Integer for n because "Integer" != "numeric type"
 
 module mkInOrderIOCapAxiChecker2V1Pool#(
+    KonataMode kMode,
     NumProxy#(n) n_proxy,
     function module#(Empty) makeDecoder(Get#(Cap2024_11) ins, Put#(CapCheckResult#(Tuple2#(CapPerms, CapRange))) outs),
     Sink#(KeyId) keyRequest,
@@ -686,7 +713,7 @@ module mkInOrderIOCapAxiChecker2V1Pool#(
                 insertPointer <= newInsertPointer;
         end
         if (incrementKeyRequest) begin
-            $display("V\tIncKeyReq\t", fshow(keyRequestPointer));
+            konataEvent(kMode, "IncKeyReq", fshow(keyRequestPointer));
             let newKeyRequestPointer = keyRequestPointer + 1;
             if (inLiteralRange(keyRequestPointer, valueOf(n)) && newKeyRequestPointer >= fromInteger(valueOf(n)))
                 keyRequestPointer <= 0;
@@ -740,11 +767,12 @@ module mkInOrderIOCapAxiChecker2V1Pool#(
         let keyRequestIfc = interface Sink;
             method Bool canPut = (keyRequestPointer == fromInteger(i) && keyRequest.canPut());
             method Action put(x);
-                $display("V\tPutKeyReq\t", fshow(keyRequestPointer));
+                konataEvent(kMode, "PutKeyReq", fshow(keyRequestPointer));
                 keyRequests[i].wset(x);
             endmethod
         endinterface;
         return mkSimpleIOCapAxiChecker2V1(
+            kMode,
             makeDecoder,
             keyRequestIfc,
             keyResponse,
