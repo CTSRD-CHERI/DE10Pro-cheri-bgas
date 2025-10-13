@@ -80,6 +80,8 @@ int main(int argc, char** argv) {
             new UVMStreamOfNValidTransactions<TheDUT, CapType::Cap2024_02, KeyMngrV1>(CCapPerms_ReadWrite, 100)
         )
     };
+    
+    // TODO upgrade to new test suite?
 
     return tb_main(tests, argc, argv);
 }

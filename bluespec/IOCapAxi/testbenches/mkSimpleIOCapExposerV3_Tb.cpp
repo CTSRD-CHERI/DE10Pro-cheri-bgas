@@ -85,5 +85,7 @@ int main(int argc, char** argv) {
         )
     };
 
+    // TODO upgrade to new test suite?
+
     return tb_main(tests, argc, argv);
 }

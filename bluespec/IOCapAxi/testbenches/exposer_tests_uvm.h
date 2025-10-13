@@ -1615,18 +1615,19 @@ template<class DUT, CapType ctype, KeyMngrVersion V>
 class UVMStreamOfNValidTransactions : public ExposerStimulus<DUT, ctype, V> {
     CCapPerms perms;
     uint64_t n_transactions;
+    uint8_t n_data_flits_per_transaction;
 
     uint64_t final_tick = 0;
     
 public:
     virtual ~UVMStreamOfNValidTransactions() = default;
     virtual std::string name() override {
-        return fmt::format("Stream of {} {} transactions", n_transactions, ccap_perms_str(perms));
+        return fmt::format("Stream of {} {} transactions ({} data flits each)", n_transactions, ccap_perms_str(perms), n_data_flits_per_transaction);
     }
-    UVMStreamOfNValidTransactions(CCapPerms perms, uint64_t n_transactions) : ExposerStimulus<DUT, ctype, V>(
+    UVMStreamOfNValidTransactions(CCapPerms perms, uint64_t n_transactions, uint8_t n_data_flits_per_transaction) : ExposerStimulus<DUT, ctype, V>(
         new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
-    ), perms(perms), n_transactions(n_transactions) {}
+    ), perms(perms), n_transactions(n_transactions), n_data_flits_per_transaction(n_data_flits_per_transaction) {}
     virtual void setup(std::mt19937& rng) override {
         const key_manager::KeyId secret_id = 111;
         const U128 key = U128::random(rng);
@@ -1635,7 +1636,7 @@ public:
         for (uint64_t i = 0; i < n_transactions; i++) {
             uint8_t axi_id = i & 0xF;
             auto cap_data = this->test_legacy_random_initial_resource_cap(rng, secret_id, perms);
-            auto axi_params = cap_data.valid_transfer_params(32, 4);
+            auto axi_params = cap_data.valid_transfer_params(32, n_data_flits_per_transaction);
             if (perms & CCapPerms_Read) {
                 this->enqueueReadBurst(cap_data.cap, axi_params, axi_id);
             }
@@ -1766,5 +1767,126 @@ public:
 #undef PUT_INPUT
 #undef CANPUT_INPUT
 
+template<class TheDUT, CapType ctype, KeyMngrVersion V>
+constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInvalidTransactions) {
+    std::vector<TestBase*> tests = {
+        // UVM-style testing
+        // TODO add tests for above todos, consider revocation
+        new ExposerUVMishTest(
+            new UVMValidKeyValidInitialCapValidAccess<TheDUT, ctype, V>(CCapPerms_Read),
+            expectPassthroughInvalidTransactions
+        ),
+        new ExposerUVMishTest(
+            new UVMValidKeyValidInitialCapValidAccess<TheDUT, ctype, V>(CCapPerms_Write),
+            expectPassthroughInvalidTransactions
+        ),
+        new ExposerUVMishTest(
+            new UVMValidKeyValidInitialCapValidAccess<TheDUT, ctype, V>(CCapPerms_ReadWrite),
+            expectPassthroughInvalidTransactions
+        ),
+        new ExposerUVMishTest(
+            new UVMValidKeyValidInitialCapOOBAccess<TheDUT, ctype, V>(CCapPerms_Read),
+            expectPassthroughInvalidTransactions
+        ),
+        new ExposerUVMishTest(
+            new UVMValidKeyValidInitialCapOOBAccess<TheDUT, ctype, V>(CCapPerms_Write),
+            expectPassthroughInvalidTransactions
+        ),
+        new ExposerUVMishTest(
+            new UVMValidKeyValidCapBadPerms<TheDUT, ctype, V>(),
+            expectPassthroughInvalidTransactions
+        ),
+        new ExposerUVMishTest(
+            new UVMValidKeyBadSigCap<TheDUT, ctype, V>(),
+            expectPassthroughInvalidTransactions
+        ),
+        new ExposerUVMishTest(
+            new UVMInvalidKeyAccess<TheDUT, ctype, V>(CCapPerms_ReadWrite),
+            expectPassthroughInvalidTransactions
+        ),
+
+        new ExposerUVMishTest(
+            new UVMStreamOfNValidTransactions<TheDUT, ctype, V>(
+                CCapPerms_ReadWrite,
+                /* n_transactions */ 100,
+                /* n_data_flits_per_transaction */ 1
+            ),
+            expectPassthroughInvalidTransactions
+        ),
+        new ExposerUVMishTest(
+            new UVMStreamOfNValidTransactions<TheDUT, ctype, V>(
+                CCapPerms_ReadWrite,
+                /* n_transactions */ 100,
+                /* n_data_flits_per_transaction */ 4
+            ),
+            expectPassthroughInvalidTransactions
+        ),
+        new ExposerUVMishTest(
+            new UVMStreamOfNValidTransactions<TheDUT, ctype, V>(
+                CCapPerms_ReadWrite,
+                /* n_transactions */ 100,
+                /* n_data_flits_per_transaction */ 8
+            ),
+            expectPassthroughInvalidTransactions
+        ),
+        new ExposerUVMishTest(
+            new UVMStreamOfNValidTransactions<TheDUT, ctype, V>(
+                CCapPerms_ReadWrite,
+                /* n_transactions */ 100,
+                /* n_data_flits_per_transaction */ 16
+            ),
+            expectPassthroughInvalidTransactions
+        ),
+        new ExposerUVMishTest(
+            new UVMStreamOfNValidTransactions<TheDUT, ctype, V>(
+                CCapPerms_ReadWrite,
+                /* n_transactions */ 100,
+                /* n_data_flits_per_transaction */ 32
+            ),
+            expectPassthroughInvalidTransactions
+        ),
+
+        new ExposerUVMishTest(
+            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000),
+            expectPassthroughInvalidTransactions
+        ),
+
+        new ExposerUVMishTest(
+            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_cavs */ 0),
+            expectPassthroughInvalidTransactions
+        ),
+        new ExposerUVMishTest(
+            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_cavs */ 1),
+            expectPassthroughInvalidTransactions
+        ),
+        new ExposerUVMishTest(
+            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_cavs */ 2),
+            expectPassthroughInvalidTransactions
+        ),
+    };
+
+    if constexpr (V == KeyMngrV1) {
+        tests.push_back(
+            // 5 cycles of revocations
+            // TODO test this with valid and invalid transactions!
+            // TODO figure out how to do more accurate UVM revocation testing
+            new ExposerUVMishTest(
+                new UVMTransactionsBetweenRevocations_KeyMngrV1<TheDUT, ctype>(5),
+                expectPassthroughInvalidTransactions
+            )
+        );
+    }
+
+    for (auto edge_case = 0; edge_case < ccap2024_11_rand_edge_case_num(); edge_case++) {
+        tests.push_back(
+            new ExposerUVMishTest(
+                new UVMStreamOfNLibRustEdgeCaseTransactions<TheDUT, ctype, V>(10'000, edge_case),
+                expectPassthroughInvalidTransactions
+            )
+        );
+    }
+
+    return tests;
+}
 
 #endif // EXPOSER_TESTS_UVM_H
