@@ -674,7 +674,7 @@ public:
             txn.addrForwardedDownstream = true;
             return;
         }
-        throw test_failure("Forwarded unexpected addr flit:\nexpected None");
+        throw test_failure("Forwarded unexpected addr flit:\nno valid txns waiting to forward");
     }
     // When you see a data flit getting forwarded (either from upstream->downstream for writes, or downstream->upstream for reads)
     void checkAndFwdDataFlit_validBypassInvalid(std::function<void(LatencyTracked<DataFlit>&)> checkDataFlit) {
@@ -1513,6 +1513,7 @@ public:
 
 template<class DUT, CapType ctype>
 class ExposerScoreboard<DUT, ctype, KeyMngrV2> : public BaseExposerScoreboard<DUT, ctype, KeyMngrV2> {
+    std::optional<key_manager::KeyId> killOnNextCycle;
 protected:
     // TODO test the rwValve_IncDecrement
 
@@ -1542,10 +1543,16 @@ protected:
                 }
             }
         }*/
+        if (killOnNextCycle.has_value()) {
+            // it is now the next cycle :)
+            this->wTxns.invalidateFromKey(killOnNextCycle.value());
+            this->rTxns.invalidateFromKey(killOnNextCycle.value());
+        }
+
         if (inputKeyManager.killKeyMessage.has_value()) {
-            // TODO this should be delayed by a cycle?
-            this->wTxns.invalidateFromKey(inputKeyManager.killKeyMessage.value());
-            this->rTxns.invalidateFromKey(inputKeyManager.killKeyMessage.value());
+            killOnNextCycle = inputKeyManager.killKeyMessage;
+        } else {
+            killOnNextCycle = std::nullopt;
         }
 
         if (outputKeyManager.bumpPerfCounterGoodWrite) {
@@ -1569,7 +1576,8 @@ protected:
     }
 public:
     ExposerScoreboard(std::unordered_map<key_manager::KeyId, U128>& secrets, bool expectPassthroughInvalidTransactions = false) :
-        BaseExposerScoreboard<DUT, ctype, KeyMngrV2>(secrets, expectPassthroughInvalidTransactions)
+        BaseExposerScoreboard<DUT, ctype, KeyMngrV2>(secrets, expectPassthroughInvalidTransactions),
+        killOnNextCycle(std::nullopt)
         {}
     virtual ~ExposerScoreboard() override = default;
     /*
@@ -1885,50 +1893,62 @@ public:
     }
 };
 
+// Over the sweep of {delay = 4-33 cycles}
+// - start a transaction with {0,1,2} caveats
+// - at +delay cycles, send the cancel signal
 template<class DUT, CapType ctype>
 class UVMSimpleRevokeWhileChecking_KeyMngrV2 : public ExposerStimulus<DUT, ctype, KeyMngrV2> {
+    int n_cavs;
 public:
     virtual ~UVMSimpleRevokeWhileChecking_KeyMngrV2() = default;
     virtual std::string name() override {
-        return fmt::format("Single Valid-Key Valid-Cap Valid-ReadWrite, revoked while in progress");
+        return fmt::format("Single Valid-Key Valid-Cap Valid-ReadWrite {}-cav, revoked while in progress", n_cavs);
     }
-    UVMSimpleRevokeWhileChecking_KeyMngrV2() : ExposerStimulus<DUT, ctype, KeyMngrV2>(
+    UVMSimpleRevokeWhileChecking_KeyMngrV2(int n_cavs) : ExposerStimulus<DUT, ctype, KeyMngrV2>(
         new BasicKeyManagerShimStimulus<DUT, KeyMngrV2>(),
         new BasicSanitizedMemStimulus<DUT>()
-    ) {}
+    ), n_cavs(n_cavs) {}
     virtual void driveInputsForTick(std::mt19937& rng, DUT& dut, uint64_t tick) {
         const key_manager::KeyId secret_id = 111;
-        if (tick == 100){
-            // Enqueue a transaction, including creating secret keys
+        uint64_t iteration = (tick / 1000);
+        if (iteration < 30) {
+            if (tick % 1000 == 100){
+                // Enqueue a transaction, including creating secret keys
 
-            const U128 key = U128::random(rng);
-            const uint8_t axi_id = 0b1011;
+                const U128 key = U128::random(rng);
+                const uint8_t axi_id = 0b1011;
 
-            this->keyMgr->secrets[secret_id] = key;
-            {
-                auto cap_data = this->test_legacy_random_initial_resource_cap(rng, secret_id, CCapPerms_Read);
-                auto axi_params = cap_data.valid_transfer_params(32, 10);
-                this->enqueueReadBurst(cap_data.cap, axi_params, axi_id);
-            }
-            {
-                auto cap_data = this->test_legacy_random_initial_resource_cap(rng, secret_id, CCapPerms_Write);
-                auto axi_params = cap_data.valid_transfer_params(32, 10);
-                this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
+                this->keyMgr->secrets[secret_id] = key;
+                auto cap_data = this->test_librust_random_valid_cap(rng, secret_id, n_cavs);
+                auto axi_params = cap_data.valid_transfer_params(32, 1);
+                if (cap_data.perms & CCapPerms_Read) {
+                    this->enqueueReadBurst(cap_data.cap, axi_params, axi_id);
+                }
+                if (cap_data.perms & CCapPerms_Write) {
+                    this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
+                }
             }
         }
 
         ExposerStimulus<DUT, ctype, KeyMngrV2>::driveInputsForTick(rng, dut, tick);
 
-        if (tick == 140) {
-            // We have finished key retrieval, revoke
-            WRITE_INPUT(keyStoreShim_killKeyMessage, secret_id);
-        } else {
-            NOWRITE_INPUT(keyStoreShim_killKeyMessage);
+        if (iteration < 30) {
+            uint64_t delay = 40 + iteration * 10;
+
+            if ((tick % 1000) == 100 + delay) {
+                // TODO gate this behind Konata
+                fmt::println(stdout, "V\tKillKey\t{}", secret_id);
+                // fmt::println(stderr, "delay {} killing", delay);
+                // We have finished key retrieval, revoke
+                WRITE_INPUT(keyStoreShim_killKeyMessage, secret_id);
+                // don't actually get rid of the key.
+            } else {
+                NOWRITE_INPUT(keyStoreShim_killKeyMessage);
+            }
         }
     }
     virtual bool shouldFinish(uint64_t tick) override {
-        // Each revocation = 450 cycles of transactions then 50 for revocation
-        return tick >= 500;
+        return tick >= 1000 * 30 + 1000;
     }
 };
 
@@ -2201,7 +2221,19 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
     } else if constexpr (V == KeyMngrV2) {
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMSimpleRevokeWhileChecking_KeyMngrV2<TheDUT, ctype>(),
+                new UVMSimpleRevokeWhileChecking_KeyMngrV2<TheDUT, ctype>(0),
+                expectPassthroughInvalidTransactions
+            )
+        );
+        tests.push_back(
+            new ExposerUVMishTest(
+                new UVMSimpleRevokeWhileChecking_KeyMngrV2<TheDUT, ctype>(1),
+                expectPassthroughInvalidTransactions
+            )
+        );
+        tests.push_back(
+            new ExposerUVMishTest(
+                new UVMSimpleRevokeWhileChecking_KeyMngrV2<TheDUT, ctype>(2),
                 expectPassthroughInvalidTransactions
             )
         );

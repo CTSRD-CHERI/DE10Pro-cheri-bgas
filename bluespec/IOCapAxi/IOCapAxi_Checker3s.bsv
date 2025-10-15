@@ -50,7 +50,7 @@ typedef union tagged {
     KeyId SigCheckFailedEarly;
     struct {
         KeyId keyId;
-        Bool keyInvalidatedDuringSigCheck;
+        Bool failed;
     } AwaitingSigCheck;
     // Once the signature check completes, we assume that everything else has completed.
     struct {
@@ -192,7 +192,7 @@ module mkSimpleIOCapAxiChecker3V1#(
                         });
                         newSigCheckState = tagged AwaitingSigCheck {
                             keyId: keyId,
-                            keyInvalidatedDuringSigCheck: False
+                            failed: False
                         };
                     end else begin
                         $error("ERROR PUT INTO REQ WHERE SIG OR DECODE NOT READY");
@@ -219,8 +219,8 @@ module mkSimpleIOCapAxiChecker3V1#(
                     newSigCheckState = tagged SigCheckIdle;
                 end
             end
-            tagged AwaitingSigCheck { keyId: .keyId, keyInvalidatedDuringSigCheck: .keyInvalidatedDuringSigCheck } : begin
-                let failed = keyInvalidatedDuringSigCheck;
+            tagged AwaitingSigCheck { keyId: .keyId, failed: .failed1 } : begin
+                let failed = failed1;
                 if (keyToKill == tagged Valid keyId) begin
                     // For now, don't skip ahead to SigChecked
                     // - don't want to leave a spare entry in the output FIFO
@@ -257,7 +257,7 @@ module mkSimpleIOCapAxiChecker3V1#(
                 end else begin
                     newSigCheckState = tagged AwaitingSigCheck {
                         keyId: keyId,
-                        keyInvalidatedDuringSigCheck: keyInvalidatedDuringSigCheck
+                        failed: failed
                     };
                 end
             end

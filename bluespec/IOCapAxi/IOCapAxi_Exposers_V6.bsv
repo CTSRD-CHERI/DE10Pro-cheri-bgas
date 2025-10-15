@@ -413,7 +413,7 @@ module mkSimpleIOCapExposerV6#(
         end
     endrule
 
-    rule check_ar (rScoreboard.canBeginTxn(tpl_1(arChecker.checkResponse.peek).arid));
+    rule check_ar (arChecker.checkResponse.canPeek && rScoreboard.canBeginTxn(tpl_1(arChecker.checkResponse.peek).arid));
         // Pull the AR check result out of the arIn
         let arResp = arChecker.checkResponse.peek();
         arChecker.checkResponse.drop();
