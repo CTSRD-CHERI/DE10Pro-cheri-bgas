@@ -135,10 +135,10 @@ struct MaybeValidCapWithRange {
 
 // Helper macros for generating stimulus
 #define CANPUT_INPUT(name) ((dut.RDY_## name ##_put != 0) && (dut. name ##_canPut != 0))
-#define PUT_INPUT(name, value) do {                  \
-    dut.EN_## name ##_put = 1;        \
+#define PUT_INPUT(name, value) do { \
+    dut.EN_## name ##_put = 1;      \
     dut. name ##_put_val = (value); \
-    assert(dut.RDY_## name ##_put);   \
+    assert(dut.RDY_## name ##_put); \
     assert(dut. name ##_canPut);    \
 } while(0);
 #define NOPUT_INPUT(name) dut.EN_## name ##_put = 0;
@@ -151,6 +151,13 @@ struct MaybeValidCapWithRange {
     into = dut. from ##_peek;
 #define NOPOP_OUTPUT(from) \
     dut.EN_## from ##_drop = 0;
+#define WRITE_INPUT(name, value) do {      \
+    dut.EN_## name ##___05Fwrite = 1;      \
+    dut. name ##___05Fwrite_x = (value);   \
+    assert(dut.RDY_## name ##___05Fwrite); \
+} while(0);
+#define NOWRITE_INPUT(name) \
+    dut.EN_## name ##___05Fwrite = 0;
 
 /**
  * Generic stimulus generator for the key manager parts of ShimmedExposer DUTs.
@@ -329,9 +336,9 @@ public:
         if (!bInputs.empty()) {
             if (CANPUT_INPUT(exposer4x32_sanitizedOut_b)) {
                 auto bInput = bInputs.front();
-                bInputs.pop_front();
                 PUT_INPUT(exposer4x32_sanitizedOut_b, bInput.pack());
                 b_throughput.trackAccepted();
+                bInputs.pop_front();
             }
             b_throughput.trackCycleWithAvailableInput();
         }
@@ -340,9 +347,9 @@ public:
         if (!rInputs.empty()) {
             if (CANPUT_INPUT(exposer4x32_sanitizedOut_r)) {
                 auto rInput = rInputs.front();
-                rInputs.pop_front();
                 PUT_INPUT(exposer4x32_sanitizedOut_r, rInput.pack());
                 r_throughput.trackAccepted();
+                rInputs.pop_front();
             }
             r_throughput.trackCycleWithAvailableInput();
         }
@@ -368,7 +375,6 @@ public:
         // Resolve W flits
         while (!wFlitsExpectedPerBurst.empty() && !unexpectedWFlits.empty()) {
             auto wFlit = unexpectedWFlits.front();
-            unexpectedWFlits.pop_front();
 
             if (wFlitsExpectedPerBurst.front() == 0) {
                 throw std::logic_error("BasicSanitizedMemStimulus had a burst of 0 flits expected");
@@ -385,6 +391,8 @@ public:
                 wFlitsExpectedPerBurst.front() -= 1;
                 assert(wFlit.wlast == 0);
             }
+
+            unexpectedWFlits.pop_front();
         }
 
         if (CANPEEK_OUTPUT(exposer4x32_sanitizedOut_ar)) {
@@ -495,9 +503,9 @@ public:
         if (!awInputs.empty()) {
             if (CANPUT_INPUT(exposer4x32_iocapsIn_axiSignals_aw)) {
                 auto awInput = awInputs.front();
-                awInputs.pop_front();
                 PUT_INPUT(exposer4x32_iocapsIn_axiSignals_aw, verilate_array(awInput.pack()));
                 aw_throughput.trackAccepted();
+                awInputs.pop_front();
             }
             aw_throughput.trackCycleWithAvailableInput();
         }
@@ -506,9 +514,9 @@ public:
         if (!wInputs.empty()) {
             if (CANPUT_INPUT(exposer4x32_iocapsIn_axiSignals_w)) {
                 auto wInput = wInputs.front();
-                wInputs.pop_front();
                 PUT_INPUT(exposer4x32_iocapsIn_axiSignals_w, wInput.pack());
                 w_throughput.trackAccepted();
+                wInputs.pop_front();
             }
             w_throughput.trackCycleWithAvailableInput();
         }
@@ -517,9 +525,9 @@ public:
         if (!arInputs.empty()) {
             if (CANPUT_INPUT(exposer4x32_iocapsIn_axiSignals_ar)) {
                 auto arInput = arInputs.front();
-                arInputs.pop_front();
                 PUT_INPUT(exposer4x32_iocapsIn_axiSignals_ar, verilate_array(arInput.pack()));
                 ar_throughput.trackAccepted();
+                arInputs.pop_front();
             }
             ar_throughput.trackCycleWithAvailableInput();
         }
@@ -533,20 +541,538 @@ public:
     }
 };
 
-// Used for B and R flits which may be associated with unauthenticated (capability was bad) AW/AR flits or correct AW/AR flits which received a response from the sanitized side
-template<typename T>
-struct LatencyTrackedWithAuthCorrectness {
-    uint64_t tick_initiated;
-    bool was_correct;
-    T value;
+template<class AddrFlit, class DataFlit>
+struct AxiTxn {
+    key_manager::KeyId keyId;
+    bool valid;
+    // Can only be true if valid
+    bool addrForwardedDownstream;
+    // Can only be true if valid && addrForwardedDownstream && (nDataFlitsForwarded == nDataFlits)
+    // - In the write case, B flit has to be sent downstream->upstream after all W flits sent upstream->downstream
+    // - In the read case, final R flit has to be sent downstream->upstream after all other R flits sent downstream->upstream
+    bool completionArrivedFromDownstream;
+    // Can only be true if !valid || (valid && addrForwardedDownstream && (nDataFlitsForwarded == nDataFlits))
+    bool completionSentUpstream;
+
+    // Number of data flits we expect to see for this transaction
+    // If the txn is invalid and a read, this should be one - there's exactly one flit that needs forwarding
+    uint64_t nDataFlits;
+    uint64_t nDataFlitsForwarded;
+
+    // tick_initiated = the tick on which the final addr flit arrived from upstream and was put into the DUT
+    LatencyTracked<AddrFlit> upstreamAddr;
+    // tick_initiated = the tick on which each data flit arrived from (upstream if write else downstream) and was put into the DUT
+    std::vector<LatencyTracked<DataFlit>> data;
+
+    AxiTxn(key_manager::KeyId, bool valid, uint64_t nDataFlits, LatencyTracked<AddrFlit> upstreamAddr) :
+        keyId(keyId),
+        valid(valid),
+        addrForwardedDownstream(false),
+        completionArrivedFromDownstream(false),
+        completionSentUpstream(false),
+        nDataFlits(nDataFlits), nDataFlitsForwarded(0),
+        upstreamAddr(upstreamAddr), data() {}
+
+    bool hasAllDataFlits() const {
+        return data.size() == nDataFlits;
+    }
+    void pushDataFlit(LatencyTracked<DataFlit> flit) {
+        if (hasAllDataFlits()) {
+            throw std::runtime_error("tried to add too many data flits to an AxiTxn");
+        }
+        data.push_back(flit);
+    }
 };
 
-template <typename T> class fmt::formatter<LatencyTrackedWithAuthCorrectness<T>> {
+template <class AddrFlit, class DataFlit> class fmt::formatter<AxiTxn<AddrFlit, DataFlit>> {
     public:
     constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
     template <typename Context>
-    constexpr auto format (LatencyTrackedWithAuthCorrectness<T> const& x, Context& ctx) const {
-        return format_to(ctx.out(), "{{ .tick_initiated = {}, .was_correct = {}, .value = {} }}", x.tick_initiated, x.was_correct, x.value);
+    constexpr auto format (AxiTxn<AddrFlit, DataFlit> const& x, Context& ctx) const {
+        return format_to(ctx.out(), "{{ .keyId = {}, .valid = {}, .addrFwdedDownstream = {}, .completionArrivedDownstream = {}, .completionSentUpstream = {}, nDataFlits = {}, .nDataFlitsFwded = {}, .upstreamAddr = {}, .data = <{}>{} }}",
+            x.keyId,
+            x.valid,
+            x.addrForwardedDownstream,
+            x.completionArrivedFromDownstream,
+            x.completionSentUpstream,
+            x.nDataFlits,
+            x.nDataFlitsForwarded,
+            x.upstreamAddr,
+            x.data.size(),
+            x.data
+        );
+    }
+};
+
+template<class AddrFlit, class DataFlit>
+class TxnPerKeyScoreboard {
+public:
+    std::deque<AxiTxn<AddrFlit, DataFlit>> txns;
+    // Data flits from upstream that aren't attached to any txn yet
+    // Can only be from upstream, because downstream can't send packets unsolicited
+    std::deque<LatencyTracked<DataFlit>> dataFlitsPendingTxn;
+
+    void cleanupTxns(bool isRead) {
+        while (!txns.empty()) {
+            auto& txn = txns.front();
+            if (!txn.completionSentUpstream) {
+                break;
+            }
+
+            // txn.completionSentUpstream = true
+
+            if (txn.valid) {
+                // we can assume txn.nDataFlits == txn.nDataFlitsForwarded == txn.data.size()
+                txns.pop_front();
+            }
+            // For invalid txns we can't make that assumption - we have to check
+            // txn.data.size() == txn.nDataFlits
+            // in case e.g. a write transaction sent the completion upstream early when they knew it was bad,
+            // even though the data flits from upstream hadn't been captured.
+            // We can delete it ONLY if we have captured all the data flits we need.
+            if (!txn.valid) {
+                bool canPop = isRead ? true : (txn.data.size() == txn.nDataFlits);
+                if (canPop) {
+                    txns.pop_front();
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+
+public:
+    TxnPerKeyScoreboard() : txns(), dataFlitsPendingTxn() {}
+
+    void recvDataFlit(LatencyTracked<DataFlit> flit, bool isRead) {
+        for (auto& txn : txns) {
+            if (!txn.hasAllDataFlits()) {
+                txn.pushDataFlit(flit);
+                // If the txn is invalid and has already sent a completion upstream, adding a flit
+                // can cause it to be completely finished and popped off.
+                cleanupTxns(isRead);
+                return;
+            }
+        }
+        dataFlitsPendingTxn.push_back(flit);
+    }
+    void pushUnconfirmedTxn(key_manager::KeyId keyId, bool valid, uint64_t nDataFlits, LatencyTracked<AddrFlit> upstreamAddr) {
+        auto txn = AxiTxn<AddrFlit, DataFlit>(keyId, valid, nDataFlits, upstreamAddr);
+        while (!dataFlitsPendingTxn.empty() && !txn.hasAllDataFlits()) {
+            txn.pushDataFlit(dataFlitsPendingTxn.front());
+            dataFlitsPendingTxn.pop_front();
+        }
+        txns.push_back(txn);
+    }
+    void checkAndFwdAddrFlit(std::function<void(LatencyTracked<AddrFlit>&)> checkAddrFlit) {
+        for (auto& txn : txns) {
+            // Skip all txns that don't need to or already have forwarded their address
+            if (txn.addrForwardedDownstream || !txn.valid) {
+                continue;
+            }
+            checkAddrFlit(txn.upstreamAddr);
+            txn.addrForwardedDownstream = true;
+            return;
+        }
+        throw test_failure("Forwarded unexpected addr flit:\nexpected None");
+    }
+    // When you see a data flit getting forwarded (either from upstream->downstream for writes, or downstream->upstream for reads)
+    void checkAndFwdDataFlit_validBypassInvalid(std::function<void(LatencyTracked<DataFlit>&)> checkDataFlit) {
+        for (auto& txn : txns) {
+            // Skip all txns that don't need to or already have forwarded all data flits
+            if (txn.nDataFlitsForwarded == txn.nDataFlits) {
+                continue;
+            }
+            if (!txn.valid) {
+                // Even if there are invalid writes ahead of a valid write, we are allowed to forward the data for the valid write.
+                continue;
+            }
+
+            if (!txn.addrForwardedDownstream) {
+                // May not be an AXI error in all cases - e.g. write data can be forwarded before the aw - but in practice this shouldn't happen
+                throw test_failure("Forwarded unexpected data flit:\nnext txn hadn't forwarded address yet");
+            }
+            if (txn.data.size() <= txn.nDataFlitsForwarded) {
+                throw test_failure("Forwarded unexpected data flit:\nnext txn didn't have a new data flit to confirm");
+            }
+            checkDataFlit(txn.data[txn.nDataFlitsForwarded]);
+            txn.nDataFlitsForwarded += 1;
+
+            return;
+        }
+        throw test_failure("Forwarded unexpected data flit:\nno txns with pending data");
+    }
+    // For reads, where read responses for valid txns can't bypass invalid ones under the same txnid.
+    // The callback can receive nullopt when the next transaction is invalid so should return an error response
+    void checkAndFwdDataFlit_noValidBypassInvalid(std::function<void(LatencyTracked<DataFlit>*)> checkDataFlit) {
+        for (auto& txn : txns) {
+            // Skip all txns that don't need to or already have forwarded all data flits
+            if (txn.nDataFlitsForwarded == txn.nDataFlits) {
+                continue;
+            }
+
+            if (txn.valid) {
+                if (!txn.addrForwardedDownstream) {
+                    // May not be an AXI error in all cases - e.g. write data can be forwarded before the aw - but in practice this shouldn't happen
+                    throw test_failure("Forwarded unexpected data flit:\nnext txn hadn't forwarded address yet");
+                }
+                if (txn.data.size() <= txn.nDataFlitsForwarded) {
+                    throw test_failure("Forwarded unexpected data flit:\nnext txn didn't have a new data flit to confirm");
+                }
+                checkDataFlit(&txn.data[txn.nDataFlitsForwarded]);
+                txn.nDataFlitsForwarded += 1;
+                // fmt::println(stderr, "checkAndFwdDataFlit {} {}", txn.nDataFlitsForwarded, txn.data[txn.nDataFlitsForwarded - 1]);
+            } else {
+                // We should forward exactly one data - the completion
+                checkDataFlit(nullptr);
+                txn.nDataFlitsForwarded += 1;
+                // fmt::println(stderr, "checkAndFwdDataFlit {} nullptr", txn.nDataFlitsForwarded);
+            }
+
+            return;
+        }
+        throw test_failure("Forwarded unexpected data flit:\nno txns with pending data");
+    }
+    void checkCompletionFlitFromDownstream(bool isRead) {
+        for (auto& txn : txns) {
+            // Skip all txns that don't need or already have a completion from downstream
+            if (!txn.valid || txn.completionArrivedFromDownstream) {
+                continue;
+            }
+            if (!txn.addrForwardedDownstream) {
+                throw test_failure("Received unexpected completion from downstream:\nthe next valid txn hasn't forwarded the address flit yet");
+            }
+            if (!isRead && txn.nDataFlitsForwarded < txn.nDataFlits) {
+                // In the write case, B flit can only arrive from downstream after all W flits forwarded upstream->downstream
+                // In the read case, final R flit may arrive before other flits are forwarded downstream->upstream
+                throw test_failure("Recevied unexpected completion from downstream:\nthe next valid txn hasn't forwarded all data flits yet");
+            }
+            txn.completionArrivedFromDownstream = true;
+            return;
+        }
+        throw test_failure("Recieved unexpected completion from downstream:\nthere aren't any valid txns awaiting such");
+    }
+    void checkCompletionFlitSentUpstream(std::function<void(AxiTxn<AddrFlit, DataFlit>&)> checkTxn, bool isRead) {
+        // fmt::println(stderr, "checkCompletionFlitSentUpstream {}", txns);
+        for (auto& txn : txns) {
+            // Skip any txns which have already sent completions upstream
+            if (txn.completionSentUpstream) {
+                continue;
+            }
+            if (txn.valid && !txn.completionArrivedFromDownstream) {
+                throw test_failure("Sent unexpected completion upstream:\nthe next transaction is valid + hasn't received a completion from downstream");
+            }
+            if (isRead && txn.nDataFlitsForwarded < txn.nDataFlits) {
+                // In the write case, B flit may be forwarded upstream before all W flits have arrived from upstream- (TODO IS THIS TRUE??)
+                // In the read case, final R flit must be forwarded upstreama after other flits are forwarded upstream
+                throw test_failure("Sent unexpected completion upstream:\nthe next valid txn hasn't forwarded all data flits yet");
+            }
+            checkTxn(txn);
+            txn.completionSentUpstream = true;
+            // We have completed a txn, we might need to pop it off...
+            cleanupTxns(isRead);
+            return;
+        }
+        throw test_failure("Sent unexpected completion upstream:\nthere aren't any uncompleted txns");
+    }
+    void invalidateFromKey(key_manager::KeyId keyId, bool isRead) {
+        for (auto& txn : txns) {
+            if (txn.keyId == keyId && txn.valid && !txn.addrForwardedDownstream) {
+                txn.valid = false;
+                if (isRead) {
+                    txn.nDataFlits = 1;
+                }
+            } 
+        }
+        cleanupTxns(isRead); // TODO maybe this won't ever do anything...
+    }
+    bool empty() const {
+        return txns.empty() && dataFlitsPendingTxn.empty();
+    }
+};
+
+template <class AddrFlit, class DataFlit> class fmt::formatter<TxnPerKeyScoreboard<AddrFlit, DataFlit>> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (TxnPerKeyScoreboard<AddrFlit, DataFlit> const& x, Context& ctx) const {
+        return format_to(ctx.out(), "\n\t{{ .txns = {}, .dataFlitsPendingTxn = {} }}\n", x.txns, x.dataFlitsPendingTxn);
+    }
+};
+
+class WriteTxnScoreboard {
+    using AddrFlit = axi::SanitizedAxi::AWFlit_id4_addr64_user0;
+    using DataFlit = axi::SanitizedAxi::WFlit_data32;
+
+public:
+    std::array<TxnPerKeyScoreboard<AddrFlit, DataFlit>, 16> txnIdBoards;
+    // (txnId, n-data-flits-expected)
+    std::deque<std::pair<uint8_t, uint64_t>> expectedIncomingDataFlitTarget;
+    // (txnId, n-data-flits-expected)
+    std::deque<std::pair<uint8_t, uint64_t>> expectedOutgoingDataFlitTarget;
+
+    // tick_initiated = the tick on which the flit arrived from downstream
+    // tick_completed = the tick on which the flit exits to upstream
+    // only contains responses from confirmed-valid transactions (the only resps to be passed through from downstream->upstream), not error ones.
+    std::array<std::deque<LatencyTracked<axi::IOCapAxi::BFlit_id4>>, 16> expectedBFromDownstream;
+    // tick_initiated = the tick on which the flit arrived from upstream
+    // Flits which arrived before their AW was processed, so we don't know what txnid they have.
+    // This can happen for e.g. short transactions with 1 data-flit per.
+    std::deque<LatencyTracked<DataFlit>> dataFlitsPendingTxnId;
+
+    std::vector<uint64_t> aw_aw_latency;
+    // This is meaningless - it depends on bottlenecks
+    // std::vector<uint64_t> aw_b_latency;
+    std::vector<uint64_t> w_w_latency;
+    std::vector<uint64_t> b_b_latency;
+
+    void expectIncomingDataFlits(uint8_t txnId, uint64_t nDataFlits) {
+        expectedIncomingDataFlitTarget.push_back({
+            txnId, nDataFlits
+        });
+        while (!dataFlitsPendingTxnId.empty() && !expectedIncomingDataFlitTarget.empty()) {
+            auto dFlit = dataFlitsPendingTxnId.front();
+            auto& [txnId, nDataFlits] = expectedIncomingDataFlitTarget.front();
+            // fmt::println(stderr, "recvW {} {} {}", nDataFlits, txnId, flit);
+            txnIdBoards[txnId].recvDataFlit(dFlit, /* isRead */ false);
+            nDataFlits -= 1;
+            if (nDataFlits == 0) {
+                expectedIncomingDataFlitTarget.pop_front();
+            }
+            dataFlitsPendingTxnId.pop_front();
+        }
+    }
+    void recvWFlitFromUpstream(uint64_t tick, axi::IOCapAxi::WFlit_data32& flit) {
+        LatencyTracked<DataFlit> dFlit = {
+            tick,
+            axi::SanitizedAxi::WFlit_data32 {
+                .wlast = flit.wlast,
+                .wstrb = flit.wstrb,
+                .wdata = flit.wdata
+            }
+        };
+        if (expectedIncomingDataFlitTarget.empty()) {
+            dataFlitsPendingTxnId.push_back(dFlit);
+        } else {
+            auto& [txnId, nDataFlits] = expectedIncomingDataFlitTarget.front();
+            // fmt::println(stderr, "recvW {} {} {}", nDataFlits, txnId, flit);
+            txnIdBoards[txnId].recvDataFlit(dFlit, /* isRead */ false);
+            nDataFlits -= 1;
+            if (nDataFlits == 0) {
+                expectedIncomingDataFlitTarget.pop_front();
+            }
+        }
+    }
+    void pushUnconfirmedTxn(uint8_t txnId, key_manager::KeyId keyId, bool valid, uint64_t nDataFlits, LatencyTracked<AddrFlit> upstreamAddr) {
+        txnIdBoards[txnId].pushUnconfirmedTxn(keyId, valid, nDataFlits, upstreamAddr);
+    }
+    void checkAndFwdAwFlit(uint64_t tick, AddrFlit& awFlit) {   
+        try {
+            txnIdBoards[awFlit.awid].checkAndFwdAddrFlit([&](auto& expected){
+                if (awFlit != expected.value) {
+                    throw test_failure(fmt::format("Forwarded unexpected aw flit:\nexpected: {}", expected));
+                }
+                aw_aw_latency.push_back(tick - expected.tick_initiated);
+            });
+        } catch (test_failure& e) {
+            throw test_failure(fmt::format("{}\ngot: {}\n", e.what(), awFlit));
+        }
+        
+        expectedOutgoingDataFlitTarget.push_back({
+            awFlit.awid, axi::len_to_n_transfers(awFlit.awlen)
+        });
+    }
+    void checkAndFwdWFlit(uint64_t tick, DataFlit& wFlit) {
+        try {
+            if (expectedOutgoingDataFlitTarget.empty()) {
+                throw test_failure("Forwarding unexpected w flit:\nno addr flit to associate with");
+            }
+            auto& [txnId, nDataFlits] = expectedOutgoingDataFlitTarget.front();
+
+            txnIdBoards[txnId].checkAndFwdDataFlit_validBypassInvalid([&](auto expected) {
+                if (wFlit != expected.value) {
+                    throw test_failure(fmt::format("Forwarding unexpected w flit:\nexpected: {}", expected.value));
+                }
+                // TODO: note that this is the latency of entering the pipe e.g. the latency from the input port being *ready* to it coming out the other end.
+                // Not the latency from the input becoming available.
+                w_w_latency.push_back(tick - expected.tick_initiated);
+            });
+
+            nDataFlits -= 1;
+            if (nDataFlits == 0) {
+                expectedOutgoingDataFlitTarget.pop_front();
+            }
+        } catch (test_failure& e) {
+            throw test_failure(fmt::format("{}\ngot: {}\ntxns: {}\n", e.what(), wFlit, txnIdBoards));
+        }
+
+    }
+    void checkBFlitFromDownstream(uint64_t tick, axi::SanitizedAxi::BFlit_id4& bFlit) {
+        try{
+            txnIdBoards[bFlit.bid].checkCompletionFlitFromDownstream(/* isRead */ false);
+        } catch (test_failure& e) {
+            throw test_failure(fmt::format("{}\ngot: {}\ntxns: {}\n", e.what(), bFlit, txnIdBoards));
+        }
+        expectedBFromDownstream[bFlit.bid].push_back({
+            tick, 
+            axi::IOCapAxi::BFlit_id4 {
+                .bresp = bFlit.bresp,
+                .bid = bFlit.bid
+            }
+        });
+    }
+    void checkBFlitSentUpstream(uint64_t tick, axi::IOCapAxi::BFlit_id4& bFlit) {
+        try {
+            txnIdBoards[bFlit.bid].checkCompletionFlitSentUpstream([&](auto& expectedTxn) {
+                if (expectedTxn.valid) {
+                    auto expectedFlit = expectedBFromDownstream[bFlit.bid].front();
+                    
+                    if (bFlit != expectedFlit.value) {
+                        throw test_failure(fmt::format("Sent unexpected b flit upstream:\nexpected: {}", expectedFlit.value));
+                    }
+
+                    b_b_latency.push_back(tick - expectedFlit.tick_initiated);
+
+                    expectedBFromDownstream[bFlit.bid].pop_front();
+                } else {
+                    auto expectedFlit = axi::IOCapAxi::BFlit_id4 {
+                        .bresp = (uint8_t)axi::AXI4_Resp::SlvErr,
+                        .bid = bFlit.bid
+                    };
+                    if (bFlit != expectedFlit) {
+                        throw test_failure(fmt::format("Sent unexpected b flit upstream:\nexpected: {}", expectedFlit));
+                    }
+                }
+            }, /* isRead */ false);
+        } catch (test_failure& e) {
+            throw test_failure(fmt::format("{}\ngot: {}\ntxns: {}\n", e.what(), bFlit, txnIdBoards));
+        }
+    }
+    void invalidateFromKey(key_manager::KeyId keyId) {
+        for (auto& board : txnIdBoards) {
+            board.invalidateFromKey(keyId, /* isRead */ false);
+        }
+    }
+    bool empty() const {
+        if (std::any_of(this->txnIdBoards.begin(), this->txnIdBoards.end(), [](auto& board) { return !board.empty(); })) {
+            return false;
+        }
+        if (std::any_of(this->expectedBFromDownstream.begin(), this->expectedBFromDownstream.end(), [](auto& stream) { return !stream.empty(); })) {
+            return false;
+        }
+        return expectedIncomingDataFlitTarget.empty() && expectedOutgoingDataFlitTarget.empty();
+    }
+};
+    
+template <> class fmt::formatter<WriteTxnScoreboard> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (WriteTxnScoreboard const& x, Context& ctx) const {
+        return format_to(ctx.out(), "{{ {}, .expectedBFromDownstream = {}, .expectedIncoming = {}, .expectedOutgoing = {} }}", x.txnIdBoards, x.expectedBFromDownstream, x.expectedIncomingDataFlitTarget, x.expectedOutgoingDataFlitTarget);
+    }
+};
+
+class ReadTxnScoreboard {
+    using AddrFlit = axi::SanitizedAxi::ARFlit_id4_addr64_user0;
+    using DataFlit = axi::IOCapAxi::RFlit_id4_data32;
+
+public:
+    std::array<TxnPerKeyScoreboard<AddrFlit, DataFlit>, 16> txnIdBoards;
+
+    std::vector<uint64_t> ar_ar_latency;
+    // This is meaningless - it's affected by transaction-to-transaction dependencies
+    // std::vector<uint64_t> ar_r_latency;
+    std::vector<uint64_t> r_r_latency;
+
+    void pushUnconfirmedTxn(uint8_t txnId, key_manager::KeyId keyId, bool valid, uint64_t nDataFlits, LatencyTracked<AddrFlit> upstreamAddr) {
+        if (!valid) {
+            // invalid txns need to forward exactly one flit - the error confirmation
+            nDataFlits = 1;
+        }
+        txnIdBoards[txnId].pushUnconfirmedTxn(keyId, valid, nDataFlits, upstreamAddr);
+    }
+    void checkAndFwdArFlit(uint64_t tick, AddrFlit& arFlit) {
+        try {
+            txnIdBoards[arFlit.arid].checkAndFwdAddrFlit([&](auto& expected) {
+                if (arFlit != expected.value) {
+                    throw test_failure(fmt::format("Forwarded unexpected ar flit:\nexpected: {}", expected.value));
+                }
+                ar_ar_latency.push_back(tick - expected.tick_initiated);
+            });
+        } catch (test_failure& e) {
+            throw test_failure(fmt::format("{}\ngot: {}\ntxns: {}\n", e.what(), arFlit, txnIdBoards));
+        }
+    }
+    void recvRFlitFromDownstream(uint64_t tick, axi::SanitizedAxi::RFlit_id4_data32& rFlit) {
+        try {
+            txnIdBoards[rFlit.rid].recvDataFlit({
+                tick,
+                axi::IOCapAxi::RFlit_id4_data32 {
+                    .rlast = rFlit.rlast,
+                    .rresp = rFlit.rresp,
+                    .rdata = rFlit.rdata,
+                    .rid = rFlit.rid
+                }
+            }, /* isRead */ true);
+            if (rFlit.rlast) {
+                txnIdBoards[rFlit.rid].checkCompletionFlitFromDownstream(/* isRead */ true);
+            }
+        } catch (test_failure& e) {
+            throw test_failure(fmt::format("{}\ngot: {}\ntxns: {}\n", e.what(), rFlit, txnIdBoards));
+        }
+    }
+    void checkAndFwdRFlit(uint64_t tick, DataFlit& rFlit) {
+        try {
+            txnIdBoards[rFlit.rid].checkAndFwdDataFlit_noValidBypassInvalid([&](auto nullablePtrToExpected) {
+                if (nullablePtrToExpected) {
+                    auto& expectedFlit = *nullablePtrToExpected;
+                    
+                    if (rFlit != expectedFlit.value) {
+                        throw test_failure(fmt::format("Sent unexpected r flit upstream:\nexpected: {}", expectedFlit.value));
+                    }
+
+                    r_r_latency.push_back(tick - expectedFlit.tick_initiated);
+                } else {
+                    // expected an error flit
+                    auto expectedFlit = axi::IOCapAxi::RFlit_id4_data32 {
+                        .rlast = 1,
+                        .rresp = (uint8_t)axi::AXI4_Resp::SlvErr,
+                        .rdata = 0xaaaaaaaa, // Bluespec uses this to mean ?
+                        .rid = rFlit.rid,
+                    };
+                    if (rFlit != expectedFlit) {
+                        throw test_failure(fmt::format("Sent unexpected r flit upstream:\nexpected: {}", expectedFlit));
+                    }
+                }
+            });
+            if (rFlit.rlast) {
+                // We've already checked if expectedTxn is valid or not, if the rFlit didn't match the txn validity then the above checkAndFwdDataFlit call wouldn't have succeeded
+                txnIdBoards[rFlit.rid].checkCompletionFlitSentUpstream([&](auto& expectedTxn) {}, /* isRead */ true);
+            }
+        } catch (test_failure& e) {
+            throw test_failure(fmt::format("{}\ngot: {}\ntxns: {}\n", e.what(), rFlit, txnIdBoards));
+        }
+    }
+    void invalidateFromKey(key_manager::KeyId keyId) {
+        for (auto& board : txnIdBoards) {
+            board.invalidateFromKey(keyId, /* isRead */ true);
+        }
+    }
+    bool empty() const {
+        if (std::any_of(this->txnIdBoards.begin(), this->txnIdBoards.end(), [](auto& board) { return !board.empty(); })) {
+            return false;
+        }
+        return true;
+    }
+};
+
+template <> class fmt::formatter<ReadTxnScoreboard> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (ReadTxnScoreboard const& x, Context& ctx) const {
+        return format_to(ctx.out(), "{}", x.txnIdBoards);
     }
 };
 
@@ -555,6 +1081,8 @@ template <typename T> class fmt::formatter<LatencyTrackedWithAuthCorrectness<T>>
  * Can be instantiated directly or subclassed.
  * Does not do anything to handle revocation, but revocation can be simulated by modifying the KeyID -> Key map `secrets` the scoreboard uses
  * to determine if incoming requests will be valid or not.
+ * 
+ * By AXI convention, Upstream = the Manager who speaks IOCapAxi, Downstream = the Subordinate who speaks plain AXI.
  */
 template<class DUT, CapType ctype, KeyMngrVersion V>
 class BaseExposerScoreboard : public Scoreboard<DUT> {
@@ -565,36 +1093,22 @@ protected:
     bool expectPassthroughInvalidTransactions;
 
     std::vector<axi::IOCapAxi::AWFlit_id4_addr64_user3> awInProgress;
-    // tick_initiated = the tick on which the last AW flit was put-ed into the unit
-    std::deque<LatencyTracked<axi::SanitizedAxi::AWFlit_id4_addr64_user0>> expectedAw;
-
-    // W flits received on the input where we don't know if their associated AWs were correctly authed.
-    // The DUT cannot possibly know if W flits in this queue are correctly authed or not.
-    std::deque<LatencyTracked<axi::IOCapAxi::WFlit_data32>> wInProgress;
-    // The status of future groups of W flits. e.g. if you recieve a valid AW transaction specifying 3 W flits, store (true, 3) so the next 3 W flits received will automatically be counted as valid.
-    std::deque<std::pair<bool, uint64_t>> wflitValidity; // tuple[0] = is valid, tuple[1] = count
-    // The W flits we expect to see on the output, i.e. only valid ones
-    std::deque<LatencyTracked<axi::SanitizedAxi::WFlit_data32>> expectedW;
+    WriteTxnScoreboard wTxns;
 
     std::vector<axi::IOCapAxi::ARFlit_id4_addr64_user3> arInProgress;
-    // tick_initiated = the tick on which the last AW flit was put-ed into the unit
-    std::deque<LatencyTracked<axi::SanitizedAxi::ARFlit_id4_addr64_user0>> expectedAr;
+    ReadTxnScoreboard rTxns;
 
-    // B and R responses have no ordering guarantees *except* B is ordered w.r.t. B when the IDs are the same, ditto for R.
-    // => for each, keep a map of ID -> ordered list of responses.
-    // Whenever we receive a response, look in the map at the given ID. if the vector is empty, there wasn't supposed to be a response. Otherwise the first pop()-ed element must match.
-    // tick_initiated = the tick on which the 
-    std::array<std::deque<LatencyTrackedWithAuthCorrectness<axi::IOCapAxi::BFlit_id4>>, 16> expectedB;
-    std::array<std::deque<LatencyTrackedWithAuthCorrectness<axi::IOCapAxi::RFlit_id4_data32>>, 16> expectedR;
+    // We can't understand what should be good/bad ahead of time, because txns could be cancelled while still in progress.
+    // Monitor the actual outputs of the exposer, which are checked by the read/write txnscoreboards, and check the performance counters against *those*.
+    // NOTE: this means if a valid txn stalls out, it won't be "confirmed" and therefore will show up as "expected bad" instead of "expected good"
+    uint64_t totalWriteTxns;
+    uint64_t totalReadTxns;
+    // Confirmed i.e. were valid at the point they passed out of the exposed.
+    // signalledGoodWrite should match this.
+    uint64_t confirmedWriteTxns;
+    uint64_t confirmedReadTxns;
+    // expectedBad{Read,Write} = total{Read,Write} - confirmed{Read,Write}
 
-    uint64_t expectedGoodWrite = 0;
-    uint64_t expectedBadWrite = 0;
-    uint64_t expectedBadWriteBadCap = 0;
-    uint64_t expectedBadWriteGoodCapBadRange = 0;
-    uint64_t expectedGoodRead = 0;
-    uint64_t expectedBadRead = 0;
-    uint64_t expectedBadReadBadCap = 0;
-    uint64_t expectedBadReadGoodCapBadRange = 0;
     uint64_t signalledGoodWrite = 0;
     uint64_t signalledBadWrite = 0;
     uint64_t signalledGoodRead = 0;
@@ -603,39 +1117,15 @@ protected:
     std::vector<ShimmedExposerInput<V>> inputs;
     std::vector<ShimmedExposerOutput<V>> outputs;
 
-    std::vector<uint64_t> aw_aw_latency;
-    std::vector<uint64_t> aw_b_latency;
-    std::vector<uint64_t> ar_ar_latency;
-    std::vector<uint64_t> ar_r_latency;
-    std::vector<uint64_t> w_w_latency;
-    std::vector<uint64_t> b_b_latency;
-    std::vector<uint64_t> r_r_latency;
-
     void resolveAwFlit(uint64_t tick, std::optional<axi::IOCapAxi::AWFlit_id4_addr64_user3> newIncomingFlit) {
         if (newIncomingFlit) {
             awInProgress.push_back(newIncomingFlit.value());
-            if (awInProgress.size() == 1 && expectPassthroughInvalidTransactions) {
-                // No matter what, this AW transaction *will* be passed through, so do it immediately
-                if (awInProgress[0].awuser != (uint8_t)axi::IOCapAxi::IOCapAxi_User::Start) {
-                    throw test_failure(fmt::format("BaseExposerScoreboard got nonsensical initial aw flit - incorrect user flags {}", awInProgress));
-                }
-                expectedAw.push_back({
-                    tick,
-                    axi::SanitizedAxi::AWFlit_id4_addr64_user0 {
-                        .awregion = awInProgress[0].awregion,
-                        .awqos = awInProgress[0].awqos,
-                        .awprot = awInProgress[0].awprot,
-                        .awcache = awInProgress[0].awcache,
-                        .awlock = awInProgress[0].awlock,
-                        .awburst = awInProgress[0].awburst,
-                        .awsize = awInProgress[0].awsize,
-                        .awlen = awInProgress[0].awlen,
-                        .awaddr = awInProgress[0].awaddr,
-                        .awid = awInProgress[0].awid,
-                    }
-                });
-                // and expect the right number of W flits to be passed through
-                wflitValidity.push_back(std::make_pair(true, axi::len_to_n_transfers(awInProgress[0].awlen)));
+            // No matter what, we're going to get some data flits in and they're going to be related to this txnId.
+            // Call this early so we can process W flits coming in while handling the rest of the AW
+            if (awInProgress.size() == 1) {
+                uint8_t txnId = awInProgress[0].awid;
+                uint64_t nDataFlits = axi::len_to_n_transfers(awInProgress[0].awlen);
+                wTxns.expectIncomingDataFlits(txnId, nDataFlits);
             }
         }
         if (awInProgress.size() > 4) {
@@ -689,56 +1179,34 @@ protected:
 
             // TODO this might not work if axiBase+axiLen = end of addrspace?
             bool rangeIsValid = len64 || (axiBase >= base && (axiTop - base) <= len);
-            // The performance counters should reflect the validity of the capability/access in all cases
-            if (capIsValid && rangeIsValid) {
-                expectedGoodWrite++;
-            } else {
-                expectedBadWrite++;
-                if (!capIsValid) {
-                    expectedBadWriteBadCap++;
-                } else {
-                    if (expectedBadWriteGoodCapBadRange == 0) {
-                        fmt::println(stderr, "Bad range: cap 0x{:x} .. 0x{:x}, axi {:x} .. {:x}", base, base+len, axiBase, axiTop);
-                    }
-                    expectedBadWriteGoodCapBadRange++;
-                }
-            }
+            // The performance counters should reflect the validity of the capability/access in all cases.
+            // We can't predict the goodness of a txn ahead of time - it could be cancelled after it comes through!
+            totalWriteTxns++;
             // If the capability and ranges are valid,
             // expect an AW flit to come out *and* the right number of W flits!
-            // If `expectPassthroughInvalidTransactions` is true then these will already be expected, so do nothing.
-            if (!expectPassthroughInvalidTransactions) {
-                if (capIsValid && rangeIsValid) {
-                    expectedAw.push_back({
-                        tick,
-                        axi::SanitizedAxi::AWFlit_id4_addr64_user0 {
-                            .awregion = awInProgress[0].awregion,
-                            .awqos = awInProgress[0].awqos,
-                            .awprot = awInProgress[0].awprot,
-                            .awcache = awInProgress[0].awcache,
-                            .awlock = awInProgress[0].awlock,
-                            .awburst = awInProgress[0].awburst,
-                            .awsize = awInProgress[0].awsize,
-                            .awlen = awInProgress[0].awlen,
-                            .awaddr = awInProgress[0].awaddr,
-                            .awid = awInProgress[0].awid,
-                        }
-                    });
-                    // and expect the right number of W flits to be passed through
-                    wflitValidity.push_back(std::make_pair(true, axi::len_to_n_transfers(awInProgress[0].awlen)));
-                } else {
-                    // Otherwise expect a B flit with a BAD response to come out
-                    expectedB[awInProgress[0].awid].push_back({
-                        tick,
-                        false, // This is from an invalid AW flit, not a valid B response from the sanitized side
-                        axi::IOCapAxi::BFlit_id4 {
-                            .bresp = (uint8_t)axi::AXI4_Resp::SlvErr,
-                            .bid = awInProgress[0].awid
-                        }
-                    });
-                    // and drop the W flits
-                    wflitValidity.push_back(std::make_pair(false, axi::len_to_n_transfers(awInProgress[0].awlen)));
+            uint8_t txnId = awInProgress[0].awid;
+            uint64_t nDataFlits = axi::len_to_n_transfers(awInProgress[0].awlen);
+            wTxns.pushUnconfirmedTxn(
+                txnId,
+                secret_key_id,
+                (capIsValid && rangeIsValid) || expectPassthroughInvalidTransactions, // valid
+                nDataFlits,
+                {
+                    tick,
+                    axi::SanitizedAxi::AWFlit_id4_addr64_user0 {
+                        .awregion = awInProgress[0].awregion,
+                        .awqos = awInProgress[0].awqos,
+                        .awprot = awInProgress[0].awprot,
+                        .awcache = awInProgress[0].awcache,
+                        .awlock = awInProgress[0].awlock,
+                        .awburst = awInProgress[0].awburst,
+                        .awsize = awInProgress[0].awsize,
+                        .awlen = awInProgress[0].awlen,
+                        .awaddr = awInProgress[0].awaddr,
+                        .awid = awInProgress[0].awid,
+                    }
                 }
-            }
+            );
 
             // We've now handled the set of AW flits, and can drop them
             awInProgress.clear();
@@ -748,27 +1216,6 @@ protected:
     void resolveArFlit(uint64_t tick, std::optional<axi::IOCapAxi::ARFlit_id4_addr64_user3> newIncomingFlit) {
         if (newIncomingFlit) {
             arInProgress.push_back(newIncomingFlit.value());
-            if (arInProgress.size() == 1 && expectPassthroughInvalidTransactions) {
-                // No matter what, this AR transaction *will* be passed through, so do it immediately
-                if (arInProgress[0].aruser != (uint8_t)axi::IOCapAxi::IOCapAxi_User::Start) {
-                    throw test_failure(fmt::format("BaseExposerScoreboard got nonsensical initial ar flit - incorrect user flags {}", awInProgress));
-                }
-                expectedAr.push_back({
-                    tick,
-                    axi::SanitizedAxi::ARFlit_id4_addr64_user0 {
-                        .arregion = arInProgress[0].arregion,
-                        .arqos = arInProgress[0].arqos,
-                        .arprot = arInProgress[0].arprot,
-                        .arcache = arInProgress[0].arcache,
-                        .arlock = arInProgress[0].arlock,
-                        .arburst = arInProgress[0].arburst,
-                        .arsize = arInProgress[0].arsize,
-                        .arlen = arInProgress[0].arlen,
-                        .araddr = arInProgress[0].araddr,
-                        .arid = arInProgress[0].arid,
-                    }
-                });
-            }
         }
         if (arInProgress.size() > 4) {
             throw test_failure(fmt::format("BaseExposerScoreboard got nonsensical set of ar flits - too many somehow? {}", arInProgress));
@@ -820,92 +1267,34 @@ protected:
             // TODO this might not work if axiBase+axiLen = end of addrspace?
             bool rangeIsValid = len64 || (axiBase >= base && axiTop <= (base + len));
             // The performance counters should reflect the validity of the capability/access in all cases
-            if (capIsValid && rangeIsValid) {
-                expectedGoodRead++;
-            } else {
-                expectedBadRead++;
-                if (!capIsValid) {
-                    expectedBadReadBadCap++;
-                } else {
-                    expectedBadReadGoodCapBadRange++;
-                }
-            }
+            // We can't predict the goodness of a txn ahead of time - it could be cancelled after it comes through!
+            totalReadTxns++;
+            bool isValid = (capIsValid && rangeIsValid) || expectPassthroughInvalidTransactions;
             // If the capability and ranges are valid, expect an AR flit to come out
-            // If `expectPassthroughInvalidTransactions` is true then these will already be expected, so do nothing.
-            if (!expectPassthroughInvalidTransactions) {
-                if (capIsValid && rangeIsValid) {
-                    expectedAr.push_back({
-                        tick,
-                        axi::SanitizedAxi::ARFlit_id4_addr64_user0 {
-                            .arregion = arInProgress[0].arregion,
-                            .arqos = arInProgress[0].arqos,
-                            .arprot = arInProgress[0].arprot,
-                            .arcache = arInProgress[0].arcache,
-                            .arlock = arInProgress[0].arlock,
-                            .arburst = arInProgress[0].arburst,
-                            .arsize = arInProgress[0].arsize,
-                            .arlen = arInProgress[0].arlen,
-                            .araddr = arInProgress[0].araddr,
-                            .arid = arInProgress[0].arid,
-                        }
-                    });
-                } else {
-                    // Otherwise expect a B flit with a BAD response to come out
-                    expectedR[arInProgress[0].arid].push_back({
-                        tick,
-                        false, // This is from an invalid AR flit, not a valid R response from the sanitized side
-                        axi::IOCapAxi::RFlit_id4_data32 {
-                            .rlast = 1,
-                            .rresp = (uint8_t)axi::AXI4_Resp::SlvErr,
-                            .rdata = 0xaaaaaaaa, // Bluespec uses this to mean ?
-                            .rid = arInProgress[0].arid,
-                        }
-                    });
+            rTxns.pushUnconfirmedTxn(
+                arInProgress[0].arid,
+                secret_key_id,
+                (capIsValid && rangeIsValid) || expectPassthroughInvalidTransactions, // valid
+                axi::len_to_n_transfers(arInProgress[0].arlen),
+                {
+                    tick,
+                    axi::SanitizedAxi::ARFlit_id4_addr64_user0 {
+                        .arregion = arInProgress[0].arregion,
+                        .arqos = arInProgress[0].arqos,
+                        .arprot = arInProgress[0].arprot,
+                        .arcache = arInProgress[0].arcache,
+                        .arlock = arInProgress[0].arlock,
+                        .arburst = arInProgress[0].arburst,
+                        .arsize = arInProgress[0].arsize,
+                        .arlen = arInProgress[0].arlen,
+                        .araddr = arInProgress[0].araddr,
+                        .arid = arInProgress[0].arid,
+                    }
                 }
-            }
+            );
 
             // We've now handled the set of AR flits, and can drop them
             arInProgress.clear();
-        }
-    }
-
-    void resolveWFlits(uint64_t tick, std::optional<axi::IOCapAxi::WFlit_data32> newIncomingFlit) {
-        if (newIncomingFlit) {
-            wInProgress.push_back({
-                tick,
-                newIncomingFlit.value()
-            });
-        }
-        // If there are outstanding future groups of W flits, compare them to the wInProgress.
-        while (!wflitValidity.empty() && !wInProgress.empty()) {
-            auto [groupValid, groupLen] = *wflitValidity.begin();
-            while (!wInProgress.empty() && groupLen > 0) {
-                const LatencyTracked<axi::IOCapAxi::WFlit_data32> iocapFlit = wInProgress.front();
-                wInProgress.pop_front();
-                // Handle the w flit: if it's in a valid group make a new expected flit
-                if (groupValid) {
-                    expectedW.push_back({
-                        iocapFlit.tick_initiated,
-                        axi::SanitizedAxi::WFlit_data32 {
-                            .wlast = iocapFlit.value.wlast,
-                            .wstrb = iocapFlit.value.wstrb,
-                            .wdata = iocapFlit.value.wdata,
-                        }
-                    });
-                }
-                // Otherwise drop it and do nothing!
-                groupLen--;
-            }
-            // If we exhausted the group, pop it off
-            if (groupLen == 0) {
-                wflitValidity.pop_front();
-            } else {
-                // Otherwise, update the new length
-                wflitValidity.front() = std::make_pair(groupValid, groupLen);
-            }
-        }
-        if (!wflitValidity.empty() && !wInProgress.empty()) {
-            throw std::logic_error("Screwed up resolveWFlits");
         }
     }
 
@@ -913,16 +1302,7 @@ protected:
 
 public:
     BaseExposerScoreboard(std::unordered_map<key_manager::KeyId, U128>& secrets, bool expectPassthroughInvalidTransactions = false) : secrets(secrets),
-        expectPassthroughInvalidTransactions(expectPassthroughInvalidTransactions),
-        awInProgress(),
-        expectedAw(),
-        wInProgress(),
-        wflitValidity(),
-        expectedW(),
-        arInProgress(),
-        expectedAr(),
-        expectedB(),
-        expectedR() {}
+        expectPassthroughInvalidTransactions(expectPassthroughInvalidTransactions) {}
     virtual ~BaseExposerScoreboard() = default;
     // Should raise a test_failure on failure
     virtual void monitorAndScore(DUT& dut, uint64_t tick) {
@@ -933,79 +1313,25 @@ public:
             outputs.push_back(output);
 
         if (output.clean_flit_aw) {
-            if (expectedAw.empty()) {
-                throw test_failure(fmt::format("BaseExposerScoreboard got unexpected aw flit:\nexpected None\ngot: {}\n", output.clean_flit_aw.value()));
-            } else {
-                auto expected = expectedAw.front();
-                expectedAw.pop_front();
-                if (output.clean_flit_aw.value() != expected.value) {
-                    throw test_failure(fmt::format("BaseExposerScoreboard got unexpected aw flit:\nexpected: {}\ngot: {}\n", expected, output.clean_flit_aw.value()));
-                }
-                aw_aw_latency.push_back(tick - expected.tick_initiated);
-            }
+            confirmedWriteTxns++;
+            wTxns.checkAndFwdAwFlit(tick, output.clean_flit_aw.value());
         }
 
         if (output.clean_flit_ar) {
-            if (expectedAr.empty()) {
-                throw test_failure(fmt::format("BaseExposerScoreboard got unexpected ar flit:\nexpected None\ngot: {}\n", output.clean_flit_ar.value()));
-            } else {
-                auto expected = expectedAr.front();
-                expectedAr.pop_front();
-                if (output.clean_flit_ar.value() != expected.value) {
-                    throw test_failure(fmt::format("BaseExposerScoreboard got unexpected ar flit:\nexpected: {}\ngot: {}\n", expected, output.clean_flit_ar.value()));
-                }
-                ar_ar_latency.push_back(tick - expected.tick_initiated);
-            }
+            confirmedReadTxns++;
+            rTxns.checkAndFwdArFlit(tick, output.clean_flit_ar.value());
         }
 
         if (output.clean_flit_w) {
-            if (expectedW.empty()) {
-                throw test_failure(fmt::format("BaseExposerScoreboard got unexpected w flit:\nexpected None, had {} unresolved and {} groups\ngot: {}\n", wInProgress, wflitValidity, output.clean_flit_w.value()));
-            } else {
-                auto expected = expectedW.front();
-                expectedW.pop_front();
-                if (output.clean_flit_w.value() != expected.value) {
-                    throw test_failure(fmt::format("BaseExposerScoreboard got unexpected w flit:\nexpected {}, had {} unresolved and {} groups\ngot: {}\n", expected, wInProgress, wflitValidity, output.clean_flit_w.value()));
-                }
-                // TODO: note that this is the latency of entering the pipe e.g. the latency from the input port being *ready* to it coming out the other end. Not the latency from the input becoming available.
-                w_w_latency.push_back(tick - expected.tick_initiated);
-            }
+            wTxns.checkAndFwdWFlit(tick, output.clean_flit_w.value());
         }
 
         if (output.iocap_flit_b) {
-            auto& expectedForId = expectedB[output.iocap_flit_b.value().bid];
-            if (expectedForId.empty()) {
-                throw test_failure(fmt::format("BaseExposerScoreboard got unexpected b flit:\nexpected None\nall expected: {}\ngot: {}\n", expectedB, output.iocap_flit_b.value()));
-            } else {
-                auto expected = expectedForId.front();
-                expectedForId.pop_front();
-                if (output.iocap_flit_b.value() != expected.value) {
-                    throw test_failure(fmt::format("BaseExposerScoreboard got unexpected b flit:\nexpected: {}\nall expected: {}\ngot: {}\n", expected, expectedB, output.iocap_flit_b.value()));
-                }
-                if (expected.was_correct) {
-                    b_b_latency.push_back(tick - expected.tick_initiated);
-                } else {
-                    aw_b_latency.push_back(tick - expected.tick_initiated);
-                }
-            }
+            wTxns.checkBFlitSentUpstream(tick, output.iocap_flit_b.value());
         }
 
         if (output.iocap_flit_r) {
-            auto& expectedForId = expectedR[output.iocap_flit_r.value().rid];
-            if (expectedForId.empty()) {
-                throw test_failure(fmt::format("BaseExposerScoreboard got unexpected r flit:\nexpected None\nall expected: {}\ngot: {}\n", expectedR, output.iocap_flit_r.value()));
-            } else {
-                auto expected = expectedForId.front();
-                expectedForId.pop_front();
-                if (output.iocap_flit_r.value() != expected.value) {
-                    throw test_failure(fmt::format("BaseExposerScoreboard got unexpected r flit:\nexpected: {}\nall expected: {}\ngot: {}\n", expected, expectedR, output.iocap_flit_r.value()));
-                }
-                if (expected.was_correct) {
-                    r_r_latency.push_back(tick - expected.tick_initiated);
-                } else {
-                    ar_r_latency.push_back(tick - expected.tick_initiated);
-                }
-            }
+            rTxns.checkAndFwdRFlit(tick, output.iocap_flit_r.value());
         }
 
         ShimmedExposerInput<V> input{0};
@@ -1016,28 +1342,10 @@ public:
 
         // Add incoming B and R flits from the sanitized-side to the list of expected outputs
         if (input.clean_flit_b) {
-            auto expected = input.clean_flit_b.value();
-            expectedB[expected.bid].push_back({
-                tick, 
-                true, // This is from a valid B flit from the sanitized side
-                axi::IOCapAxi::BFlit_id4 {
-                    .bresp = expected.bresp,
-                    .bid = expected.bid
-                }
-            });
+            wTxns.checkBFlitFromDownstream(tick, input.clean_flit_b.value());
         }
         if (input.clean_flit_r) {
-            auto expected = input.clean_flit_r.value();
-            expectedR[expected.rid].push_back({
-                tick,
-                true, // This is from a valid R flit from the sanitized side
-                axi::IOCapAxi::RFlit_id4_data32 {
-                    .rlast = expected.rlast,
-                    .rresp = expected.rresp,
-                    .rdata = expected.rdata,
-                    .rid = expected.rid
-                }
-            });
+            rTxns.recvRFlitFromDownstream(tick, input.clean_flit_r.value());
         }
 
         // Resolve AW flits to see if there's a new valid/invalid burst
@@ -1048,7 +1356,9 @@ public:
         resolveArFlit(tick, input.iocap_flit_ar);
 
         // Add incoming W flits from the IOCap-side to the list of expected output W flits, if possible.
-        resolveWFlits(tick, input.iocap_flit_w);
+        if (input.iocap_flit_w) {
+            wTxns.recvWFlitFromUpstream(tick, input.iocap_flit_w.value());
+        }
 
         this->monitorAndScoreKeyManager(dut, tick, input.keyManager, output.keyManager);
     }
@@ -1056,71 +1366,51 @@ public:
     virtual void endTest() override {
         // TODO log inputs and outputs
         if (
-            !this->awInProgress.empty() ||
-            !this->expectedAw.empty() ||
-            !this->wInProgress.empty() ||
-            !this->expectedW.empty() ||
-            !this->arInProgress.empty() ||
-            !this->expectedAr.empty() ||
-            // Check foreach ID in {B, R}
-            std::any_of(this->expectedB.begin(), this->expectedB.end(), [](auto& expectedForId) { return !expectedForId.empty(); }) ||
-            std::any_of(this->expectedR.begin(), this->expectedR.end(), [](auto& expectedForId) { return !expectedForId.empty(); }) ||
-            (this->expectedGoodWrite != this->signalledGoodWrite) ||
-            (this->expectedBadWrite != this->signalledBadWrite) ||
-            (this->expectedGoodRead != this->signalledGoodRead) ||
-            (this->expectedBadRead != this->signalledBadRead)
+            !this->wTxns.empty() ||
+            !this->rTxns.empty() ||
+            (this->confirmedWriteTxns != this->signalledGoodWrite) ||
+            (this->totalWriteTxns - this->confirmedWriteTxns != this->signalledBadWrite) ||
+            (this->confirmedReadTxns != this->signalledGoodRead) ||
+            (this->totalReadTxns - this->confirmedReadTxns != this->signalledBadRead)
         ) {
             throw test_failure(fmt::format(
                 "BaseExposerScoreboard unexpected outcome:\n"
-                "aw: {} in progress, {} expected\n"
-                "w: {} in progress, {} expected\n"
-                "ar: {} in progress, {} expected\n"
-                "b: {}\n"
-                "r: {}\n"
+                "wTxns: {}\n"
+                "rTxns: {}\n"
                 "perf counters exp/act:\n"
                 "good write {}/{}\n"
                 "bad write {}/{}\n"
-                "bad write bad cap {}\n"
-                "bad write good cap bad range {}\n"
                 "good read {}/{}\n"
                 "bad read {}/{}\n"
-                "bad read bad cap {}\n"
-                "bad read good cap bad range {}\n"
                 ,
-                this->awInProgress, this->expectedAw,
-                this->wInProgress, this->expectedW,
-                this->arInProgress, this->expectedAr,
-                this->expectedB,
-                this->expectedR,
-                this->expectedGoodWrite, this->signalledGoodWrite,
-                this->expectedBadWrite, this->signalledBadWrite,
-                this->expectedBadWriteBadCap, this->expectedBadWriteGoodCapBadRange,
-                this->expectedGoodRead, this->signalledGoodRead,
-                this->expectedBadRead, this->signalledBadRead,
-                this->expectedBadReadBadCap, this->expectedBadReadGoodCapBadRange
+                this->wTxns, this->rTxns,
+                this->confirmedWriteTxns, this->signalledGoodWrite,
+                this->totalWriteTxns - this->confirmedWriteTxns, this->signalledBadWrite,
+                this->confirmedReadTxns, this->signalledGoodRead,
+                this->totalReadTxns - this->confirmedReadTxns, this->signalledBadRead
             ));
         }
     }
     #define STRINGIFY(x) STRINGIFY2(x)
     #define STRINGIFY2(x) #x
-    #define DUMP_MEAN_OF(x) fmt::println(stats, STRINGIFY(x) "_mean = {}", mean_of(x));
+    #define DUMP_MEAN_OF(name, x) fmt::println(stats, STRINGIFY(name) "_mean = {}", mean_of(x));
     virtual void dump_toml_stats(FILE* stats) override {
-        DUMP_MEAN_OF(aw_aw_latency);
-        DUMP_MEAN_OF(aw_b_latency);
-        DUMP_MEAN_OF(ar_ar_latency);
-        DUMP_MEAN_OF(ar_r_latency);
-        DUMP_MEAN_OF(w_w_latency);
-        DUMP_MEAN_OF(b_b_latency);
-        DUMP_MEAN_OF(r_r_latency);
-        fmt::println(stats, "exp_valid_write = {}", expectedGoodWrite);
-        fmt::println(stats, "exp_invalid_write = {}", expectedBadWrite);
-        fmt::println(stats, "exp_invalid_write_bad_cap = {}", expectedBadWriteBadCap);
-        fmt::println(stats, "exp_invalid_write_good_cap_bad_range = {}", expectedBadWriteGoodCapBadRange);
-        fmt::println(stats, "exp_valid_read = {}", expectedGoodRead);
-        fmt::println(stats, "exp_invalid_read = {}", expectedBadRead);
-        fmt::println(stats, "exp_invalid_read_bad_cap = {}", expectedBadReadBadCap);
-        fmt::println(stats, "exp_invalid_read_good_cap_bad_range = {}", expectedBadReadGoodCapBadRange);
-        fmt::println(stats, "valid_cap_ratio = {}", (double(expectedGoodWrite+expectedGoodRead))/(double(expectedGoodWrite+expectedGoodRead+expectedBadWrite+expectedBadRead)));
+        DUMP_MEAN_OF(aw_aw_latency, wTxns.aw_aw_latency);
+        DUMP_MEAN_OF(ar_ar_latency, rTxns.ar_ar_latency);
+        DUMP_MEAN_OF(w_w_latency, wTxns.w_w_latency);
+        DUMP_MEAN_OF(b_b_latency, wTxns.b_b_latency);
+        DUMP_MEAN_OF(r_r_latency, rTxns.r_r_latency);
+        fmt::println(stats, "total_write = {}", totalWriteTxns);
+        fmt::println(stats, "confirmed_write = {}", confirmedWriteTxns);
+        fmt::println(stats, "exp_invalid_write = {}", totalWriteTxns - confirmedWriteTxns);
+        fmt::println(stats, "perf_valid_write = {}", signalledGoodWrite);
+        fmt::println(stats, "perf_invalid_write = {}", signalledBadWrite);
+        fmt::println(stats, "total_read = {}", totalReadTxns);
+        fmt::println(stats, "confirmed_read = {}", confirmedReadTxns);
+        fmt::println(stats, "exp_invalid_read = {}", totalReadTxns - confirmedReadTxns);
+        fmt::println(stats, "perf_valid_read = {}", signalledGoodRead);
+        fmt::println(stats, "perf_invalid_read = {}", signalledBadRead);
+        fmt::println(stats, "valid_txn_ratio = {}", (double(confirmedWriteTxns + confirmedReadTxns))/(double(totalWriteTxns + totalReadTxns)));
     }
     #undef DUMP_MEAN_OF
     #undef STRINGIFY2
@@ -1193,50 +1483,29 @@ public:
         // TODO log inputs and outputs
         if (
             !expectedEpochCompletions.empty() ||
-            !this->awInProgress.empty() ||
-            !this->expectedAw.empty() ||
-            !this->wInProgress.empty() ||
-            !this->expectedW.empty() ||
-            !this->arInProgress.empty() ||
-            !this->expectedAr.empty() ||
-            // Check foreach ID in {B, R}
-            std::any_of(this->expectedB.begin(), this->expectedB.end(), [](auto& expectedForId) { return !expectedForId.empty(); }) ||
-            std::any_of(this->expectedR.begin(), this->expectedR.end(), [](auto& expectedForId) { return !expectedForId.empty(); }) ||
-            (this->expectedGoodWrite != this->signalledGoodWrite) ||
-            (this->expectedBadWrite != this->signalledBadWrite) ||
-            (this->expectedGoodRead != this->signalledGoodRead) ||
-            (this->expectedBadRead != this->signalledBadRead)
+            !this->wTxns.empty() ||
+            !this->rTxns.empty() ||
+            (this->confirmedWriteTxns != this->signalledGoodWrite) ||
+            (this->totalWriteTxns - this->confirmedWriteTxns != this->signalledBadWrite) ||
+            (this->confirmedReadTxns != this->signalledGoodRead) ||
+            (this->totalReadTxns - this->confirmedReadTxns != this->signalledBadRead)
         ) {
             throw test_failure(fmt::format(
                 "BaseExposerScoreboard unexpected outcome:\n"
                 "epoch completions: {}\n"
-                "aw: {} in progress, {} expected\n"
-                "w: {} in progress, {} expected\n"
-                "ar: {} in progress, {} expected\n"
-                "b: {}\n"
-                "r: {}\n"
+                "wTxns: {}\n"
+                "rTxns: {}\n"
                 "perf counters exp/act:\n"
                 "good write {}/{}\n"
                 "bad write {}/{}\n"
-                "bad write bad cap {}\n"
-                "bad write good cap bad range {}\n"
                 "good read {}/{}\n"
                 "bad read {}/{}\n"
-                "bad read bad cap {}\n"
-                "bad read good cap bad range {}\n"
                 ,
-                expectedEpochCompletions,
-                this->awInProgress, this->expectedAw,
-                this->wInProgress, this->expectedW,
-                this->arInProgress, this->expectedAr,
-                this->expectedB,
-                this->expectedR,
-                this->expectedGoodWrite, this->signalledGoodWrite,
-                this->expectedBadWrite, this->signalledBadWrite,
-                this->expectedBadWriteBadCap, this->expectedBadWriteGoodCapBadRange,
-                this->expectedGoodRead, this->signalledGoodRead,
-                this->expectedBadRead, this->signalledBadRead,
-                this->expectedBadReadBadCap, this->expectedBadReadGoodCapBadRange
+                this->wTxns, this->rTxns,
+                this->confirmedWriteTxns, this->signalledGoodWrite,
+                this->totalWriteTxns - this->confirmedWriteTxns, this->signalledBadWrite,
+                this->confirmedReadTxns, this->signalledGoodRead,
+                this->totalReadTxns - this->confirmedReadTxns, this->signalledBadRead
             ));
         }
     }
@@ -1273,6 +1542,11 @@ protected:
                 }
             }
         }*/
+        if (inputKeyManager.killKeyMessage.has_value()) {
+            // TODO this should be delayed by a cycle?
+            this->wTxns.invalidateFromKey(inputKeyManager.killKeyMessage.value());
+            this->rTxns.invalidateFromKey(inputKeyManager.killKeyMessage.value());
+        }
 
         if (outputKeyManager.bumpPerfCounterGoodWrite) {
             this->signalledGoodWrite++;
@@ -1611,6 +1885,53 @@ public:
     }
 };
 
+template<class DUT, CapType ctype>
+class UVMSimpleRevokeWhileChecking_KeyMngrV2 : public ExposerStimulus<DUT, ctype, KeyMngrV2> {
+public:
+    virtual ~UVMSimpleRevokeWhileChecking_KeyMngrV2() = default;
+    virtual std::string name() override {
+        return fmt::format("Single Valid-Key Valid-Cap Valid-ReadWrite, revoked while in progress");
+    }
+    UVMSimpleRevokeWhileChecking_KeyMngrV2() : ExposerStimulus<DUT, ctype, KeyMngrV2>(
+        new BasicKeyManagerShimStimulus<DUT, KeyMngrV2>(),
+        new BasicSanitizedMemStimulus<DUT>()
+    ) {}
+    virtual void driveInputsForTick(std::mt19937& rng, DUT& dut, uint64_t tick) {
+        const key_manager::KeyId secret_id = 111;
+        if (tick == 100){
+            // Enqueue a transaction, including creating secret keys
+
+            const U128 key = U128::random(rng);
+            const uint8_t axi_id = 0b1011;
+
+            this->keyMgr->secrets[secret_id] = key;
+            {
+                auto cap_data = this->test_legacy_random_initial_resource_cap(rng, secret_id, CCapPerms_Read);
+                auto axi_params = cap_data.valid_transfer_params(32, 10);
+                this->enqueueReadBurst(cap_data.cap, axi_params, axi_id);
+            }
+            {
+                auto cap_data = this->test_legacy_random_initial_resource_cap(rng, secret_id, CCapPerms_Write);
+                auto axi_params = cap_data.valid_transfer_params(32, 10);
+                this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
+            }
+        }
+
+        ExposerStimulus<DUT, ctype, KeyMngrV2>::driveInputsForTick(rng, dut, tick);
+
+        if (tick == 140) {
+            // We have finished key retrieval, revoke
+            WRITE_INPUT(keyStoreShim_killKeyMessage, secret_id);
+        } else {
+            NOWRITE_INPUT(keyStoreShim_killKeyMessage);
+        }
+    }
+    virtual bool shouldFinish(uint64_t tick) override {
+        // Each revocation = 450 cycles of transactions then 50 for revocation
+        return tick >= 500;
+    }
+};
+
 template<class DUT, CapType ctype, KeyMngrVersion V>
 class UVMStreamOfNValidTransactions : public ExposerStimulus<DUT, ctype, V> {
     CCapPerms perms;
@@ -1760,6 +2081,8 @@ public:
 
 
 
+#undef NOWRITE_INPUT
+#undef WRITE_INPUT
 #undef POP_OUTPUT
 #undef PEEK_OUTPUT
 #undef CANPEEK_OUTPUT
@@ -1872,6 +2195,13 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
             // TODO figure out how to do more accurate UVM revocation testing
             new ExposerUVMishTest(
                 new UVMTransactionsBetweenRevocations_KeyMngrV1<TheDUT, ctype>(5),
+                expectPassthroughInvalidTransactions
+            )
+        );
+    } else if constexpr (V == KeyMngrV2) {
+        tests.push_back(
+            new ExposerUVMishTest(
+                new UVMSimpleRevokeWhileChecking_KeyMngrV2<TheDUT, ctype>(),
                 expectPassthroughInvalidTransactions
             )
         );
