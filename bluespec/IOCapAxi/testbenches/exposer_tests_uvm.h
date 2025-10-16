@@ -439,10 +439,11 @@ protected:
     ValidCapWithRange<ctype> test_legacy_random_initial_resource_cap(std::mt19937& rng, uint32_t secret_id, CCapPerms perms) {
         return ValidCapWithRange(CapStruct<ctype>::legacy_random_initial_resource_cap(rng, keyMgr->secrets[secret_id], secret_id, perms));
     }
-    ValidCapWithRange<ctype> test_librust_random_valid_cap(std::mt19937& rng, uint32_t secret_id, int n_cavs=-1) {
+    ValidCapWithRange<ctype> test_librust_random_valid_cap(std::mt19937& rng, uint32_t secret_id, int n_cavs=-1, std::optional<CCapPerms> perms = std::nullopt){
         CCapU128 secret_key;
         keyMgr->secrets[secret_id].to_le(secret_key);
-        return ValidCapWithRange(CapStruct<ctype>::librust_rand_valid_cap(rng, &secret_key, &secret_id, n_cavs));
+        CCapPerms* perms_ptr = (perms.has_value()) ? &perms.value() : nullptr;
+        return ValidCapWithRange(CapStruct<ctype>::librust_rand_valid_cap(rng, &secret_key, &secret_id, perms_ptr, n_cavs));
     }
     MaybeValidCapWithRange<ctype> test_librust_random_edge_case_cap(std::mt19937& rng, uint32_t secret_id, uintptr_t edge_case) {
         CCapU128 secret_key;
@@ -1513,7 +1514,7 @@ public:
 
 template<class DUT, CapType ctype>
 class ExposerScoreboard<DUT, ctype, KeyMngrV2> : public BaseExposerScoreboard<DUT, ctype, KeyMngrV2> {
-    std::optional<key_manager::KeyId> killOnNextCycle;
+    // std::optional<key_manager::KeyId> killOnNextCycle;
 protected:
     // TODO test the rwValve_IncDecrement
 
@@ -1543,28 +1544,34 @@ protected:
                 }
             }
         }*/
-        if (killOnNextCycle.has_value()) {
-            // it is now the next cycle :)
-            this->wTxns.invalidateFromKey(killOnNextCycle.value());
-            this->rTxns.invalidateFromKey(killOnNextCycle.value());
-        }
+        // if (killOnNextCycle.has_value()) {
+        //     // it is now the next cycle :)
+        //     // fmt::println(stderr, "{} kill {}", tick, killOnNextCycle.value());
+        //     this->wTxns.invalidateFromKey(killOnNextCycle.value());
+        //     this->rTxns.invalidateFromKey(killOnNextCycle.value());
+        // }
 
         if (inputKeyManager.killKeyMessage.has_value()) {
-            killOnNextCycle = inputKeyManager.killKeyMessage;
+            this->wTxns.invalidateFromKey(inputKeyManager.killKeyMessage.value());
+            this->rTxns.invalidateFromKey(inputKeyManager.killKeyMessage.value());
         } else {
-            killOnNextCycle = std::nullopt;
+            // killOnNextCycle = std::nullopt;
         }
 
         if (outputKeyManager.bumpPerfCounterGoodWrite) {
+            fmt::println("V\tPerfGood\tWrite");
             this->signalledGoodWrite++;
         }
         if (outputKeyManager.bumpPerfCounterBadWrite) {
+            fmt::println("V\tPerfBad\tWrite");
             this->signalledBadWrite++;
         }
         if (outputKeyManager.bumpPerfCounterGoodRead) {
+            fmt::println("V\tPerfGood\tRead");
             this->signalledGoodRead++;
         }
         if (outputKeyManager.bumpPerfCounterBadRead) {
+            fmt::println("V\tPerfBad\tRead");
             this->signalledBadRead++;
         }
 
@@ -1576,8 +1583,8 @@ protected:
     }
 public:
     ExposerScoreboard(std::unordered_map<key_manager::KeyId, U128>& secrets, bool expectPassthroughInvalidTransactions = false) :
-        BaseExposerScoreboard<DUT, ctype, KeyMngrV2>(secrets, expectPassthroughInvalidTransactions),
-        killOnNextCycle(std::nullopt)
+        BaseExposerScoreboard<DUT, ctype, KeyMngrV2>(secrets, expectPassthroughInvalidTransactions)
+        // killOnNextCycle(std::nullopt)
         {}
     virtual ~ExposerScoreboard() override = default;
     /*
@@ -1919,14 +1926,10 @@ public:
                 const uint8_t axi_id = 0b1011;
 
                 this->keyMgr->secrets[secret_id] = key;
-                auto cap_data = this->test_librust_random_valid_cap(rng, secret_id, n_cavs);
+                auto cap_data = this->test_librust_random_valid_cap(rng, secret_id, n_cavs, CCapPerms_ReadWrite);
                 auto axi_params = cap_data.valid_transfer_params(32, 1);
-                if (cap_data.perms & CCapPerms_Read) {
-                    this->enqueueReadBurst(cap_data.cap, axi_params, axi_id);
-                }
-                if (cap_data.perms & CCapPerms_Write) {
-                    this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
-                }
+                this->enqueueReadBurst(cap_data.cap, axi_params, axi_id);
+                this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
             }
         }
 

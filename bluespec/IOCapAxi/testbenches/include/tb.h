@@ -432,7 +432,13 @@ public:
 
                     // Only start driving at 20 to let the reset status settle
                     if (main_time >= 20) {
+                        // drive the inputs on the same tick the clock falls
                         generator->driveInputsForTick(this->rng, dut, main_time);
+                    }
+                } else if ((main_time % 10) == 1) {
+                    // process output just after the clock actually falls, so the circuit actually evaluates??
+                    // If I do this at time%10==0 then some binary event signals are wrong - e.g. bumpPerfCounterBadRead looks like bumpPerfCounterGoodRead (somehow??) 
+                    if (main_time >= 20) {
                         scoreboard->monitorAndScore(dut, main_time);
                     }
                 }

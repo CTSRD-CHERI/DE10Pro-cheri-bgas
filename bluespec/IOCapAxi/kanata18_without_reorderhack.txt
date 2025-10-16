@@ -1,0 +1,4957 @@
+Kanata	0004 // Test Single Valid-Key Valid-Cap Valid-ReadWrite 0-cav, revoked while in progress
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                   0	                  11	                   0
+L	                   0	0	'h0019611a184e0000 W#11
+I	                   1	                  11	                   0
+L	                   1	0	'h0019611a184e0000 R#11
+C	1
+S	                   0	10	B0
+S	                   1	10	B0
+C	1
+S	                   0	10	B1
+S	                   0	11	AwaitingKey
+S	                   1	10	B1
+S	                   1	11	AwaitingKeyRequest
+C	1
+S	                   0	10	B2
+S	                   1	10	B2
+S	                   1	11	AwaitingKey
+C	1
+V	KillKey	111
+E	                   0	10	B2
+S	                   0	11	HasKey
+E	                   1	10	B2
+S	                   1	11	HasKey
+C	1
+L	                   0	1	Checker 'h0
+S	                   0	11	Idle
+E	                   0	11	Idle
+// tick incrementInsert 'h0
+S	                   0	12	SigCheckFailedEarly
+S	                   0	13	AwaitingFlitBounds
+L	                   1	1	Checker 'h0
+S	                   1	11	Idle
+E	                   1	11	Idle
+// tick incrementInsert 'h0
+S	                   1	12	SigCheckFailedEarly
+S	                   1	13	AwaitingFlitBounds
+C	1
+S	                   0	13	AwaitingIOCapDecode
+S	                   1	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                   0	13	Decoded
+S	                   1	13	Decoded
+C	1
+S	                   0	12	SigCheckIdle
+E	                   0	12	SigCheckIdle
+E	                   0	13	Decoded
+S	                   1	12	SigCheckIdle
+E	                   1	12	SigCheckIdle
+E	                   1	13	Decoded
+C	1
+V	PerfBad	Write
+V	PerfBad	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h0019611a184e0000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },1,'h6f,False> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h0019611a184e0000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },0,'h6f,False>
+// write bump perf bad
+S	                   0	20	BlockInvalid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h0019611a184e0000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },1,'h6f,False>
+// ALLOWED False
+ // read bump perf bad
+S	                   1	20	BlockInvalid
+// tick incrementRetrieve 'h0
+// tick incrementRetrieve 'h0
+C	1
+S	                   0	20	ScoreboardCompleted
+R	                   0	                   0	0
+S	                   1	20	ScoreboardCompleted
+R	                   1	                   1	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                   2	                  11	                   0
+L	                   2	0	'h0021a309a97c0000 W#11
+I	                   3	                  11	                   0
+L	                   3	0	'h0021a309a97c0000 R#11
+C	1
+S	                   2	10	B0
+S	                   3	10	B0
+C	1
+S	                   2	10	B1
+S	                   2	11	AwaitingKey
+S	                   3	10	B1
+S	                   3	11	AwaitingKeyRequest
+C	1
+S	                   2	10	B2
+S	                   3	10	B2
+S	                   3	11	AwaitingKey
+C	1
+E	                   2	10	B2
+E	                   3	10	B2
+C	1
+V	KillKey	111
+L	                   2	1	Checker 'h1
+S	                   2	11	Idle
+E	                   2	11	Idle
+// tick incrementInsert 'h1
+S	                   2	12	SigCheckFailedEarly
+S	                   2	13	AwaitingFlitBounds
+L	                   3	1	Checker 'h1
+S	                   3	11	Idle
+E	                   3	11	Idle
+// tick incrementInsert 'h1
+S	                   3	12	SigCheckFailedEarly
+S	                   3	13	AwaitingFlitBounds
+C	1
+S	                   2	13	AwaitingIOCapDecode
+S	                   3	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                   2	13	Decoded
+S	                   3	13	Decoded
+C	1
+S	                   2	12	SigCheckIdle
+E	                   2	12	SigCheckIdle
+E	                   2	13	Decoded
+S	                   3	12	SigCheckIdle
+E	                   3	12	SigCheckIdle
+E	                   3	13	Decoded
+C	1
+V	PerfBad	Write
+V	PerfBad	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h0021a309a97c0000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },3,'h6f,False> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h0021a309a97c0000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },2,'h6f,False>
+// write bump perf bad
+S	                   2	20	BlockInvalid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h0021a309a97c0000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },3,'h6f,False>
+// ALLOWED False
+ // read bump perf bad
+S	                   3	20	BlockInvalid
+// tick incrementRetrieve 'h1
+// tick incrementRetrieve 'h1
+C	1
+S	                   2	20	ScoreboardCompleted
+R	                   2	                   2	0
+S	                   3	20	ScoreboardCompleted
+R	                   3	                   3	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                   4	                  11	                   0
+L	                   4	0	'h000a65af6ac70c00 W#11
+I	                   5	                  11	                   0
+L	                   5	0	'h000a65af6ac70c00 R#11
+C	1
+S	                   4	10	B0
+S	                   5	10	B0
+C	1
+S	                   4	10	B1
+S	                   4	11	AwaitingKey
+S	                   5	10	B1
+S	                   5	11	AwaitingKeyRequest
+C	1
+S	                   4	10	B2
+S	                   5	10	B2
+S	                   5	11	AwaitingKey
+C	1
+E	                   4	10	B2
+E	                   5	10	B2
+C	1
+L	                   4	1	Checker 'h2
+S	                   4	11	Idle
+E	                   4	11	Idle
+// tick incrementInsert 'h2
+S	                   4	12	AwaitingSigCheck
+S	                   4	13	AwaitingFlitBounds
+L	                   5	1	Checker 'h2
+S	                   5	11	Idle
+E	                   5	11	Idle
+// tick incrementInsert 'h2
+S	                   5	12	AwaitingSigCheck
+S	                   5	13	AwaitingFlitBounds
+C	1
+V	KillKey	111
+S	                   4	12	AwaitingSigCheck
+S	                   4	13	AwaitingIOCapDecode
+S	                   5	12	AwaitingSigCheck
+S	                   5	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                   4	13	Decoded
+S	                   5	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                   4	12	SigCheckIdle
+E	                   4	12	SigCheckIdle
+E	                   4	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                   5	12	SigCheckIdle
+E	                   5	12	SigCheckIdle
+E	                   5	13	Decoded
+C	1
+V	PerfBad	Write
+V	PerfBad	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h000a65af6ac70c00, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },5,'h6f,False> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h000a65af6ac70c00, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },4,'h6f,False>
+// write bump perf bad
+S	                   4	20	BlockInvalid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h000a65af6ac70c00, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },5,'h6f,False>
+// ALLOWED False
+ // read bump perf bad
+S	                   5	20	BlockInvalid
+// tick incrementRetrieve 'h2
+// tick incrementRetrieve 'h2
+C	1
+S	                   4	20	ScoreboardCompleted
+R	                   4	                   4	0
+S	                   5	20	ScoreboardCompleted
+R	                   5	                   5	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                   6	                  11	                   0
+L	                   6	0	'h00199ee69aa60000 W#11
+I	                   7	                  11	                   0
+L	                   7	0	'h00199ee69aa60000 R#11
+C	1
+S	                   6	10	B0
+S	                   7	10	B0
+C	1
+S	                   6	10	B1
+S	                   6	11	AwaitingKey
+S	                   7	10	B1
+S	                   7	11	AwaitingKeyRequest
+C	1
+S	                   6	10	B2
+S	                   7	10	B2
+S	                   7	11	AwaitingKey
+C	1
+E	                   6	10	B2
+E	                   7	10	B2
+C	1
+L	                   6	1	Checker 'h3
+S	                   6	11	Idle
+E	                   6	11	Idle
+// tick incrementInsert 'h3
+S	                   6	12	AwaitingSigCheck
+S	                   6	13	AwaitingFlitBounds
+L	                   7	1	Checker 'h3
+S	                   7	11	Idle
+E	                   7	11	Idle
+// tick incrementInsert 'h3
+S	                   7	12	AwaitingSigCheck
+S	                   7	13	AwaitingFlitBounds
+C	1
+S	                   6	13	AwaitingIOCapDecode
+S	                   7	13	AwaitingIOCapDecode
+C	1
+V	KillKey	111
+S	                   6	12	AwaitingSigCheck
+S	                   7	12	AwaitingSigCheck
+C	1
+C	1
+S	                   6	13	Decoded
+S	                   7	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                   6	12	SigCheckIdle
+E	                   6	12	SigCheckIdle
+E	                   6	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                   7	12	SigCheckIdle
+E	                   7	12	SigCheckIdle
+E	                   7	13	Decoded
+C	1
+V	PerfBad	Write
+V	PerfBad	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h00199ee69aa60000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },7,'h6f,False> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h00199ee69aa60000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },6,'h6f,False>
+// write bump perf bad
+S	                   6	20	BlockInvalid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h00199ee69aa60000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },7,'h6f,False>
+// ALLOWED False
+ // read bump perf bad
+S	                   7	20	BlockInvalid
+// tick incrementRetrieve 'h3
+// tick incrementRetrieve 'h3
+C	1
+S	                   6	20	ScoreboardCompleted
+R	                   6	                   6	0
+S	                   7	20	ScoreboardCompleted
+R	                   7	                   7	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                   8	                  11	                   0
+L	                   8	0	'h001356ccc4560000 W#11
+I	                   9	                  11	                   0
+L	                   9	0	'h001356ccc4560000 R#11
+C	1
+S	                   8	10	B0
+S	                   9	10	B0
+C	1
+S	                   8	10	B1
+S	                   8	11	AwaitingKey
+S	                   9	10	B1
+S	                   9	11	AwaitingKeyRequest
+C	1
+S	                   8	10	B2
+S	                   9	10	B2
+S	                   9	11	AwaitingKey
+C	1
+E	                   8	10	B2
+E	                   9	10	B2
+C	1
+L	                   8	1	Checker 'h4
+S	                   8	11	Idle
+E	                   8	11	Idle
+// tick incrementInsert 'h4
+S	                   8	12	AwaitingSigCheck
+S	                   8	13	AwaitingFlitBounds
+L	                   9	1	Checker 'h4
+S	                   9	11	Idle
+E	                   9	11	Idle
+// tick incrementInsert 'h4
+S	                   9	12	AwaitingSigCheck
+S	                   9	13	AwaitingFlitBounds
+C	1
+S	                   8	13	AwaitingIOCapDecode
+S	                   9	13	AwaitingIOCapDecode
+C	1
+C	1
+V	KillKey	111
+S	                   8	12	AwaitingSigCheck
+S	                   9	12	AwaitingSigCheck
+C	1
+S	                   8	13	Decoded
+S	                   9	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                   8	12	SigCheckIdle
+E	                   8	12	SigCheckIdle
+E	                   8	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                   9	12	SigCheckIdle
+E	                   9	12	SigCheckIdle
+E	                   9	13	Decoded
+C	1
+V	PerfBad	Write
+V	PerfBad	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h001356ccc4560000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },9,'h6f,False> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h001356ccc4560000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },8,'h6f,False>
+// write bump perf bad
+S	                   8	20	BlockInvalid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h001356ccc4560000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },9,'h6f,False>
+// ALLOWED False
+ // read bump perf bad
+S	                   9	20	BlockInvalid
+// tick incrementRetrieve 'h4
+// tick incrementRetrieve 'h4
+C	1
+S	                   8	20	ScoreboardCompleted
+R	                   8	                   8	0
+S	                   9	20	ScoreboardCompleted
+R	                   9	                   9	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  10	                  11	                   0
+L	                  10	0	'h0026ab3a52ae0000 W#11
+I	                  11	                  11	                   0
+L	                  11	0	'h0026ab3a52ae0000 R#11
+C	1
+S	                  10	10	B0
+S	                  11	10	B0
+C	1
+S	                  10	10	B1
+S	                  10	11	AwaitingKey
+S	                  11	10	B1
+S	                  11	11	AwaitingKeyRequest
+C	1
+S	                  10	10	B2
+S	                  11	10	B2
+S	                  11	11	AwaitingKey
+C	1
+E	                  10	10	B2
+E	                  11	10	B2
+C	1
+L	                  10	1	Checker 'h5
+S	                  10	11	Idle
+E	                  10	11	Idle
+// tick incrementInsert 'h5
+S	                  10	12	AwaitingSigCheck
+S	                  10	13	AwaitingFlitBounds
+L	                  11	1	Checker 'h5
+S	                  11	11	Idle
+E	                  11	11	Idle
+// tick incrementInsert 'h5
+S	                  11	12	AwaitingSigCheck
+S	                  11	13	AwaitingFlitBounds
+C	1
+S	                  10	13	AwaitingIOCapDecode
+S	                  11	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+V	KillKey	111
+S	                  10	12	AwaitingSigCheck
+S	                  10	13	Decoded
+S	                  11	12	AwaitingSigCheck
+S	                  11	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  10	12	SigCheckIdle
+E	                  10	12	SigCheckIdle
+E	                  10	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  11	12	SigCheckIdle
+E	                  11	12	SigCheckIdle
+E	                  11	13	Decoded
+C	1
+V	PerfBad	Write
+V	PerfBad	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h0026ab3a52ae0000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },11,'h6f,False> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h0026ab3a52ae0000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },10,'h6f,False>
+// write bump perf bad
+S	                  10	20	BlockInvalid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h0026ab3a52ae0000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },11,'h6f,False>
+// ALLOWED False
+ // read bump perf bad
+S	                  11	20	BlockInvalid
+// tick incrementRetrieve 'h5
+// tick incrementRetrieve 'h5
+C	1
+S	                  10	20	ScoreboardCompleted
+R	                  10	                  10	0
+S	                  11	20	ScoreboardCompleted
+R	                  11	                  11	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  12	                  11	                   0
+L	                  12	0	'h0033b65152180000 W#11
+I	                  13	                  11	                   0
+L	                  13	0	'h0033b65152180000 R#11
+C	1
+S	                  12	10	B0
+S	                  13	10	B0
+C	1
+S	                  12	10	B1
+S	                  12	11	AwaitingKey
+S	                  13	10	B1
+S	                  13	11	AwaitingKeyRequest
+C	1
+S	                  12	10	B2
+S	                  13	10	B2
+S	                  13	11	AwaitingKey
+C	1
+E	                  12	10	B2
+E	                  13	10	B2
+C	1
+L	                  12	1	Checker 'h0
+S	                  12	11	Idle
+E	                  12	11	Idle
+// tick incrementInsert 'h0
+S	                  12	12	AwaitingSigCheck
+S	                  12	13	AwaitingFlitBounds
+L	                  13	1	Checker 'h0
+S	                  13	11	Idle
+E	                  13	11	Idle
+// tick incrementInsert 'h0
+S	                  13	12	AwaitingSigCheck
+S	                  13	13	AwaitingFlitBounds
+C	1
+S	                  12	13	AwaitingIOCapDecode
+S	                  13	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  12	13	Decoded
+S	                  13	13	Decoded
+C	1
+V	KillKey	111
+S	                  12	12	AwaitingSigCheck
+S	                  13	12	AwaitingSigCheck
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  12	12	SigCheckIdle
+E	                  12	12	SigCheckIdle
+E	                  12	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  13	12	SigCheckIdle
+E	                  13	12	SigCheckIdle
+E	                  13	13	Decoded
+C	1
+V	PerfBad	Write
+V	PerfBad	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h0033b65152180000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },13,'h6f,False> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h0033b65152180000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },12,'h6f,False>
+// write bump perf bad
+S	                  12	20	BlockInvalid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h0033b65152180000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },13,'h6f,False>
+// ALLOWED False
+ // read bump perf bad
+S	                  13	20	BlockInvalid
+// tick incrementRetrieve 'h0
+// tick incrementRetrieve 'h0
+C	1
+S	                  12	20	ScoreboardCompleted
+R	                  12	                  12	0
+S	                  13	20	ScoreboardCompleted
+R	                  13	                  13	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  14	                  11	                   0
+L	                  14	0	'h001e175fa2120000 W#11
+I	                  15	                  11	                   0
+L	                  15	0	'h001e175fa2120000 R#11
+C	1
+S	                  14	10	B0
+S	                  15	10	B0
+C	1
+S	                  14	10	B1
+S	                  14	11	AwaitingKey
+S	                  15	10	B1
+S	                  15	11	AwaitingKeyRequest
+C	1
+S	                  14	10	B2
+S	                  15	10	B2
+S	                  15	11	AwaitingKey
+C	1
+E	                  14	10	B2
+E	                  15	10	B2
+C	1
+L	                  14	1	Checker 'h1
+S	                  14	11	Idle
+E	                  14	11	Idle
+// tick incrementInsert 'h1
+S	                  14	12	AwaitingSigCheck
+S	                  14	13	AwaitingFlitBounds
+L	                  15	1	Checker 'h1
+S	                  15	11	Idle
+E	                  15	11	Idle
+// tick incrementInsert 'h1
+S	                  15	12	AwaitingSigCheck
+S	                  15	13	AwaitingFlitBounds
+C	1
+S	                  14	13	AwaitingIOCapDecode
+S	                  15	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  14	13	Decoded
+S	                  15	13	Decoded
+C	1
+C	1
+V	KillKey	111
+// flitCompleted from AwaitingSigCheck
+S	                  14	12	SigCheckIdle
+E	                  14	12	SigCheckIdle
+E	                  14	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  15	12	SigCheckIdle
+E	                  15	12	SigCheckIdle
+E	                  15	13	Decoded
+C	1
+V	PerfBad	Write
+V	PerfBad	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h001e175fa2120000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },15,'h6f,False> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h001e175fa2120000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },14,'h6f,False>
+// write bump perf bad
+S	                  14	20	BlockInvalid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h001e175fa2120000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },15,'h6f,False>
+// ALLOWED False
+ // read bump perf bad
+S	                  15	20	BlockInvalid
+// tick incrementRetrieve 'h1
+// tick incrementRetrieve 'h1
+C	1
+S	                  14	20	ScoreboardCompleted
+R	                  14	                  14	0
+S	                  15	20	ScoreboardCompleted
+R	                  15	                  15	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  16	                  11	                   0
+L	                  16	0	'h00244d2e77000000 W#11
+I	                  17	                  11	                   0
+L	                  17	0	'h00244d2e77000000 R#11
+C	1
+S	                  16	10	B0
+S	                  17	10	B0
+C	1
+S	                  16	10	B1
+S	                  16	11	AwaitingKey
+S	                  17	10	B1
+S	                  17	11	AwaitingKeyRequest
+C	1
+S	                  16	10	B2
+S	                  17	10	B2
+S	                  17	11	AwaitingKey
+C	1
+E	                  16	10	B2
+E	                  17	10	B2
+C	1
+L	                  16	1	Checker 'h2
+S	                  16	11	Idle
+E	                  16	11	Idle
+// tick incrementInsert 'h2
+S	                  16	12	AwaitingSigCheck
+S	                  16	13	AwaitingFlitBounds
+L	                  17	1	Checker 'h2
+S	                  17	11	Idle
+E	                  17	11	Idle
+// tick incrementInsert 'h2
+S	                  17	12	AwaitingSigCheck
+S	                  17	13	AwaitingFlitBounds
+C	1
+S	                  16	13	AwaitingIOCapDecode
+S	                  17	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  16	13	Decoded
+S	                  17	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  16	12	SigCheckIdle
+E	                  16	12	SigCheckIdle
+E	                  16	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  17	12	SigCheckIdle
+E	                  17	12	SigCheckIdle
+E	                  17	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+V	KillKey	111
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h00244d2e77000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },17,'h6f,False> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h00244d2e77000000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },16,'h6f,False>
+// write bump perf bad
+S	                  16	20	BlockInvalid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h00244d2e77000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },17,'h6f,False>
+// ALLOWED False
+ // read bump perf bad
+S	                  17	20	BlockInvalid
+// tick incrementRetrieve 'h2
+// tick incrementRetrieve 'h2
+C	1
+S	                  16	20	ScoreboardCompleted
+R	                  16	                  16	0
+S	                  17	20	ScoreboardCompleted
+R	                  17	                  17	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  18	                  11	                   0
+L	                  18	0	'h00085eeab1000000 W#11
+I	                  19	                  11	                   0
+L	                  19	0	'h00085eeab1000000 R#11
+C	1
+S	                  18	10	B0
+S	                  19	10	B0
+C	1
+S	                  18	10	B1
+S	                  18	11	AwaitingKey
+S	                  19	10	B1
+S	                  19	11	AwaitingKeyRequest
+C	1
+S	                  18	10	B2
+S	                  19	10	B2
+S	                  19	11	AwaitingKey
+C	1
+E	                  18	10	B2
+E	                  19	10	B2
+C	1
+L	                  18	1	Checker 'h3
+S	                  18	11	Idle
+E	                  18	11	Idle
+// tick incrementInsert 'h3
+S	                  18	12	AwaitingSigCheck
+S	                  18	13	AwaitingFlitBounds
+L	                  19	1	Checker 'h3
+S	                  19	11	Idle
+E	                  19	11	Idle
+// tick incrementInsert 'h3
+S	                  19	12	AwaitingSigCheck
+S	                  19	13	AwaitingFlitBounds
+C	1
+S	                  18	13	AwaitingIOCapDecode
+S	                  19	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  18	13	Decoded
+S	                  19	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  18	12	SigCheckIdle
+E	                  18	12	SigCheckIdle
+E	                  18	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  19	12	SigCheckIdle
+E	                  19	12	SigCheckIdle
+E	                  19	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h00085eeab1000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },19,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h00085eeab1000000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },18,'h6f,True>
+// write bump perf good
+S	                  18	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h00085eeab1000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },19,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  19	20	SendValid
+// tick incrementRetrieve 'h3
+V	ScoreboardWrite	<18,'h6f>
+// tick incrementRetrieve 'h3
+V	ScoreboardWrite	<19,'h6f>
+C	1
+V	KillKey	111
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<18,'h6f>
+V	ScoreboardFindComplete	<19,'h6f>
+C	1
+S	                  18	20	ScoreboardCompleted
+R	                  18	                  18	0
+S	                  19	20	ScoreboardCompleted
+R	                  19	                  19	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  20	                  11	                   0
+L	                  20	0	'h0000000000000000 W#11
+I	                  21	                  11	                   0
+L	                  21	0	'h0000000000000000 R#11
+C	1
+S	                  20	10	B0
+S	                  21	10	B0
+C	1
+S	                  20	10	B1
+S	                  20	11	AwaitingKey
+S	                  21	10	B1
+S	                  21	11	AwaitingKeyRequest
+C	1
+S	                  20	10	B2
+S	                  21	10	B2
+S	                  21	11	AwaitingKey
+C	1
+E	                  20	10	B2
+E	                  21	10	B2
+C	1
+L	                  20	1	Checker 'h4
+S	                  20	11	Idle
+E	                  20	11	Idle
+// tick incrementInsert 'h4
+S	                  20	12	AwaitingSigCheck
+S	                  20	13	AwaitingFlitBounds
+L	                  21	1	Checker 'h4
+S	                  21	11	Idle
+E	                  21	11	Idle
+// tick incrementInsert 'h4
+S	                  21	12	AwaitingSigCheck
+S	                  21	13	AwaitingFlitBounds
+C	1
+S	                  20	13	AwaitingIOCapDecode
+S	                  21	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  20	13	Decoded
+S	                  21	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  20	12	SigCheckIdle
+E	                  20	12	SigCheckIdle
+E	                  20	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  21	12	SigCheckIdle
+E	                  21	12	SigCheckIdle
+E	                  21	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h0000000000000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },21,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h0000000000000000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },20,'h6f,True>
+// write bump perf good
+S	                  20	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h0000000000000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },21,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  21	20	SendValid
+// tick incrementRetrieve 'h4
+V	ScoreboardWrite	<20,'h6f>
+// tick incrementRetrieve 'h4
+V	ScoreboardWrite	<21,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+V	KillKey	111
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<20,'h6f>
+V	ScoreboardFindComplete	<21,'h6f>
+C	1
+S	                  20	20	ScoreboardCompleted
+R	                  20	                  20	0
+S	                  21	20	ScoreboardCompleted
+R	                  21	                  21	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  22	                  11	                   0
+L	                  22	0	'h001a3d04a7000000 W#11
+I	                  23	                  11	                   0
+L	                  23	0	'h001a3d04a7000000 R#11
+C	1
+S	                  22	10	B0
+S	                  23	10	B0
+C	1
+S	                  22	10	B1
+S	                  22	11	AwaitingKey
+S	                  23	10	B1
+S	                  23	11	AwaitingKeyRequest
+C	1
+S	                  22	10	B2
+S	                  23	10	B2
+S	                  23	11	AwaitingKey
+C	1
+E	                  22	10	B2
+E	                  23	10	B2
+C	1
+L	                  22	1	Checker 'h5
+S	                  22	11	Idle
+E	                  22	11	Idle
+// tick incrementInsert 'h5
+S	                  22	12	AwaitingSigCheck
+S	                  22	13	AwaitingFlitBounds
+L	                  23	1	Checker 'h5
+S	                  23	11	Idle
+E	                  23	11	Idle
+// tick incrementInsert 'h5
+S	                  23	12	AwaitingSigCheck
+S	                  23	13	AwaitingFlitBounds
+C	1
+S	                  22	13	AwaitingIOCapDecode
+S	                  23	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  22	13	Decoded
+S	                  23	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  22	12	SigCheckIdle
+E	                  22	12	SigCheckIdle
+E	                  22	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  23	12	SigCheckIdle
+E	                  23	12	SigCheckIdle
+E	                  23	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h001a3d04a7000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },23,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h001a3d04a7000000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },22,'h6f,True>
+// write bump perf good
+S	                  22	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h001a3d04a7000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },23,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  23	20	SendValid
+// tick incrementRetrieve 'h5
+V	ScoreboardWrite	<22,'h6f>
+// tick incrementRetrieve 'h5
+V	ScoreboardWrite	<23,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	KillKey	111
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<22,'h6f>
+V	ScoreboardFindComplete	<23,'h6f>
+C	1
+S	                  22	20	ScoreboardCompleted
+R	                  22	                  22	0
+S	                  23	20	ScoreboardCompleted
+R	                  23	                  23	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  24	                  11	                   0
+L	                  24	0	'h0017744eeb000000 W#11
+I	                  25	                  11	                   0
+L	                  25	0	'h0017744eeb000000 R#11
+C	1
+S	                  24	10	B0
+S	                  25	10	B0
+C	1
+S	                  24	10	B1
+S	                  24	11	AwaitingKey
+S	                  25	10	B1
+S	                  25	11	AwaitingKeyRequest
+C	1
+S	                  24	10	B2
+S	                  25	10	B2
+S	                  25	11	AwaitingKey
+C	1
+E	                  24	10	B2
+E	                  25	10	B2
+C	1
+L	                  24	1	Checker 'h0
+S	                  24	11	Idle
+E	                  24	11	Idle
+// tick incrementInsert 'h0
+S	                  24	12	AwaitingSigCheck
+S	                  24	13	AwaitingFlitBounds
+L	                  25	1	Checker 'h0
+S	                  25	11	Idle
+E	                  25	11	Idle
+// tick incrementInsert 'h0
+S	                  25	12	AwaitingSigCheck
+S	                  25	13	AwaitingFlitBounds
+C	1
+S	                  24	13	AwaitingIOCapDecode
+S	                  25	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  24	13	Decoded
+S	                  25	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  24	12	SigCheckIdle
+E	                  24	12	SigCheckIdle
+E	                  24	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  25	12	SigCheckIdle
+E	                  25	12	SigCheckIdle
+E	                  25	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h0017744eeb000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },25,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h0017744eeb000000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },24,'h6f,True>
+// write bump perf good
+S	                  24	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h0017744eeb000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },25,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  25	20	SendValid
+// tick incrementRetrieve 'h0
+V	ScoreboardWrite	<24,'h6f>
+// tick incrementRetrieve 'h0
+V	ScoreboardWrite	<25,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+V	KillKey	111
+C	1
+V	ScoreboardFindComplete	<24,'h6f>
+V	ScoreboardFindComplete	<25,'h6f>
+C	1
+S	                  24	20	ScoreboardCompleted
+R	                  24	                  24	0
+S	                  25	20	ScoreboardCompleted
+R	                  25	                  25	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  26	                  11	                   0
+L	                  26	0	'h001d5106b4160000 W#11
+I	                  27	                  11	                   0
+L	                  27	0	'h001d5106b4160000 R#11
+C	1
+S	                  26	10	B0
+S	                  27	10	B0
+C	1
+S	                  26	10	B1
+S	                  26	11	AwaitingKey
+S	                  27	10	B1
+S	                  27	11	AwaitingKeyRequest
+C	1
+S	                  26	10	B2
+S	                  27	10	B2
+S	                  27	11	AwaitingKey
+C	1
+E	                  26	10	B2
+E	                  27	10	B2
+C	1
+L	                  26	1	Checker 'h1
+S	                  26	11	Idle
+E	                  26	11	Idle
+// tick incrementInsert 'h1
+S	                  26	12	AwaitingSigCheck
+S	                  26	13	AwaitingFlitBounds
+L	                  27	1	Checker 'h1
+S	                  27	11	Idle
+E	                  27	11	Idle
+// tick incrementInsert 'h1
+S	                  27	12	AwaitingSigCheck
+S	                  27	13	AwaitingFlitBounds
+C	1
+S	                  26	13	AwaitingIOCapDecode
+S	                  27	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  26	13	Decoded
+S	                  27	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  26	12	SigCheckIdle
+E	                  26	12	SigCheckIdle
+E	                  26	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  27	12	SigCheckIdle
+E	                  27	12	SigCheckIdle
+E	                  27	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h001d5106b4160000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },27,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h001d5106b4160000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },26,'h6f,True>
+// write bump perf good
+S	                  26	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h001d5106b4160000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },27,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  27	20	SendValid
+// tick incrementRetrieve 'h1
+V	ScoreboardWrite	<26,'h6f>
+// tick incrementRetrieve 'h1
+V	ScoreboardWrite	<27,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	KillKey	111
+V	ScoreboardFindComplete	<26,'h6f>
+V	ScoreboardFindComplete	<27,'h6f>
+C	1
+S	                  26	20	ScoreboardCompleted
+R	                  26	                  26	0
+S	                  27	20	ScoreboardCompleted
+R	                  27	                  27	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  28	                  11	                   0
+L	                  28	0	'h000a7bc5a83a0000 W#11
+I	                  29	                  11	                   0
+L	                  29	0	'h000a7bc5a83a0000 R#11
+C	1
+S	                  28	10	B0
+S	                  29	10	B0
+C	1
+S	                  28	10	B1
+S	                  28	11	AwaitingKey
+S	                  29	10	B1
+S	                  29	11	AwaitingKeyRequest
+C	1
+S	                  28	10	B2
+S	                  29	10	B2
+S	                  29	11	AwaitingKey
+C	1
+E	                  28	10	B2
+E	                  29	10	B2
+C	1
+L	                  28	1	Checker 'h2
+S	                  28	11	Idle
+E	                  28	11	Idle
+// tick incrementInsert 'h2
+S	                  28	12	AwaitingSigCheck
+S	                  28	13	AwaitingFlitBounds
+L	                  29	1	Checker 'h2
+S	                  29	11	Idle
+E	                  29	11	Idle
+// tick incrementInsert 'h2
+S	                  29	12	AwaitingSigCheck
+S	                  29	13	AwaitingFlitBounds
+C	1
+S	                  28	13	AwaitingIOCapDecode
+S	                  29	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  28	13	Decoded
+S	                  29	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  28	12	SigCheckIdle
+E	                  28	12	SigCheckIdle
+E	                  28	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  29	12	SigCheckIdle
+E	                  29	12	SigCheckIdle
+E	                  29	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h000a7bc5a83a0000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },29,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h000a7bc5a83a0000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },28,'h6f,True>
+// write bump perf good
+S	                  28	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h000a7bc5a83a0000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },29,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  29	20	SendValid
+// tick incrementRetrieve 'h2
+V	ScoreboardWrite	<28,'h6f>
+// tick incrementRetrieve 'h2
+V	ScoreboardWrite	<29,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<28,'h6f>
+V	ScoreboardFindComplete	<29,'h6f>
+C	1
+V	KillKey	111
+S	                  28	20	ScoreboardCompleted
+R	                  28	                  28	0
+S	                  29	20	ScoreboardCompleted
+R	                  29	                  29	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  30	                  11	                   0
+L	                  30	0	'h0018c670c4000000 W#11
+I	                  31	                  11	                   0
+L	                  31	0	'h0018c670c4000000 R#11
+C	1
+S	                  30	10	B0
+S	                  31	10	B0
+C	1
+S	                  30	10	B1
+S	                  30	11	AwaitingKey
+S	                  31	10	B1
+S	                  31	11	AwaitingKeyRequest
+C	1
+S	                  30	10	B2
+S	                  31	10	B2
+S	                  31	11	AwaitingKey
+C	1
+E	                  30	10	B2
+E	                  31	10	B2
+C	1
+L	                  30	1	Checker 'h3
+S	                  30	11	Idle
+E	                  30	11	Idle
+// tick incrementInsert 'h3
+S	                  30	12	AwaitingSigCheck
+S	                  30	13	AwaitingFlitBounds
+L	                  31	1	Checker 'h3
+S	                  31	11	Idle
+E	                  31	11	Idle
+// tick incrementInsert 'h3
+S	                  31	12	AwaitingSigCheck
+S	                  31	13	AwaitingFlitBounds
+C	1
+S	                  30	13	AwaitingIOCapDecode
+S	                  31	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  30	13	Decoded
+S	                  31	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  30	12	SigCheckIdle
+E	                  30	12	SigCheckIdle
+E	                  30	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  31	12	SigCheckIdle
+E	                  31	12	SigCheckIdle
+E	                  31	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h0018c670c4000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },31,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h0018c670c4000000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },30,'h6f,True>
+// write bump perf good
+S	                  30	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h0018c670c4000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },31,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  31	20	SendValid
+// tick incrementRetrieve 'h3
+V	ScoreboardWrite	<30,'h6f>
+// tick incrementRetrieve 'h3
+V	ScoreboardWrite	<31,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<30,'h6f>
+V	ScoreboardFindComplete	<31,'h6f>
+C	1
+S	                  30	20	ScoreboardCompleted
+R	                  30	                  30	0
+S	                  31	20	ScoreboardCompleted
+R	                  31	                  31	0
+C	1
+V	KillKey	111
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  32	                  11	                   0
+L	                  32	0	'h000cf205f1300000 W#11
+I	                  33	                  11	                   0
+L	                  33	0	'h000cf205f1300000 R#11
+C	1
+S	                  32	10	B0
+S	                  33	10	B0
+C	1
+S	                  32	10	B1
+S	                  32	11	AwaitingKey
+S	                  33	10	B1
+S	                  33	11	AwaitingKeyRequest
+C	1
+S	                  32	10	B2
+S	                  33	10	B2
+S	                  33	11	AwaitingKey
+C	1
+E	                  32	10	B2
+E	                  33	10	B2
+C	1
+L	                  32	1	Checker 'h4
+S	                  32	11	Idle
+E	                  32	11	Idle
+// tick incrementInsert 'h4
+S	                  32	12	AwaitingSigCheck
+S	                  32	13	AwaitingFlitBounds
+L	                  33	1	Checker 'h4
+S	                  33	11	Idle
+E	                  33	11	Idle
+// tick incrementInsert 'h4
+S	                  33	12	AwaitingSigCheck
+S	                  33	13	AwaitingFlitBounds
+C	1
+S	                  32	13	AwaitingIOCapDecode
+S	                  33	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  32	13	Decoded
+S	                  33	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  32	12	SigCheckIdle
+E	                  32	12	SigCheckIdle
+E	                  32	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  33	12	SigCheckIdle
+E	                  33	12	SigCheckIdle
+E	                  33	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h000cf205f1300000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },33,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h000cf205f1300000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },32,'h6f,True>
+// write bump perf good
+S	                  32	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h000cf205f1300000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },33,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  33	20	SendValid
+// tick incrementRetrieve 'h4
+V	ScoreboardWrite	<32,'h6f>
+// tick incrementRetrieve 'h4
+V	ScoreboardWrite	<33,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<32,'h6f>
+V	ScoreboardFindComplete	<33,'h6f>
+C	1
+S	                  32	20	ScoreboardCompleted
+R	                  32	                  32	0
+S	                  33	20	ScoreboardCompleted
+R	                  33	                  33	0
+C	1
+C	1
+V	KillKey	111
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  34	                  11	                   0
+L	                  34	0	'h0031fc25330e0000 W#11
+I	                  35	                  11	                   0
+L	                  35	0	'h0031fc25330e0000 R#11
+C	1
+S	                  34	10	B0
+S	                  35	10	B0
+C	1
+S	                  34	10	B1
+S	                  34	11	AwaitingKey
+S	                  35	10	B1
+S	                  35	11	AwaitingKeyRequest
+C	1
+S	                  34	10	B2
+S	                  35	10	B2
+S	                  35	11	AwaitingKey
+C	1
+E	                  34	10	B2
+E	                  35	10	B2
+C	1
+L	                  34	1	Checker 'h5
+S	                  34	11	Idle
+E	                  34	11	Idle
+// tick incrementInsert 'h5
+S	                  34	12	AwaitingSigCheck
+S	                  34	13	AwaitingFlitBounds
+L	                  35	1	Checker 'h5
+S	                  35	11	Idle
+E	                  35	11	Idle
+// tick incrementInsert 'h5
+S	                  35	12	AwaitingSigCheck
+S	                  35	13	AwaitingFlitBounds
+C	1
+S	                  34	13	AwaitingIOCapDecode
+S	                  35	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  34	13	Decoded
+S	                  35	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  34	12	SigCheckIdle
+E	                  34	12	SigCheckIdle
+E	                  34	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  35	12	SigCheckIdle
+E	                  35	12	SigCheckIdle
+E	                  35	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h0031fc25330e0000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },35,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h0031fc25330e0000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },34,'h6f,True>
+// write bump perf good
+S	                  34	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h0031fc25330e0000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },35,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  35	20	SendValid
+// tick incrementRetrieve 'h5
+V	ScoreboardWrite	<34,'h6f>
+// tick incrementRetrieve 'h5
+V	ScoreboardWrite	<35,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<34,'h6f>
+V	ScoreboardFindComplete	<35,'h6f>
+C	1
+S	                  34	20	ScoreboardCompleted
+R	                  34	                  34	0
+S	                  35	20	ScoreboardCompleted
+R	                  35	                  35	0
+C	1
+C	1
+C	1
+V	KillKey	111
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  36	                  11	                   0
+L	                  36	0	'h0002ab7b80000000 W#11
+I	                  37	                  11	                   0
+L	                  37	0	'h0002ab7b80000000 R#11
+C	1
+S	                  36	10	B0
+S	                  37	10	B0
+C	1
+S	                  36	10	B1
+S	                  36	11	AwaitingKey
+S	                  37	10	B1
+S	                  37	11	AwaitingKeyRequest
+C	1
+S	                  36	10	B2
+S	                  37	10	B2
+S	                  37	11	AwaitingKey
+C	1
+E	                  36	10	B2
+E	                  37	10	B2
+C	1
+L	                  36	1	Checker 'h0
+S	                  36	11	Idle
+E	                  36	11	Idle
+// tick incrementInsert 'h0
+S	                  36	12	AwaitingSigCheck
+S	                  36	13	AwaitingFlitBounds
+L	                  37	1	Checker 'h0
+S	                  37	11	Idle
+E	                  37	11	Idle
+// tick incrementInsert 'h0
+S	                  37	12	AwaitingSigCheck
+S	                  37	13	AwaitingFlitBounds
+C	1
+S	                  36	13	AwaitingIOCapDecode
+S	                  37	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  36	13	Decoded
+S	                  37	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  36	12	SigCheckIdle
+E	                  36	12	SigCheckIdle
+E	                  36	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  37	12	SigCheckIdle
+E	                  37	12	SigCheckIdle
+E	                  37	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h0002ab7b80000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },37,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h0002ab7b80000000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },36,'h6f,True>
+// write bump perf good
+S	                  36	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h0002ab7b80000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },37,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  37	20	SendValid
+// tick incrementRetrieve 'h0
+V	ScoreboardWrite	<36,'h6f>
+// tick incrementRetrieve 'h0
+V	ScoreboardWrite	<37,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<36,'h6f>
+V	ScoreboardFindComplete	<37,'h6f>
+C	1
+S	                  36	20	ScoreboardCompleted
+R	                  36	                  36	0
+S	                  37	20	ScoreboardCompleted
+R	                  37	                  37	0
+C	1
+C	1
+C	1
+C	1
+V	KillKey	111
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  38	                  11	                   0
+L	                  38	0	'h003911a1cb000000 W#11
+I	                  39	                  11	                   0
+L	                  39	0	'h003911a1cb000000 R#11
+C	1
+S	                  38	10	B0
+S	                  39	10	B0
+C	1
+S	                  38	10	B1
+S	                  38	11	AwaitingKey
+S	                  39	10	B1
+S	                  39	11	AwaitingKeyRequest
+C	1
+S	                  38	10	B2
+S	                  39	10	B2
+S	                  39	11	AwaitingKey
+C	1
+E	                  38	10	B2
+E	                  39	10	B2
+C	1
+L	                  38	1	Checker 'h1
+S	                  38	11	Idle
+E	                  38	11	Idle
+// tick incrementInsert 'h1
+S	                  38	12	AwaitingSigCheck
+S	                  38	13	AwaitingFlitBounds
+L	                  39	1	Checker 'h1
+S	                  39	11	Idle
+E	                  39	11	Idle
+// tick incrementInsert 'h1
+S	                  39	12	AwaitingSigCheck
+S	                  39	13	AwaitingFlitBounds
+C	1
+S	                  38	13	AwaitingIOCapDecode
+S	                  39	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  38	13	Decoded
+S	                  39	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  38	12	SigCheckIdle
+E	                  38	12	SigCheckIdle
+E	                  38	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  39	12	SigCheckIdle
+E	                  39	12	SigCheckIdle
+E	                  39	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h003911a1cb000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },39,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h003911a1cb000000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },38,'h6f,True>
+// write bump perf good
+S	                  38	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h003911a1cb000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },39,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  39	20	SendValid
+// tick incrementRetrieve 'h1
+V	ScoreboardWrite	<38,'h6f>
+// tick incrementRetrieve 'h1
+V	ScoreboardWrite	<39,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<38,'h6f>
+V	ScoreboardFindComplete	<39,'h6f>
+C	1
+S	                  38	20	ScoreboardCompleted
+R	                  38	                  38	0
+S	                  39	20	ScoreboardCompleted
+R	                  39	                  39	0
+C	1
+C	1
+C	1
+C	1
+C	1
+V	KillKey	111
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  40	                  11	                   0
+L	                  40	0	'h0010c73238af0c00 W#11
+I	                  41	                  11	                   0
+L	                  41	0	'h0010c73238af0c00 R#11
+C	1
+S	                  40	10	B0
+S	                  41	10	B0
+C	1
+S	                  40	10	B1
+S	                  40	11	AwaitingKey
+S	                  41	10	B1
+S	                  41	11	AwaitingKeyRequest
+C	1
+S	                  40	10	B2
+S	                  41	10	B2
+S	                  41	11	AwaitingKey
+C	1
+E	                  40	10	B2
+E	                  41	10	B2
+C	1
+L	                  40	1	Checker 'h2
+S	                  40	11	Idle
+E	                  40	11	Idle
+// tick incrementInsert 'h2
+S	                  40	12	AwaitingSigCheck
+S	                  40	13	AwaitingFlitBounds
+L	                  41	1	Checker 'h2
+S	                  41	11	Idle
+E	                  41	11	Idle
+// tick incrementInsert 'h2
+S	                  41	12	AwaitingSigCheck
+S	                  41	13	AwaitingFlitBounds
+C	1
+S	                  40	13	AwaitingIOCapDecode
+S	                  41	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  40	13	Decoded
+S	                  41	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  40	12	SigCheckIdle
+E	                  40	12	SigCheckIdle
+E	                  40	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  41	12	SigCheckIdle
+E	                  41	12	SigCheckIdle
+E	                  41	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h0010c73238af0c00, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },41,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h0010c73238af0c00, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },40,'h6f,True>
+// write bump perf good
+S	                  40	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h0010c73238af0c00, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },41,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  41	20	SendValid
+// tick incrementRetrieve 'h2
+V	ScoreboardWrite	<40,'h6f>
+// tick incrementRetrieve 'h2
+V	ScoreboardWrite	<41,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<40,'h6f>
+V	ScoreboardFindComplete	<41,'h6f>
+C	1
+S	                  40	20	ScoreboardCompleted
+R	                  40	                  40	0
+S	                  41	20	ScoreboardCompleted
+R	                  41	                  41	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+V	KillKey	111
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  42	                  11	                   0
+L	                  42	0	'h0007e12ad7c40000 W#11
+I	                  43	                  11	                   0
+L	                  43	0	'h0007e12ad7c40000 R#11
+C	1
+S	                  42	10	B0
+S	                  43	10	B0
+C	1
+S	                  42	10	B1
+S	                  42	11	AwaitingKey
+S	                  43	10	B1
+S	                  43	11	AwaitingKeyRequest
+C	1
+S	                  42	10	B2
+S	                  43	10	B2
+S	                  43	11	AwaitingKey
+C	1
+E	                  42	10	B2
+E	                  43	10	B2
+C	1
+L	                  42	1	Checker 'h3
+S	                  42	11	Idle
+E	                  42	11	Idle
+// tick incrementInsert 'h3
+S	                  42	12	AwaitingSigCheck
+S	                  42	13	AwaitingFlitBounds
+L	                  43	1	Checker 'h3
+S	                  43	11	Idle
+E	                  43	11	Idle
+// tick incrementInsert 'h3
+S	                  43	12	AwaitingSigCheck
+S	                  43	13	AwaitingFlitBounds
+C	1
+S	                  42	13	AwaitingIOCapDecode
+S	                  43	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  42	13	Decoded
+S	                  43	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  42	12	SigCheckIdle
+E	                  42	12	SigCheckIdle
+E	                  42	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  43	12	SigCheckIdle
+E	                  43	12	SigCheckIdle
+E	                  43	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h0007e12ad7c40000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },43,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h0007e12ad7c40000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },42,'h6f,True>
+// write bump perf good
+S	                  42	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h0007e12ad7c40000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },43,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  43	20	SendValid
+// tick incrementRetrieve 'h3
+V	ScoreboardWrite	<42,'h6f>
+// tick incrementRetrieve 'h3
+V	ScoreboardWrite	<43,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<42,'h6f>
+V	ScoreboardFindComplete	<43,'h6f>
+C	1
+S	                  42	20	ScoreboardCompleted
+R	                  42	                  42	0
+S	                  43	20	ScoreboardCompleted
+R	                  43	                  43	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+V	KillKey	111
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  44	                  11	                   0
+L	                  44	0	'h0010caa5db460000 W#11
+I	                  45	                  11	                   0
+L	                  45	0	'h0010caa5db460000 R#11
+C	1
+S	                  44	10	B0
+S	                  45	10	B0
+C	1
+S	                  44	10	B1
+S	                  44	11	AwaitingKey
+S	                  45	10	B1
+S	                  45	11	AwaitingKeyRequest
+C	1
+S	                  44	10	B2
+S	                  45	10	B2
+S	                  45	11	AwaitingKey
+C	1
+E	                  44	10	B2
+E	                  45	10	B2
+C	1
+L	                  44	1	Checker 'h4
+S	                  44	11	Idle
+E	                  44	11	Idle
+// tick incrementInsert 'h4
+S	                  44	12	AwaitingSigCheck
+S	                  44	13	AwaitingFlitBounds
+L	                  45	1	Checker 'h4
+S	                  45	11	Idle
+E	                  45	11	Idle
+// tick incrementInsert 'h4
+S	                  45	12	AwaitingSigCheck
+S	                  45	13	AwaitingFlitBounds
+C	1
+S	                  44	13	AwaitingIOCapDecode
+S	                  45	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  44	13	Decoded
+S	                  45	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  44	12	SigCheckIdle
+E	                  44	12	SigCheckIdle
+E	                  44	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  45	12	SigCheckIdle
+E	                  45	12	SigCheckIdle
+E	                  45	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h0010caa5db460000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },45,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h0010caa5db460000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },44,'h6f,True>
+// write bump perf good
+S	                  44	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h0010caa5db460000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },45,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  45	20	SendValid
+// tick incrementRetrieve 'h4
+V	ScoreboardWrite	<44,'h6f>
+// tick incrementRetrieve 'h4
+V	ScoreboardWrite	<45,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<44,'h6f>
+V	ScoreboardFindComplete	<45,'h6f>
+C	1
+S	                  44	20	ScoreboardCompleted
+R	                  44	                  44	0
+S	                  45	20	ScoreboardCompleted
+R	                  45	                  45	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+V	KillKey	111
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  46	                  11	                   0
+L	                  46	0	'h001e5e53e6000000 W#11
+I	                  47	                  11	                   0
+L	                  47	0	'h001e5e53e6000000 R#11
+C	1
+S	                  46	10	B0
+S	                  47	10	B0
+C	1
+S	                  46	10	B1
+S	                  46	11	AwaitingKey
+S	                  47	10	B1
+S	                  47	11	AwaitingKeyRequest
+C	1
+S	                  46	10	B2
+S	                  47	10	B2
+S	                  47	11	AwaitingKey
+C	1
+E	                  46	10	B2
+E	                  47	10	B2
+C	1
+L	                  46	1	Checker 'h5
+S	                  46	11	Idle
+E	                  46	11	Idle
+// tick incrementInsert 'h5
+S	                  46	12	AwaitingSigCheck
+S	                  46	13	AwaitingFlitBounds
+L	                  47	1	Checker 'h5
+S	                  47	11	Idle
+E	                  47	11	Idle
+// tick incrementInsert 'h5
+S	                  47	12	AwaitingSigCheck
+S	                  47	13	AwaitingFlitBounds
+C	1
+S	                  46	13	AwaitingIOCapDecode
+S	                  47	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  46	13	Decoded
+S	                  47	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  46	12	SigCheckIdle
+E	                  46	12	SigCheckIdle
+E	                  46	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  47	12	SigCheckIdle
+E	                  47	12	SigCheckIdle
+E	                  47	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h001e5e53e6000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },47,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h001e5e53e6000000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },46,'h6f,True>
+// write bump perf good
+S	                  46	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h001e5e53e6000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },47,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  47	20	SendValid
+// tick incrementRetrieve 'h5
+V	ScoreboardWrite	<46,'h6f>
+// tick incrementRetrieve 'h5
+V	ScoreboardWrite	<47,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<46,'h6f>
+V	ScoreboardFindComplete	<47,'h6f>
+C	1
+S	                  46	20	ScoreboardCompleted
+R	                  46	                  46	0
+S	                  47	20	ScoreboardCompleted
+R	                  47	                  47	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+V	KillKey	111
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  48	                  11	                   0
+L	                  48	0	'h00005f7090000000 W#11
+I	                  49	                  11	                   0
+L	                  49	0	'h00005f7090000000 R#11
+C	1
+S	                  48	10	B0
+S	                  49	10	B0
+C	1
+S	                  48	10	B1
+S	                  48	11	AwaitingKey
+S	                  49	10	B1
+S	                  49	11	AwaitingKeyRequest
+C	1
+S	                  48	10	B2
+S	                  49	10	B2
+S	                  49	11	AwaitingKey
+C	1
+E	                  48	10	B2
+E	                  49	10	B2
+C	1
+L	                  48	1	Checker 'h0
+S	                  48	11	Idle
+E	                  48	11	Idle
+// tick incrementInsert 'h0
+S	                  48	12	AwaitingSigCheck
+S	                  48	13	AwaitingFlitBounds
+L	                  49	1	Checker 'h0
+S	                  49	11	Idle
+E	                  49	11	Idle
+// tick incrementInsert 'h0
+S	                  49	12	AwaitingSigCheck
+S	                  49	13	AwaitingFlitBounds
+C	1
+S	                  48	13	AwaitingIOCapDecode
+S	                  49	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  48	13	Decoded
+S	                  49	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  48	12	SigCheckIdle
+E	                  48	12	SigCheckIdle
+E	                  48	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  49	12	SigCheckIdle
+E	                  49	12	SigCheckIdle
+E	                  49	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h00005f7090000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },49,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h00005f7090000000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },48,'h6f,True>
+// write bump perf good
+S	                  48	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h00005f7090000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },49,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  49	20	SendValid
+// tick incrementRetrieve 'h0
+V	ScoreboardWrite	<48,'h6f>
+// tick incrementRetrieve 'h0
+V	ScoreboardWrite	<49,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<48,'h6f>
+V	ScoreboardFindComplete	<49,'h6f>
+C	1
+S	                  48	20	ScoreboardCompleted
+R	                  48	                  48	0
+S	                  49	20	ScoreboardCompleted
+R	                  49	                  49	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+V	KillKey	111
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  50	                  11	                   0
+L	                  50	0	'h0034faa0d1e89400 W#11
+I	                  51	                  11	                   0
+L	                  51	0	'h0034faa0d1e89400 R#11
+C	1
+S	                  50	10	B0
+S	                  51	10	B0
+C	1
+S	                  50	10	B1
+S	                  50	11	AwaitingKey
+S	                  51	10	B1
+S	                  51	11	AwaitingKeyRequest
+C	1
+S	                  50	10	B2
+S	                  51	10	B2
+S	                  51	11	AwaitingKey
+C	1
+E	                  50	10	B2
+E	                  51	10	B2
+C	1
+L	                  50	1	Checker 'h1
+S	                  50	11	Idle
+E	                  50	11	Idle
+// tick incrementInsert 'h1
+S	                  50	12	AwaitingSigCheck
+S	                  50	13	AwaitingFlitBounds
+L	                  51	1	Checker 'h1
+S	                  51	11	Idle
+E	                  51	11	Idle
+// tick incrementInsert 'h1
+S	                  51	12	AwaitingSigCheck
+S	                  51	13	AwaitingFlitBounds
+C	1
+S	                  50	13	AwaitingIOCapDecode
+S	                  51	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  50	13	Decoded
+S	                  51	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  50	12	SigCheckIdle
+E	                  50	12	SigCheckIdle
+E	                  50	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  51	12	SigCheckIdle
+E	                  51	12	SigCheckIdle
+E	                  51	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h0034faa0d1e89400, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },51,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h0034faa0d1e89400, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },50,'h6f,True>
+// write bump perf good
+S	                  50	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h0034faa0d1e89400, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },51,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  51	20	SendValid
+// tick incrementRetrieve 'h1
+V	ScoreboardWrite	<50,'h6f>
+// tick incrementRetrieve 'h1
+V	ScoreboardWrite	<51,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<50,'h6f>
+V	ScoreboardFindComplete	<51,'h6f>
+C	1
+S	                  50	20	ScoreboardCompleted
+R	                  50	                  50	0
+S	                  51	20	ScoreboardCompleted
+R	                  51	                  51	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+V	KillKey	111
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  52	                  11	                   0
+L	                  52	0	'h001a86b3b2000000 W#11
+I	                  53	                  11	                   0
+L	                  53	0	'h001a86b3b2000000 R#11
+C	1
+S	                  52	10	B0
+S	                  53	10	B0
+C	1
+S	                  52	10	B1
+S	                  52	11	AwaitingKey
+S	                  53	10	B1
+S	                  53	11	AwaitingKeyRequest
+C	1
+S	                  52	10	B2
+S	                  53	10	B2
+S	                  53	11	AwaitingKey
+C	1
+E	                  52	10	B2
+E	                  53	10	B2
+C	1
+L	                  52	1	Checker 'h2
+S	                  52	11	Idle
+E	                  52	11	Idle
+// tick incrementInsert 'h2
+S	                  52	12	AwaitingSigCheck
+S	                  52	13	AwaitingFlitBounds
+L	                  53	1	Checker 'h2
+S	                  53	11	Idle
+E	                  53	11	Idle
+// tick incrementInsert 'h2
+S	                  53	12	AwaitingSigCheck
+S	                  53	13	AwaitingFlitBounds
+C	1
+S	                  52	13	AwaitingIOCapDecode
+S	                  53	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  52	13	Decoded
+S	                  53	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  52	12	SigCheckIdle
+E	                  52	12	SigCheckIdle
+E	                  52	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  53	12	SigCheckIdle
+E	                  53	12	SigCheckIdle
+E	                  53	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h001a86b3b2000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },53,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h001a86b3b2000000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },52,'h6f,True>
+// write bump perf good
+S	                  52	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h001a86b3b2000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },53,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  53	20	SendValid
+// tick incrementRetrieve 'h2
+V	ScoreboardWrite	<52,'h6f>
+// tick incrementRetrieve 'h2
+V	ScoreboardWrite	<53,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<52,'h6f>
+V	ScoreboardFindComplete	<53,'h6f>
+C	1
+S	                  52	20	ScoreboardCompleted
+R	                  52	                  52	0
+S	                  53	20	ScoreboardCompleted
+R	                  53	                  53	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+V	KillKey	111
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  54	                  11	                   0
+L	                  54	0	'h003800a598000000 W#11
+I	                  55	                  11	                   0
+L	                  55	0	'h003800a598000000 R#11
+C	1
+S	                  54	10	B0
+S	                  55	10	B0
+C	1
+S	                  54	10	B1
+S	                  54	11	AwaitingKey
+S	                  55	10	B1
+S	                  55	11	AwaitingKeyRequest
+C	1
+S	                  54	10	B2
+S	                  55	10	B2
+S	                  55	11	AwaitingKey
+C	1
+E	                  54	10	B2
+E	                  55	10	B2
+C	1
+L	                  54	1	Checker 'h3
+S	                  54	11	Idle
+E	                  54	11	Idle
+// tick incrementInsert 'h3
+S	                  54	12	AwaitingSigCheck
+S	                  54	13	AwaitingFlitBounds
+L	                  55	1	Checker 'h3
+S	                  55	11	Idle
+E	                  55	11	Idle
+// tick incrementInsert 'h3
+S	                  55	12	AwaitingSigCheck
+S	                  55	13	AwaitingFlitBounds
+C	1
+S	                  54	13	AwaitingIOCapDecode
+S	                  55	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  54	13	Decoded
+S	                  55	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  54	12	SigCheckIdle
+E	                  54	12	SigCheckIdle
+E	                  54	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  55	12	SigCheckIdle
+E	                  55	12	SigCheckIdle
+E	                  55	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h003800a598000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },55,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h003800a598000000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },54,'h6f,True>
+// write bump perf good
+S	                  54	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h003800a598000000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },55,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  55	20	SendValid
+// tick incrementRetrieve 'h3
+V	ScoreboardWrite	<54,'h6f>
+// tick incrementRetrieve 'h3
+V	ScoreboardWrite	<55,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<54,'h6f>
+V	ScoreboardFindComplete	<55,'h6f>
+C	1
+S	                  54	20	ScoreboardCompleted
+R	                  54	                  54	0
+S	                  55	20	ScoreboardCompleted
+R	                  55	                  55	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+V	KillKey	111
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  56	                  11	                   0
+L	                  56	0	'h000f5d0636360000 W#11
+I	                  57	                  11	                   0
+L	                  57	0	'h000f5d0636360000 R#11
+C	1
+S	                  56	10	B0
+S	                  57	10	B0
+C	1
+S	                  56	10	B1
+S	                  56	11	AwaitingKey
+S	                  57	10	B1
+S	                  57	11	AwaitingKeyRequest
+C	1
+S	                  56	10	B2
+S	                  57	10	B2
+S	                  57	11	AwaitingKey
+C	1
+E	                  56	10	B2
+E	                  57	10	B2
+C	1
+L	                  56	1	Checker 'h4
+S	                  56	11	Idle
+E	                  56	11	Idle
+// tick incrementInsert 'h4
+S	                  56	12	AwaitingSigCheck
+S	                  56	13	AwaitingFlitBounds
+L	                  57	1	Checker 'h4
+S	                  57	11	Idle
+E	                  57	11	Idle
+// tick incrementInsert 'h4
+S	                  57	12	AwaitingSigCheck
+S	                  57	13	AwaitingFlitBounds
+C	1
+S	                  56	13	AwaitingIOCapDecode
+S	                  57	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  56	13	Decoded
+S	                  57	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  56	12	SigCheckIdle
+E	                  56	12	SigCheckIdle
+E	                  56	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  57	12	SigCheckIdle
+E	                  57	12	SigCheckIdle
+E	                  57	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h000f5d0636360000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },57,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h000f5d0636360000, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },56,'h6f,True>
+// write bump perf good
+S	                  56	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h000f5d0636360000, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },57,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  57	20	SendValid
+// tick incrementRetrieve 'h4
+V	ScoreboardWrite	<56,'h6f>
+// tick incrementRetrieve 'h4
+V	ScoreboardWrite	<57,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<56,'h6f>
+V	ScoreboardFindComplete	<57,'h6f>
+C	1
+S	                  56	20	ScoreboardCompleted
+R	                  56	                  56	0
+S	                  57	20	ScoreboardCompleted
+R	                  57	                  57	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+V	KillKey	111
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+I	                  58	                  11	                   0
+L	                  58	0	'h0022d5cd53550800 W#11
+I	                  59	                  11	                   0
+L	                  59	0	'h0022d5cd53550800 R#11
+C	1
+S	                  58	10	B0
+S	                  59	10	B0
+C	1
+S	                  58	10	B1
+S	                  58	11	AwaitingKey
+S	                  59	10	B1
+S	                  59	11	AwaitingKeyRequest
+C	1
+S	                  58	10	B2
+S	                  59	10	B2
+S	                  59	11	AwaitingKey
+C	1
+E	                  58	10	B2
+E	                  59	10	B2
+C	1
+L	                  58	1	Checker 'h5
+S	                  58	11	Idle
+E	                  58	11	Idle
+// tick incrementInsert 'h5
+S	                  58	12	AwaitingSigCheck
+S	                  58	13	AwaitingFlitBounds
+L	                  59	1	Checker 'h5
+S	                  59	11	Idle
+E	                  59	11	Idle
+// tick incrementInsert 'h5
+S	                  59	12	AwaitingSigCheck
+S	                  59	13	AwaitingFlitBounds
+C	1
+S	                  58	13	AwaitingIOCapDecode
+S	                  59	13	AwaitingIOCapDecode
+C	1
+C	1
+C	1
+S	                  58	13	Decoded
+S	                  59	13	Decoded
+C	1
+C	1
+// flitCompleted from AwaitingSigCheck
+S	                  58	12	SigCheckIdle
+E	                  58	12	SigCheckIdle
+E	                  58	13	Decoded
+// flitCompleted from AwaitingSigCheck
+S	                  59	12	SigCheckIdle
+E	                  59	12	SigCheckIdle
+E	                  59	13	Decoded
+C	1
+V	PerfGood	Write
+V	PerfGood	Read
+// AR <AXI4_ARFlit { arid: 'hb, araddr: 'h0022d5cd53550800, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },59,'h6f,True> canBegin True
+// IOCap - check_aw <AXI4_AWFlit { awid: 'hb, awaddr: 'h0022d5cd53550800, awlen: 'h00, awsize: AXI4_Size { val: 'h5 }, awburst: INCR, awlock: NORMAL, awcache: 'h0, awprot: 'h0, awqos: 'h0, awregion: 'h0, awuser: 'h0 },58,'h6f,True>
+// write bump perf good
+S	                  58	20	SendValid
+// IOCap - check_ar <AXI4_ARFlit { arid: 'hb, araddr: 'h0022d5cd53550800, arlen: 'h00, arsize: AXI4_Size { val: 'h5 }, arburst: INCR, arlock: NORMAL, arcache: 'h0, arprot: 'h0, arqos: 'h0, arregion: 'h0, aruser: 'h0 },59,'h6f,True>
+// ALLOWED True
+// read bump perf good
+S	                  59	20	SendValid
+// tick incrementRetrieve 'h5
+V	ScoreboardWrite	<58,'h6f>
+// tick incrementRetrieve 'h5
+V	ScoreboardWrite	<59,'h6f>
+C	1
+V	ValuePassW	 
+C	1
+C	1
+V	ValuePassRComplete	R#'hb
+V	ScoreboardSearch	 
+V	ScoreboardSearch	 
+C	1
+C	1
+V	ScoreboardFindComplete	<58,'h6f>
+V	ScoreboardFindComplete	<59,'h6f>
+C	1
+S	                  58	20	ScoreboardCompleted
+R	                  58	                  58	0
+S	                  59	20	ScoreboardCompleted
+R	                  59	                  59	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+V	KillKey	111
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
