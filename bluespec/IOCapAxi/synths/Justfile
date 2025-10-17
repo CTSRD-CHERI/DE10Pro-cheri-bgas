@@ -1,0 +1,13 @@
+default:
+    @just --list
+
+gen:
+    python3 gen_design.py SimpleIOCapExposerKeyMngrV2Tb.txt >verilog/SimpleIOCapExposerKeyMngrV2Tb_design.v
+
+synth blu_design design:
+    # Make the verilog
+    (cd ../ && make ./build/verilog/{{blu_design}}.v)
+    # Make the working directory for quartus
+    
+
+synth-exposer-v6: (synth "mkSimpleIOCapExposerV6_blockinvalid_Tb" "SimpleIOCapExposerKeyMngrV2Tb")
