@@ -1,0 +1,88 @@
+Fitter Finalize Stage Report for SimpleIOCapExposerKeyMngrV2Tb_design
+Fri Oct 17 18:05:38 2025
+Quartus Prime Version 23.2.0 Build 94 06/14/2023 SC Pro Edition
+
+
+---------------------
+; Table of Contents ;
+---------------------
+  1. Legal Notice
+  2. Routing Usage Summary
+  3. Finalize Messages
+
+
+
+----------------
+; Legal Notice ;
+----------------
+Copyright (C) 2023  Intel Corporation. All rights reserved.
+Your use of Intel Corporation's design tools, logic functions 
+and other software and tools, and any partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Intel Program License 
+Subscription Agreement, the Intel Quartus Prime License Agreement,
+the Intel FPGA IP License Agreement, or other applicable license
+agreement, including, without limitation, that your use is for
+the sole purpose of programming logic devices manufactured by
+Intel and sold by Intel or its authorized distributors.  Please
+refer to the applicable agreement for further details, at
+https://fpgasoftware.intel.com/eula.
+
+
+
++---------------------------------------------------------------+
+; Routing Usage Summary                                         ;
++--------------------------------+------------------------------+
+; Routing Resource Type          ; Usage                        ;
++--------------------------------+------------------------------+
+; Block Input Muxes              ; 3,811 / 675,444 ( < 1 % )    ;
+; Block interconnects            ; 207,509 / 9,132,912 ( 2 % )  ;
+; C16 interconnects              ; 8,440 / 226,512 ( 4 % )      ;
+; C2 interconnects               ; 44,120 / 1,359,072 ( 3 % )   ;
+; C3 interconnects               ; 54,564 / 2,758,032 ( 2 % )   ;
+; C4 interconnects               ; 64,784 / 1,772,208 ( 4 % )   ;
+; CLOCK_INVERTs                  ; 0 / 7,616 ( 0 % )            ;
+; DCM_muxes                      ; 1 / 1,632 ( < 1 % )          ;
+; Direct links                   ; 30,888 / 9,132,912 ( < 1 % ) ;
+; GAP Interconnects              ; 7,570 / 267,192 ( 3 % )      ;
+; GAPs                           ; 0 / 29,304 ( 0 % )           ;
+; HIO Buffers                    ; 3 / 209,664 ( < 1 % )        ;
+; Horizontal Buffers             ; 2,925 / 176,364 ( 2 % )      ;
+; Horizontal_clock_segment_muxes ; 0 / 7,488 ( 0 % )            ;
+; Programmable Inverts           ; 4 / 318,960 ( < 1 % )        ;
+; R10 interconnects              ; 57,137 / 2,456,208 ( 2 % )   ;
+; R2 interconnects               ; 58,118 / 2,265,120 ( 3 % )   ;
+; R24 interconnects              ; 5,502 / 293,040 ( 2 % )      ;
+; R24/C16 interconnect drivers   ; 9,661 / 453,024 ( 2 % )      ;
+; R4 interconnects               ; 80,840 / 3,248,028 ( 2 % )   ;
+; Row Clock Tap-Offs             ; 1 / 725,544 ( < 1 % )        ;
+; Switchbox_clock_muxes          ; 10 / 41,600 ( < 1 % )        ;
+; Vertical_seam_tap_muxes        ; 8 / 22,848 ( < 1 % )         ;
++--------------------------------+------------------------------+
+
+
++-------------------+
+; Finalize Messages ;
++-------------------+
+Info (20030): Parallel compilation is enabled and will use 24 of the 24 processors detected
+Info: *******************************************************************
+Info: Running Quartus Prime Fitter
+    Info: Version 23.2.0 Build 94 06/14/2023 SC Pro Edition
+    Info: Processing started: Fri Oct 17 17:51:39 2025
+    Info: System process ID: 2062796
+Info: Command: quartus_fit --read_settings_files=on --write_settings_files=off SimpleIOCapExposerKeyMngrV2Tb_design -c SimpleIOCapExposerKeyMngrV2Tb_design
+Info: qfit2_default_script.tcl version: #1
+Info: Project  = SimpleIOCapExposerKeyMngrV2Tb_design
+Info: Revision = SimpleIOCapExposerKeyMngrV2Tb_design
+Info (21077): Low junction temperature is 0 degrees C
+Info (21077): High junction temperature is 100 degrees C
+Info (18258): Fitter Physical Synthesis operations beginning
+Info (18259): Fitter Physical Synthesis operations ending: elapsed time is 00:00:03
+Critical Warning (19527): There are 96 unused RX channels and 96 unused TX channels in the design.
+    Info (19528): Add the QSF assignment 'set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to <pin_name>' for each unused channel that will be used in future.
+    Info (19529): The above QSF assignment will preserve the performance of specified channels over time.
+Info (16557): Fitter post-fit operations ending: elapsed time is 00:02:17
+
+

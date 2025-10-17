@@ -160,11 +160,15 @@ module mkSimpleIOCapAxiChecker3V1#(
 
     RWire#(CapSigCheckIn#(Cap2024_11)) sigCheckInRWire <- mkRWire;
     RWire#(CapCheckResult#(Bit#(0))) sigCheckOutRWire <- mkRWire;
+    // Using an RWire on output creates a long path from the AES input to the output FIFO.
+    // FIFOF#(CapCheckResult#(Bit#(0))) sigCheckOutFIFO <- mkFIFOF;
     mk2RoundPerCycleCapSigCheckFast(rwireToReadOnly(sigCheckInRWire), rwireToWriteOnly(sigCheckOutRWire));
+    // fifofToWriteOnly(sigCheckOutFIFO));
     let sigCheckIn = interface Sink;
         method Bool canPut() = True;
         method Action put(x) = sigCheckInRWire.wset(x);
     endinterface;
+    // let sigCheckOut = toSource(sigCheckOutFIFO);
     let sigCheckOut = interface Source;
         method Bool canPeek() = isValid(sigCheckOutRWire.wget());
         method peek() = fromMaybe(?, sigCheckOutRWire.wget());

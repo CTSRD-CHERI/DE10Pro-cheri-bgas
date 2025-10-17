@@ -1,0 +1,21 @@
+Fitter Status : Successful - Fri Oct 17 18:05:57 2025
+Quartus Prime Version : 23.2.0 Build 94 06/14/2023 SC Pro Edition
+Revision Name : SimpleIOCapExposerKeyMngrV2Tb_design
+Top-level Entity Name : SimpleIOCapExposerKeyMngrV2Tb_design
+Family : Stratix 10
+Device : 1SX280HU2F50E1VG
+Timing Models : Final
+Power Models : Final
+Device Status : Final
+Logic utilization (in ALMs) : 52,137 / 933,120 ( 6 % )
+Total dedicated logic registers : 30355
+Total pins : 5 / 1,152 ( < 1 % )
+Total block memory bits : 1,078 / 240,046,080 ( < 1 % )
+Total RAM Blocks : 3 / 11,721 ( < 1 % )
+Total DSP Blocks : 0 / 5,760 ( 0 % )
+Total DIB Channels : 0 / 75 ( 0 % )
+Total HSSI RX channels : 0 / 96 ( 0 % )
+Total HSSI TX channels : 0 / 96 ( 0 % )
+Total HSSI HPS : 0 / 1 ( 0 % )
+Total HSSI EHIPs : 0 / 4 ( 0 % )
+Total PLLs : 0 / 184 ( 0 % )

@@ -107,7 +107,7 @@ interface InternalCalc;
 endinterface
 
 (* synthesize *)
-module mkInternalCalc(InternalCalc);
+module mkInternalCalc_2024Aes2RoundPerCycle(InternalCalc);
     // Inputs are clocked, outputs are not
     // Use vReg so we only do computations when requested
     Reg#(CalcInput) inReg <- mkVReg;
@@ -182,7 +182,7 @@ module mk2RoundPerCycleCapSigCheck#(Get#(CapSigCheckIn#(tcap)) in, Put#(CapCheck
     Reg#(Bit#(128)) currentSig <- mkReg(?);
     Reg#(Bit#(2)) currentCavLevel <- mkReg(?); // 0..=2
     Reg#(Bit#(2)) expectedCavLevel <- mkReg(?); // 0..=2
-    InternalCalc calc <- mkInternalCalc;
+    InternalCalc calc <- mkInternalCalc_2024Aes2RoundPerCycle;
 
     Reg#(Bool) fsmWorking <- mkReg(False);
 

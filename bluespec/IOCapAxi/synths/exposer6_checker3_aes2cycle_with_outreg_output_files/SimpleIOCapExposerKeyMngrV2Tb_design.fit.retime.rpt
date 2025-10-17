@@ -1,0 +1,204 @@
+Fitter Retime Stage Report for SimpleIOCapExposerKeyMngrV2Tb_design
+Fri Oct 17 15:21:34 2025
+Quartus Prime Version 23.2.0 Build 94 06/14/2023 SC Pro Edition
+
+
+---------------------
+; Table of Contents ;
+---------------------
+  1. Legal Notice
+  2. Hyper-Retimer Settings
+  3. Reset Sequence Requirement
+  4. Retiming Limit Summary
+  5. Critical Chain Summary for Clock Domain CLK_FAST
+  6. Clock Domain CLK_SLOW (Meets timing requirements: No further analysis performed.)
+  7. Retime Messages
+
+
+
+----------------
+; Legal Notice ;
+----------------
+Copyright (C) 2023  Intel Corporation. All rights reserved.
+Your use of Intel Corporation's design tools, logic functions 
+and other software and tools, and any partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Intel Program License 
+Subscription Agreement, the Intel Quartus Prime License Agreement,
+the Intel FPGA IP License Agreement, or other applicable license
+agreement, including, without limitation, that your use is for
+the sole purpose of programming logic devices manufactured by
+Intel and sold by Intel or its authorized distributors.  Please
+refer to the applicable agreement for further details, at
+https://fpgasoftware.intel.com/eula.
+
+
+
++--------------------------------------------------+
+; Hyper-Retimer Settings                           ;
++------------------------+---------+---------------+
+; Option                 ; Setting ; Default Value ;
++------------------------+---------+---------------+
+; Enable Auto-Pipelining ; On      ; On            ;
++------------------------+---------+---------------+
+
+
++------------------------------------------+
+; Reset Sequence Requirement               ;
++------------+-----------------------------+
+; Clock Name ; Number of additional cycles ;
++------------+-----------------------------+
+; CLK_FAST   ; 2                           ;
+; CLK_SLOW   ; 0                           ;
++------------+-----------------------------+
+Note: Due to retiming optimizations, a clock domain may require a longer reset sequence to ensure correct functionality.  The table above indicates the minimum number of additional reset sequence cycles needed for each clock domain.
+
+
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Retiming Limit Summary                                                                                                                                                                                                ;
++-----------------------+-----------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
+; Clock Transfer        ; Limiting Reason                                           ; Recommendation                                                                                                                    ;
++-----------------------+-----------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
+; Clock Domain CLK_FAST ; Insufficient Registers                                    ; See the Fast Forward Timing Closure Recommendations report for step-by-step suggestions for RTL changes and estimated performance ;
+; Clock Domain CLK_SLOW ; Meets timing requirements: No further analysis performed. ; None                                                                                                                              ;
++-----------------------+-----------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
+
+
+Critical Chain Summary for Clock Domain CLK_FAST
+===============================================================================
++---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Recommendations for Critical Chain                                                                                                                                                                                                                      ;
++---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Recommendation                                                                                                                                                                                                                                          ;
++---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; The critical chain is limited by: Insufficient Registers                                                                                                                                                                                                ;
+;                                                                                                                                                                                                                                                         ;
+; Reduce the delay of 'Long Paths' in the chain                                                                                                                                                                                                           ;
+;   or insert more pipeline stages for 'Long Paths' in the chain                                                                                                                                                                                          ;
+;   or remove retiming restrictions                                                                                                                                                                                                                       ;
+;    Refer to <a href='https://www.intel.com/content/www/us/en/docs/programmable/683353/current/insufficient-registers.html'>Insufficient Registers</a> in the <i>Intel Hyperflex Architecture High-Performance Design Handbook</i> for more information. ;
+;                                                                                                                                                                                                                                                         ;
+; Retiming Restrictions at Register #1:                                                                                                                                                                                                                   ;
+;  dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register[122]                                                                                                                                                                                      ;
+;   Node is driven by a locally routed clock, and cannot be retimed                                                                                                                                                                                       ;
+;     To allow retiming, promote the clock CLK_FAST~input to be a global signal.                                                                                                                                                                          ;
+;     Refer to <a href='https://www.intel.com/content/www/us/en/programmable/quartushelp/current/index.htm#logicops/logicops/def_global.htm'>Quartus Help: Global Signal logic option</a> for more information.                                           ;
+;   Node either drives or is driven by a register with a locally routed clock, and cannot be retimed                                                                                                                                                      ;
+;     To allow retiming, promote the clock CLK_FAST~input that drives dut|exposer4x32Impl_arChecker_checkers_0_sigCheckOutFIFO|data1_reg[2]~RTM_42 to be a global signal.                                                                                 ;
+;                                                                                                                                                                                                                                                         ;
+; Retiming Restrictions at Register #2:                                                                                                                                                                                                                   ;
+;  dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register[64]                                                                                                                                                                                       ;
+;   Node is driven by a locally routed clock, and cannot be retimed                                                                                                                                                                                       ;
+;     To allow retiming, promote the clock CLK_FAST~input to be a global signal.                                                                                                                                                                          ;
+;     Refer to <a href='https://www.intel.com/content/www/us/en/programmable/quartushelp/current/index.htm#logicops/logicops/def_global.htm'>Quartus Help: Global Signal logic option</a> for more information.                                           ;
+;   Node either drives or is driven by a register with a locally routed clock, and cannot be retimed                                                                                                                                                      ;
+;     To allow retiming, promote the clock CLK_FAST~input that drives dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register[61] to be a global signal.                                                                                             ;
++---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
++---------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Critical Chain Details                                                                                                                                              ;
++----------------------+-------------------------+-------------+------------------------------------------------------------------------------------------------------+
+; Path Info            ; Register                ; Register ID ; Element                                                                                              ;
++----------------------+-------------------------+-------------+------------------------------------------------------------------------------------------------------+
+; Retiming Restriction ; ALM Register            ; #1          ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register[122]                                    ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register[122]|q                                  ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register[122]~la_lab/laboutb[14]                 ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register[122]~LAB_RE_X238_Y47_N0_I128            ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register[122]~R10_X234_Y47_N0_I78                ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register[122]~GAPH_X233_Y47_N0_I57               ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register[122]~GAPSEL_X233_Y47_N0_I35             ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register[122]~R10_X232_Y47_N0_I13                ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register[122]~C3_X231_Y44_N0_I38                 ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register[122]~LOCAL_INTERCONNECT_X232_Y44_N0_I28 ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register[122]~LAB_RE_X232_Y44_N0_I4              ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_329~0|datab                                        ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_329~0|combout                                      ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_329~0~_LAB_RE_X232_Y44_N0_I94                      ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_329~0~_LOCAL_INTERCONNECT_X232_Y44_N0_I2           ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_329~0~_LAB_RE_X232_Y44_N0_I52                      ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_329~4|datab                                        ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_329~4|combout                                      ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_329~4~_LAB_RE_X232_Y44_N0_I118                     ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_329~4~_R10_X232_Y44_N0_I33                         ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_329~4~_GAPH_X232_Y44_N0_I7                         ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_329~4~_R24_X234_Y44_N0_I333                        ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_329~4~_R24_X241_Y44_N0_I58                         ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_329~4~_R2_X246_Y44_N0_I1                           ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_329~4~_C4_X245_Y40_N0_I45                          ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_329~4~_LOCAL_INTERCONNECT_X246_Y40_N0_I19          ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_329~4~_LAB_RE_X246_Y40_N0_I0                       ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|x__h216795[1]|datae                                    ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|x__h216795[1]|combout                                  ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|x__h216795[1]~LAB_RE_X246_Y40_N0_I94                   ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|x__h216795[1]~LOCAL_INTERCONNECT_X246_Y40_N0_I2        ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|x__h216795[1]~LAB_RE_X246_Y40_N0_I73                   ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|x__h216795[1]~xsyn|datad                               ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|x__h216795[1]~xsyn|combout                             ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|x__h216795[1]~xsyn~la_lab/laboutb[17]                  ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|x__h216795[1]~xsyn~_LAB_RE_X246_Y40_N0_I131            ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|x__h216795[1]~xsyn~_C3_X246_Y37_N0_I38                 ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|x__h216795[1]~xsyn~_LOCAL_INTERCONNECT_X247_Y37_N0_I28 ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|x__h216795[1]~xsyn~_LAB_RE_X247_Y37_N0_I39             ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_338~2|dataf                                        ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_338~2|combout                                      ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_338~2~_LAB_RE_X247_Y37_N0_I110                     ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_338~2~_LOCAL_INTERCONNECT_X247_Y37_N0_I12          ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_338~2~_LAB_RE_X247_Y37_N0_I51                      ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_338~4|dataa                                        ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_338~4|combout                                      ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_338~4~_LAB_RE_X247_Y37_N0_I118                     ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_338~4~_C4_X246_Y37_N0_I3                           ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_338~4~_C4_X246_Y41_N0_I3                           ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_338~4~_C4_X246_Y45_N0_I3                           ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_338~4~_R10_X237_Y47_N0_I1                          ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_338~4~_LOCAL_INTERCONNECT_X238_Y47_N0_I19          ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_338~4~_LAB_RE_X238_Y47_N0_I32                      ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_130~119|datae                                      ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_130~119|combout                                    ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_130~119~_LAB_RE_X238_Y47_N0_I110                   ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_130~119~_C2_X237_Y47_N0_I25                        ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_130~119~_C2_X237_Y49_N0_I25                        ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_130~119~_R10_X234_Y51_N0_I92                       ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_130~119~_GAPH_X233_Y51_N0_I18                      ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_130~119~_R24_X227_Y51_N0_I0                        ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_130~119~_R4_X228_Y51_N0_I53                        ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_130~119~_LOCAL_INTERCONNECT_X230_Y51_N0_I8         ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_130~119~_LAB_RE_X230_Y51_N0_I57                    ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_130~254|datad                                      ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_130~254|combout                                    ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_130~254~_LAB_RE_X230_Y51_N0_I122                   ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_130~254~_LOCAL_INTERCONNECT_X229_Y51_N0_I53        ;
+; Long Path (Critical) ; Bypassed Hyper-Register ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|Mux_130~254~_LAB_RE_X229_Y51_N0_I33                    ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc$in_put[0]~223|datad                                    ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc$in_put[0]~223|combout                                  ;
+; Long Path (Critical) ;                         ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register[64]|d                                   ;
+; Retiming Restriction ; ALM Register            ; #2          ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register[64]                                     ;
++----------------------+-------------------------+-------------+------------------------------------------------------------------------------------------------------+
+
+
+
+Clock Domain CLK_SLOW (Meets timing requirements: No further analysis performed.)
+===============================================================================
+
+
++-----------------+
+; Retime Messages ;
++-----------------+
+Info (20030): Parallel compilation is enabled and will use 24 of the 24 processors detected
+Info: *******************************************************************
+Info: Running Quartus Prime Fitter
+    Info: Version 23.2.0 Build 94 06/14/2023 SC Pro Edition
+    Info: Processing started: Fri Oct 17 15:10:04 2025
+    Info: System process ID: 1748814
+Info: Command: quartus_fit --read_settings_files=on --write_settings_files=off SimpleIOCapExposerKeyMngrV2Tb_design -c SimpleIOCapExposerKeyMngrV2Tb_design
+Info: qfit2_default_script.tcl version: #1
+Info: Project  = SimpleIOCapExposerKeyMngrV2Tb_design
+Info: Revision = SimpleIOCapExposerKeyMngrV2Tb_design
+Info (17966): Starting Hyper-Retimer operations.
+Info (18914): The Hyper-Retimer was unable to optimize the design due to retiming restrictions. Run Fast Forward Timing Closure Recommendations to see step-by-step suggestions for design changes and show the estimated performance improvement from making these changes.
+Info (17968): Completed Hyper-Retimer operations.
+Info (18821): Fitter Hyper-Retimer operations ending: elapsed time is 00:00:45
+
+

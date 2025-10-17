@@ -78,7 +78,7 @@ interface InternalCalc;
     interface Put#(CalcInput) in;
 endinterface
 
-module mkInternalCalc(InternalCalc);
+module mkInternalCalc_202402DecodeFastFSM(InternalCalc);
     // Inputs are clocked, outputs are not
     // Use vReg so we only do computations when requested
     Reg#(CalcInput) inReg <- mkVReg;
@@ -261,7 +261,7 @@ function Bool msbSet(Bit#(n) x) = unpack(msb(x));
 // TODO this is timing-independent on invalid caveats right now because that's the most convenient thing to do with an FSM.
 // Maybe bad for real fastness.
 module mkFastFSMCapDecode_2024_02#(Get#(Cap2024_02) in, Put#(CapCheckResult#(Tuple2#(CapPerms, CapRange))) out)(Empty);
-    InternalCalc calc <- mkInternalCalc;
+    InternalCalc calc <- mkInternalCalc_202402DecodeFastFSM;
 
     // Working registers for the state machine.
     Reg#(Bool) working_zero_cav <- mkReg(?);
