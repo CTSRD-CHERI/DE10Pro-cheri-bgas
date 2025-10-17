@@ -9,7 +9,6 @@ import FIFO::*;
 import MattUtil::*;
 import SamUtil::*;
 
-export CapSigCheckIn(..);
 export mk1RoundPerCycleCapSigCheck;
 
 // The internals of the signature checker calculate a round of AES-128 encryption, generating the next round key on-the-fly.
@@ -117,12 +116,6 @@ module mkInternalCalc_2024Aes1RoundPerCycle(InternalCalc);
 
     interface in = toPut(asIfc(inReg));
 endmodule
-
-typedef struct {
-    tcap cap;
-    Bit#(128) expectedSig;
-    Bit#(128) secret;
-} CapSigCheckIn#(type tcap) deriving (Bits, FShow);
 
 // TODO this needs an "abort" signal! in case the decoder fails early
 module mk1RoundPerCycleCapSigCheck#(Get#(CapSigCheckIn#(tcap)) in, Put#(CapCheckResult#(Bit#(0))) out)(Empty) provisos (Cap#(tcap));

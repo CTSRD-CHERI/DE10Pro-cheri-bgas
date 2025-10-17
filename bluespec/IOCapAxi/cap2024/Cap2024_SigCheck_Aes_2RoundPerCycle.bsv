@@ -9,8 +9,6 @@ import FIFO::*;
 import MattUtil::*;
 import SamUtil::*;
 
-import Cap2024_SigCheck_Aes_1RoundPerCycle::*; // Get CapSigCheckIn
-
 export mk2RoundPerCycleCapSigCheck;
 
 /* AES-128 computation structure

@@ -2,6 +2,8 @@ set_global_assignment -name TOP_LEVEL_ENTITY SimpleIOCapExposerKeyMngrV2Tb_desig
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 23.2.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:50:32  OCTOBER 16, 2025"
 set_global_assignment -name LAST_QUARTUS_VERSION "23.2.0 Pro Edition"
+set_global_assignment -name VERILOG_FILE ../build/verilog/mkInternalCalc_2024Aes1RoundPerCycleFast.v
+set_global_assignment -name VERILOG_FILE ../build/verilog/mkSimpleIOCapExposerV6_blockinvalid_1percycle_Tb.v
 set_global_assignment -name VERILOG_FILE ../build/verilog/mkInternalCalc_2024Aes2RoundPerCycleFast.v
 set_global_assignment -name VERILOG_FILE ../build/verilog/mkInternalCalc_2024Aes2RoundPerCycle.v
 set_global_assignment -name VERILOG_FILE "/home/sws35/Programs/bsc-2023.07-ubuntu-22.04/lib/Verilog/BRAM2Load.v"

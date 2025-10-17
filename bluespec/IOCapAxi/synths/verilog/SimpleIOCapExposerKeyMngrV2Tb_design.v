@@ -27,7 +27,7 @@ module SimpleIOCapExposerKeyMngrV2Tb_design(
         .pin_on_slow_clk(pin_out)
     );
 
-    mkSimpleIOCapExposerV6_blockinvalid_Tb dut(
+    mkSimpleIOCapExposerV6_blockinvalid_1percycle_Tb dut(
         .CLK(CLK_FAST),
         .RST_N(RST_N),
 

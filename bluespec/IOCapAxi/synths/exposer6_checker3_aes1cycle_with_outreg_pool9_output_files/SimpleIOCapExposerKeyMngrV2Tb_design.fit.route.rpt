@@ -1,0 +1,527 @@
+Fitter Route Stage Report for SimpleIOCapExposerKeyMngrV2Tb_design
+Fri Oct 17 18:58:44 2025
+Quartus Prime Version 23.2.0 Build 94 06/14/2023 SC Pro Edition
+
+
+---------------------
+; Table of Contents ;
+---------------------
+  1. Legal Notice
+  2. Nets with Highest Wire Count
+  3. Delay Chain Summary
+  4. Routing Usage Summary
+  5. Route Messages
+  6. Estimated Delay Added for Hold Timing Summary
+  7. Estimated Delay Added for Hold Timing Details
+  8. Global Router Congestion Hotspot Summary
+  9. Global Router Wire Utilization Map
+ 10. Peak Wire Demand Summary
+ 11. Peak Wire Demand Details
+ 12. Peak Total Grid Crossings
+
+
+
+----------------
+; Legal Notice ;
+----------------
+Copyright (C) 2023  Intel Corporation. All rights reserved.
+Your use of Intel Corporation's design tools, logic functions 
+and other software and tools, and any partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Intel Program License 
+Subscription Agreement, the Intel Quartus Prime License Agreement,
+the Intel FPGA IP License Agreement, or other applicable license
+agreement, including, without limitation, that your use is for
+the sole purpose of programming logic devices manufactured by
+Intel and sold by Intel or its authorized distributors.  Please
+refer to the applicable agreement for further details, at
+https://fpgasoftware.intel.com/eula.
+
+
+
++------------------------------------------------------------------------------+
+; Nets with Highest Wire Count                                                 ;
++----------------------------------------------+----------------------+--------+
+; Net                                          ; Number of Wires Used ; Fanout ;
++----------------------------------------------+----------------------+--------+
+; CLK_FAST~input                               ; 4752                 ; 4430   ;
+; RST_N~input                                  ; 3748                 ; 9845   ;
+; dut|reduce_or_7                              ; 182                  ; 390    ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|d0d1   ; 158                  ; 346    ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|d0di~0 ; 145                  ; 346    ;
+; dut|reduce_or_17                             ; 140                  ; 392    ;
+; dut|exposer4x32Impl_awIn_authFlitFIFO|d0h~0  ; 139                  ; 346    ;
+; dut|reduce_or_12                             ; 138                  ; 390    ;
+; dut|reduce_or_4                              ; 137                  ; 390    ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|d0h~0  ; 136                  ; 346    ;
++----------------------------------------------+----------------------+--------+
+
+
++-----------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Delay Chain Summary                                                                                                                                       ;
++----------+----------+---------------------+--------------------+----------------+-----------------------------------+-------------------------------------+
+; Name     ; Pin Type ; Input Delay Chain 0 ; Output Delay Chain ; OE Delay Chain ; IO_12_LANE Input Data Delay Chain ; IO_12_LANE Input Strobe Delay Chain ;
++----------+----------+---------------------+--------------------+----------------+-----------------------------------+-------------------------------------+
+; pin_out  ; Output   ; --                  ; 0                  ; --             ; --                                ; --                                  ;
+; CLK_SLOW ; Input    ; 0                   ; --                 ; --             ; --                                ; --                                  ;
+; RST_N    ; Input    ; 0                   ; --                 ; --             ; --                                ; --                                  ;
+; CLK_FAST ; Input    ; 0                   ; --                 ; --             ; --                                ; --                                  ;
+; pin_in   ; Input    ; 0                   ; --                 ; --             ; --                                ; --                                  ;
++----------+----------+---------------------+--------------------+----------------+-----------------------------------+-------------------------------------+
+
+
++---------------------------------------------------------------+
+; Routing Usage Summary                                         ;
++--------------------------------+------------------------------+
+; Routing Resource Type          ; Usage                        ;
++--------------------------------+------------------------------+
+; Block Input Muxes              ; 4,406 / 675,444 ( < 1 % )    ;
+; Block interconnects            ; 211,079 / 9,132,912 ( 2 % )  ;
+; C16 interconnects              ; 6,262 / 226,512 ( 3 % )      ;
+; C2 interconnects               ; 39,477 / 1,359,072 ( 3 % )   ;
+; C3 interconnects               ; 54,955 / 2,758,032 ( 2 % )   ;
+; C4 interconnects               ; 60,010 / 1,772,208 ( 3 % )   ;
+; CLOCK_INVERTs                  ; 2 / 7,616 ( < 1 % )          ;
+; DCM_muxes                      ; 1 / 1,632 ( < 1 % )          ;
+; Direct links                   ; 29,721 / 9,132,912 ( < 1 % ) ;
+; GAP Interconnects              ; 6,444 / 267,192 ( 2 % )      ;
+; GAPs                           ; 0 / 29,304 ( 0 % )           ;
+; HIO Buffers                    ; 3 / 209,664 ( < 1 % )        ;
+; Horizontal Buffers             ; 2,193 / 176,364 ( 1 % )      ;
+; Horizontal_clock_segment_muxes ; 4 / 7,488 ( < 1 % )          ;
+; Programmable Inverts           ; 4 / 318,960 ( < 1 % )        ;
+; R10 interconnects              ; 56,193 / 2,456,208 ( 2 % )   ;
+; R2 interconnects               ; 50,464 / 2,265,120 ( 2 % )   ;
+; R24 interconnects              ; 4,384 / 293,040 ( 1 % )      ;
+; R24/C16 interconnect drivers   ; 7,086 / 453,024 ( 2 % )      ;
+; R4 interconnects               ; 78,102 / 3,248,028 ( 2 % )   ;
+; Row Clock Tap-Offs             ; 1 / 725,544 ( < 1 % )        ;
+; Switchbox_clock_muxes          ; 10 / 41,600 ( < 1 % )        ;
+; Vertical_seam_tap_muxes        ; 5 / 22,848 ( < 1 % )         ;
++--------------------------------+------------------------------+
+
+
++----------------+
+; Route Messages ;
++----------------+
+Info (20030): Parallel compilation is enabled and will use 24 of the 24 processors detected
+Info: *******************************************************************
+Info: Running Quartus Prime Fitter
+    Info: Version 23.2.0 Build 94 06/14/2023 SC Pro Edition
+    Info: Processing started: Fri Oct 17 18:48:57 2025
+    Info: System process ID: 3144261
+Info: Command: quartus_fit --read_settings_files=on --write_settings_files=off SimpleIOCapExposerKeyMngrV2Tb_design -c SimpleIOCapExposerKeyMngrV2Tb_design
+Info: qfit2_default_script.tcl version: #1
+Info: Project  = SimpleIOCapExposerKeyMngrV2Tb_design
+Info: Revision = SimpleIOCapExposerKeyMngrV2Tb_design
+Info (22300): Design uses Placement Effort Multiplier = 1.0.
+Info (170193): Fitter routing operations beginning
+Info (20215): Router estimated peak short interconnect demand : 74% of down directional wire in region X248_Y64 to X255_Y71
+    Info (20265): Estimated peak short right directional wire demand : 26% in region X256_Y80 to X263_Y87
+    Info (20265): Estimated peak short left directional wire demand : 49% in region X232_Y40 to X239_Y47
+    Info (20265): Estimated peak short up directional wire demand : 54% in region X256_Y96 to X263_Y103
+    Info (20265): Estimated peak short down directional wire demand : 74% in region X248_Y64 to X255_Y71
+Info (20215): Router estimated peak long high speed interconnect demand : 125% of left directional wire in region X240_Y56 to X247_Y63
+    Info (20265): Estimated peak long high speed right directional wire demand : 107% in region X256_Y88 to X263_Y95
+    Info (20265): Estimated peak long high speed left directional wire demand : 125% in region X240_Y56 to X247_Y63
+    Info (20265): Estimated peak long high speed up directional wire demand : 107% in region X232_Y96 to X239_Y103
+    Info (20265): Estimated peak long high speed down directional wire demand : 125% in region X240_Y72 to X247_Y79
+    Info (20315): Note that the router may use short wires to implement long connections at higher delay
+Info (170239): Router is attempting to preserve 0.00 percent of routes from an earlier compilation, a user specified Routing Constraints File, or internal routing requirements.
+Info (11888): Total time spent on timing analysis during Routing is 12.20 seconds.
+Info (16607): Fitter routing operations ending: elapsed time is 00:03:18
+
+
++------------------------------------------------------------+
+; Estimated Delay Added for Hold Timing Summary              ;
++-----------------+----------------------+-------------------+
+; Source Clock(s) ; Destination Clock(s) ; Delay Added in ns ;
++-----------------+----------------------+-------------------+
+; CLK_FAST        ; CLK_FAST             ; 11220.1           ;
++-----------------+----------------------+-------------------+
+Note: For more information on problematic transfers, consider running the Fitter again with the Optimize hold timing option (Settings Menu) turned off.
+This will disable optimization of problematic paths and expose them for further analysis using the Timing Analyzer.
+
+
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Estimated Delay Added for Hold Timing Details                                                                                                                     ;
++-----------------------------------------------------------------------+-----------------------------------------------------------------------+-------------------+
+; Source Register                                                       ; Destination Register                                                  ; Delay Added in ns ;
++-----------------------------------------------------------------------+-----------------------------------------------------------------------+-------------------+
+; dut|exposer4x32Impl_arIn_flitInProgress[162]                          ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[34]                   ; 0.938             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_2[2]       ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[2]       ; 0.928             ;
+; dut|exposer4x32Impl_arIn_flitInProgress[109]                          ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[237]                  ; 0.910             ;
+; dut|exposer4x32Impl_arIn_flitInProgress[150]                          ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[22]                   ; 0.864             ;
+; dut|exposer4x32Impl_arIn_flitInProgress[128]                          ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[0]                    ; 0.846             ;
+; dut|exposer4x32Impl_arIn_flitInProgress[103]                          ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[231]                  ; 0.840             ;
+; i|shift_reg[289]                                                      ; dut|exposer4x32Impl_arIn_inFlitsFIFO|data0_reg[126]                   ; 0.839             ;
+; dut|exposer4x32Impl_arIn_flitInProgress[102]                          ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[230]                  ; 0.825             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[102]     ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_0[102]     ; 0.819             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[124]     ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_0[124]     ; 0.817             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[95]      ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_0[95]      ; 0.811             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[130]     ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_0[130]     ; 0.810             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[160]     ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_0[160]     ; 0.810             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_2[4]       ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[4]       ; 0.808             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[98]      ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_0[98]      ; 0.795             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[126]     ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_0[126]     ; 0.790             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[122]     ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_0[122]     ; 0.786             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_2[118]     ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[118]     ; 0.761             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[97]      ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_0[97]      ; 0.757             ;
+; dut|exposer4x32Impl_arIn_flitInProgress[142]                          ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[14]                   ; 0.739             ;
+; dut|exposer4x32Impl_awChecker_checkers_1_currentCap[64]               ; dut|exposer4x32Impl_awChecker_checkers_1_calc|inReg_register[192]     ; 0.737             ;
+; dut|exposer4x32Impl_arChecker_checkers_1_respsMapFIFO_regs_1[5]       ; dut|exposer4x32Impl_arChecker_checkers_1_respsMapFIFO_regs_0[5]       ; 0.734             ;
+; dut|exposer4x32Impl_arChecker_checkers_1_respsMapFIFO_regs_1[3]       ; dut|exposer4x32Impl_arChecker_checkers_1_respsMapFIFO_regs_0[3]       ; 0.733             ;
+; dut|exposer4x32Impl_arIn_flitInProgress[110]                          ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[238]                  ; 0.728             ;
+; dut|exposer4x32Impl_arChecker_checkers_1_respsMapFIFO_regs_1[1]       ; dut|exposer4x32Impl_arChecker_checkers_1_respsMapFIFO_regs_0[1]       ; 0.715             ;
+; dut|exposer4x32Impl_arChecker_checkers_5_currentCap[60]               ; dut|exposer4x32Impl_arChecker_checkers_5_calc|inReg_register[188]     ; 0.698             ;
+; dut|exposer4x32Impl_awChecker_checkers_6_decodeOutFIFO|data1_reg[25]  ; dut|exposer4x32Impl_awChecker_checkers_6_decodeOutFIFO|data0_reg[25]  ; 0.696             ;
+; dut|exposer4x32Impl_arChecker_checkers_1_respsMapFIFO_regs_2[2]       ; dut|exposer4x32Impl_arChecker_checkers_1_respsMapFIFO_regs_1[2]       ; 0.695             ;
+; dut|exposer4x32Impl_awChecker_checkers_6_respsMapFIFO_regs_2[2]       ; dut|exposer4x32Impl_awChecker_checkers_6_respsMapFIFO_regs_1[2]       ; 0.691             ;
+; dut|exposer4x32Impl_arChecker_checkers_5_currentCap[62]               ; dut|exposer4x32Impl_arChecker_checkers_5_calc|inReg_register[190]     ; 0.688             ;
+; dut|exposer4x32Impl_awChecker_checkers_1_currentCap[71]               ; dut|exposer4x32Impl_awChecker_checkers_1_calc|inReg_register[199]     ; 0.682             ;
+; dut|exposer4x32Impl_arChecker_checkers_3_respsMapFIFO_regs_2[166]     ; dut|exposer4x32Impl_arChecker_checkers_3_respsMapFIFO_regs_1[166]     ; 0.673             ;
+; dut|exposer4x32Impl_awChecker_checkers_4_currentCap[45]               ; dut|exposer4x32Impl_awChecker_checkers_4_calc|inReg_register[173]     ; 0.667             ;
+; dut|exposer4x32Impl_arChecker_checkers_5_respsMapFIFO_regs_1[1]       ; dut|exposer4x32Impl_arChecker_checkers_5_respsMapFIFO_regs_0[1]       ; 0.659             ;
+; dut|exposer4x32Impl_awChecker_checkers_0_respsMapFIFO_regs_1[3]       ; dut|exposer4x32Impl_awChecker_checkers_0_respsMapFIFO_regs_0[3]       ; 0.649             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[7]       ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_0[0]       ; 0.634             ;
+; dut|exposer4x32Impl_arChecker_checkers_5_respsMapFIFO_regs_1[2]       ; dut|exposer4x32Impl_arChecker_checkers_5_respsMapFIFO_regs_0[2]       ; 0.629             ;
+; dut|exposer4x32Impl_awChecker_checkers_0_respsMapFIFO_regs_2[1]       ; dut|exposer4x32Impl_awChecker_checkers_0_respsMapFIFO_regs_1[1]       ; 0.623             ;
+; dut|exposer4x32Impl_arIn_flitInProgress[19]                           ; dut|exposer4x32Impl_arIn_authFlitFIFO|data1_reg[147]                  ; 0.623             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[76]      ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_0[76]      ; 0.620             ;
+; dut|exposer4x32Impl_arChecker_checkers_4_respsMapFIFO_regs_1[73]      ; dut|exposer4x32Impl_arChecker_checkers_4_respsMapFIFO_regs_0[73]      ; 0.616             ;
+; dut|exposer4x32Impl_awChecker_checkers_4_currentCap[85]               ; dut|exposer4x32Impl_awChecker_checkers_4_calc|inReg_register[213]     ; 0.605             ;
+; dut|exposer4x32Impl_awChecker_checkers_1_currentCap[87]               ; dut|exposer4x32Impl_awChecker_checkers_1_calc|inReg_register[215]     ; 0.605             ;
+; dut|exposer4x32Impl_awIn_flitInProgress[168]                          ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[40]                   ; 0.604             ;
+; dut|exposer4x32Impl_arIn_flitInProgress[96]                           ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[224]                  ; 0.604             ;
+; dut|exposer4x32Impl_awChecker_checkers_4_currentCap[121]              ; dut|exposer4x32Impl_awChecker_checkers_4_calc|inReg_register[249]     ; 0.604             ;
+; dut|exposer4x32Impl_awChecker_checkers_6_decodeOutFIFO|data1_reg[85]  ; dut|exposer4x32Impl_awChecker_checkers_6_decodeOutFIFO|data0_reg[85]  ; 0.601             ;
+; dut|exposer4x32Impl_arChecker_checkers_3_working_base_addr[3]         ; dut|exposer4x32Impl_arChecker_checkers_3_calc_inReg_register[120]     ; 0.593             ;
+; dut|exposer4x32Impl_awChecker_checkers_1_currentCap[103]              ; dut|exposer4x32Impl_awChecker_checkers_1_calc|inReg_register[231]     ; 0.592             ;
+; dut|exposer4x32Impl_arIn_flitInProgress[119]                          ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[247]                  ; 0.589             ;
+; dut|exposer4x32Impl_awChecker_checkers_4_currentCap[56]               ; dut|exposer4x32Impl_awChecker_checkers_4_calc|inReg_register[184]     ; 0.589             ;
+; dut|exposer4x32Impl_awChecker_checkers_1_currentCap[7]                ; dut|exposer4x32Impl_awChecker_checkers_1_calc|inReg_register[135]     ; 0.589             ;
+; dut|exposer4x32Impl_awChecker_checkers_4_currentCap[22]               ; dut|exposer4x32Impl_awChecker_checkers_4_calc|inReg_register[150]     ; 0.589             ;
+; dut|exposer4x32Impl_arChecker_checkers_3_currentCap[121]              ; dut|exposer4x32Impl_arChecker_checkers_3_calc|inReg_register[249]     ; 0.586             ;
+; dut|exposer4x32Impl_arChecker_checkers_1_working_base_addr[12]        ; dut|exposer4x32Impl_arChecker_checkers_1_calc_inReg_register[129]     ; 0.585             ;
+; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data1_reg[72]  ; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data0_reg[72]  ; 0.585             ;
+; dut|exposer4x32Impl_awChecker_checkers_4_currentCap[33]               ; dut|exposer4x32Impl_awChecker_checkers_4_calc|inReg_register[161]     ; 0.584             ;
+; dut|exposer4x32Impl_arIn_flitInProgress[111]                          ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[239]                  ; 0.583             ;
+; dut|exposer4x32Impl_arIn_flitInProgress[113]                          ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[241]                  ; 0.581             ;
+; dut|exposer4x32Impl_awChecker_checkers_7_currentCap[21]               ; dut|exposer4x32Impl_awChecker_checkers_7_calc|inReg_register[149]     ; 0.581             ;
+; dut|exposer4x32Impl_arChecker_checkers_4_decodeOutFIFO|data1_reg[92]  ; dut|exposer4x32Impl_arChecker_checkers_4_decodeOutFIFO|data0_reg[92]  ; 0.579             ;
+; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data1_reg[70]  ; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data0_reg[70]  ; 0.578             ;
+; dut|exposer4x32Impl_awChecker_checkers_4_currentCap[94]               ; dut|exposer4x32Impl_awChecker_checkers_4_calc|inReg_register[222]     ; 0.578             ;
+; dut|exposer4x32Impl_arIn_flitInProgress[117]                          ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[245]                  ; 0.577             ;
+; dut|exposer4x32Impl_arChecker_checkers_1_respsMapFIFO_regs_2[6]       ; dut|exposer4x32Impl_arChecker_checkers_1_respsMapFIFO_regs_2[0]       ; 0.576             ;
+; dut|exposer4x32Impl_arChecker_checkers_1_respsMapFIFO_regs_2[7]       ; dut|exposer4x32Impl_arChecker_checkers_1_respsMapFIFO_regs_2[0]       ; 0.573             ;
+; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data1_reg[33]  ; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data0_reg[33]  ; 0.573             ;
+; dut|exposer4x32Impl_awChecker_checkers_7_currentCap[25]               ; dut|exposer4x32Impl_awChecker_checkers_7_calc|inReg_register[153]     ; 0.571             ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data1_reg[58]                   ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[58]                   ; 0.569             ;
+; dut|exposer4x32Impl_arChecker_checkers_1_currentCap[63]               ; dut|exposer4x32Impl_arChecker_checkers_1_calc|inReg_register[191]     ; 0.569             ;
+; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data1_reg[127] ; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data0_reg[127] ; 0.567             ;
+; dut|exposer4x32Impl_awChecker_checkers_1_respsMapFIFO_regs_1[1]       ; dut|exposer4x32Impl_awChecker_checkers_1_respsMapFIFO_regs_0[1]       ; 0.566             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[88]      ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_0[88]      ; 0.562             ;
+; dut|exposer4x32Impl_arIn_inFlitsFIFO|data1_reg[96]                    ; dut|exposer4x32Impl_arIn_inFlitsFIFO|data0_reg[96]                    ; 0.562             ;
+; dut|exposer4x32Impl_arChecker_checkers_6_initial_elem_width_log2[4]   ; dut|exposer4x32Impl_arChecker_checkers_6_calc_inReg_register[187]     ; 0.560             ;
+; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data1_reg[77]  ; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data0_reg[77]  ; 0.558             ;
+; o|data_xord[2][0]                                                     ; o|data_xord[3][0]                                                     ; 0.557             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[80]      ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_0[80]      ; 0.556             ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data1_reg[176]                  ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[176]                  ; 0.556             ;
+; dut|exposer4x32Impl_awChecker_checkers_3_working_end_offset[28]       ; dut|exposer4x32Impl_awChecker_checkers_3_calc_inReg_register[80]      ; 0.554             ;
+; dut|exposer4x32Impl_arChecker_checkers_3_working_base_addr[9]         ; dut|exposer4x32Impl_arChecker_checkers_3_calc_inReg_register[126]     ; 0.553             ;
+; dut|exposer4x32Impl_arChecker_checkers_8_currentCap[74]               ; dut|exposer4x32Impl_arChecker_checkers_8_calc|inReg_register[202]     ; 0.551             ;
+; dut|exposer4x32Impl_arChecker_checkers_3_working_base_addr[12]        ; dut|exposer4x32Impl_arChecker_checkers_3_calc_inReg_register[129]     ; 0.550             ;
+; dut|exposer4x32Impl_arChecker_checkers_1_currentCap[62]               ; dut|exposer4x32Impl_arChecker_checkers_1_calc|inReg_register[190]     ; 0.548             ;
+; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data1_reg[90]  ; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data0_reg[90]  ; 0.548             ;
+; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data0_reg[2]   ; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data0_reg[2]   ; 0.548             ;
+; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data1_reg[67]  ; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data0_reg[67]  ; 0.548             ;
+; dut|exposer4x32Impl_arChecker_checkers_6_working_log_max_count[1]     ; dut|exposer4x32Impl_arChecker_checkers_6_calc_inReg_register[184]     ; 0.547             ;
+; dut|exposer4x32Impl_arIn_flitInProgress[62]                           ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[190]                  ; 0.547             ;
+; dut|exposer4x32Impl_arChecker_checkers_7_decodeOutFIFO|data1_reg[119] ; dut|exposer4x32Impl_arChecker_checkers_7_decodeOutFIFO|data0_reg[119] ; 0.547             ;
+; dut|exposer4x32Impl_arChecker_checkers_3_currentCap[99]               ; dut|exposer4x32Impl_arChecker_checkers_3_calc|inReg_register[227]     ; 0.547             ;
+; dut|exposer4x32Impl_wIn|D_OUT[34]                                     ; o|data_reg[34]                                                        ; 0.547             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[84]      ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_0[84]      ; 0.545             ;
+; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_2[138]     ; dut|exposer4x32Impl_awChecker_checkers_2_respsMapFIFO_regs_1[138]     ; 0.544             ;
+; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data1_reg[131] ; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data0_reg[131] ; 0.543             ;
+; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data1_reg[16]  ; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data0_reg[16]  ; 0.543             ;
+; dut|exposer4x32Impl_awChecker_checkers_6_decodeOutFIFO|data1_reg[106] ; dut|exposer4x32Impl_awChecker_checkers_6_decodeOutFIFO|data0_reg[106] ; 0.542             ;
+; dut|exposer4x32Impl_awChecker_checkers_3_working_end_offset[38]       ; dut|exposer4x32Impl_awChecker_checkers_3_calc_inReg_register[90]      ; 0.541             ;
+; dut|exposer4x32Impl_awChecker_checkers_1_respsMapFIFO_regs_2[4]       ; dut|exposer4x32Impl_awChecker_checkers_1_respsMapFIFO_regs_1[4]       ; 0.541             ;
+; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data1_reg[2]   ; dut|exposer4x32Impl_arChecker_checkers_6_decodeOutFIFO|data0_reg[2]   ; 0.541             ;
++-----------------------------------------------------------------------+-----------------------------------------------------------------------+-------------------+
+Note: This table only shows the top 100 path(s) that have the largest delay added for hold.
+
+
+--------------------------------------------
+; Global Router Congestion Hotspot Summary ;
+--------------------------------------------
+No congestion hotspots found where global router short wire usage exceeded 100%.
+If the design is hard to route, use other techniques to analyze congestion. Refer to the Estimated Delay Added for Hold Timing section in the Fitter report and routing utilization in the Chip Planner.
+
+
+--------------------------------------
+; Global Router Wire Utilization Map ;
+--------------------------------------
+This report is unavailable in plain text report export.
+
+
++-------------------------------------------------------------------------------+
+; Peak Wire Demand Summary                                                      ;
++-----------------+-----------+-----------------------------------+-------------+
+; Wire            ; Direction ; Grid [(Xmin, Ymin), (Xmax, Ymax)] ; Peak Demand ;
++-----------------+-----------+-----------------------------------+-------------+
+; short           ; right     ; [(256, 80), (263, 87)]            ; 26.333 %    ;
+; short           ; left      ; [(232, 40), (239, 47)]            ; 49.531 %    ;
+; short           ; up        ; [(256, 96), (263, 103)]           ; 54.988 %    ;
+; short           ; down      ; [(248, 64), (255, 71)]            ; 74.942 %    ;
+; long high speed ; right     ; [(216, 56), (223, 63)]            ; 100.000 %   ;
+; long high speed ; left      ; [(232, 64), (239, 71)]            ; 100.000 %   ;
+; long high speed ; up        ; [(208, 56), (215, 63)]            ; 100.000 %   ;
+; long high speed ; down      ; [(208, 80), (215, 87)]            ; 100.000 %   ;
++-----------------+-----------+-----------------------------------+-------------+
+
+
++----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Peak Wire Demand Details                                                                                                                                                                     ;
++-----------------+-----------+-----------------------------------+-------------+--------------------------------------------------------------------------------------------------------------+
+; Wire            ; Direction ; Grid [(Xmin, Ymin), (Xmax, Ymax)] ; Peak Demand ; Net Names                                                                                                    ;
++-----------------+-----------+-----------------------------------+-------------+--------------------------------------------------------------------------------------------------------------+
+; short           ; right     ; [(256, 80), (263, 87)]            ; 26.333 %    ;    High Routing Fan-Out                                                                                      ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_1_working_fail[2]                                                     ;
+;     --          ;           ;                                   ;             ; dut|add_206~1                                                                                                ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awChecker_checkers_3_decodeState[131]                                                    ;
+;     --          ;           ;                                   ;             ; dut|WILL_FIRE_RL_exposer4x32Impl_arChecker_checkers_1_backendFSM_action_l598c17~0                            ;
+;     --          ;           ;                                   ;             ; dut|MUX_exposer4x32Impl_arChecker_checkers_1_decodeOutFIFO$enq_1__SEL_2~0                                    ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awChecker_checkers_3_savedAuthFlit[273]                                                  ;
+;     --          ;           ;                                   ;             ; dut|WILL_FIRE_RL_exposer4x32Impl_arChecker_checkers_1_backendFSM_action_l327c13~0xsyn                        ;
+;     --          ;           ;                                   ;             ; dut|Select_2687~3                                                                                            ;
+;     --          ;           ;                                   ;             ; dut|WILL_FIRE_RL_exposer4x32Impl_arChecker_checkers_1_backendFSM_action_l573c17                              ;
+;     --          ;           ;                                   ;             ; dut|WILL_FIRE_RL_exposer4x32Impl_arChecker_checkers_1_backendFSM_action_l347c13                              ;
+; short           ; right     ; [(256, 80), (263, 87)]            ; 26.333 %    ;    Long Distance                                                                                             ;
+;     --          ;           ;                                   ;             ; dut|i276496~34                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[32]                                                          ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[246]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[238]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[160]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[198]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[194]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[190]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[177]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[175]                                                         ;
+; short           ; left      ; [(232, 40), (239, 47)]            ; 49.531 %    ;    High Routing Fan-Out                                                                                      ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_8_working_fail[2]                                                     ;
+;     --          ;           ;                                   ;             ; dut|add_182~1                                                                                                ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_6_decodeState[131]                                                    ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_8_decodeState[131]                                                    ;
+;     --          ;           ;                                   ;             ; dut|WILL_FIRE_RL_exposer4x32Impl_arChecker_checkers_8_backendFSM_action_l598c17~0                            ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_8_decodeOutFIFO|d0h~0                                                 ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_8_decodeOutFIFO|d0d1                                                  ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_8_decodeOutFIFO|d0di~0                                                ;
+;     --          ;           ;                                   ;             ; dut|MUX_exposer4x32Impl_arChecker_checkers_8_decodeOutFIFO$enq_1__SEL_2~0                                    ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_6_decodeInFIFO|d0h~0                                                  ;
+; short           ; left      ; [(232, 40), (239, 47)]            ; 49.531 %    ;    Long Distance                                                                                             ;
+;     --          ;           ;                                   ;             ; dut|i248521~12                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_6_decodeState[131]                                                    ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_6_decodeState[130]                                                    ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[314]                                                         ;
+;     --          ;           ;                                   ;             ; dut|i248521~38                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[302]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_8_decodeOutFIFO|empty_reg                                             ;
+;     --          ;           ;                                   ;             ; dut|i248521~18                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i248521~8                                                                                                ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_8_decodeState[0]                                                      ;
+; short           ; up        ; [(256, 96), (263, 103)]           ; 54.988 %    ;    High Routing Fan-Out                                                                                      ;
+;     --          ;           ;                                   ;             ; dut|reduce_or_9                                                                                              ;
+;     --          ;           ;                                   ;             ; dut|reduce_or_5                                                                                              ;
+;     --          ;           ;                                   ;             ; dut|MUX_exposer4x32Impl_awChecker_checkers_8_calc$in_put_1__SEL_1~1                                          ;
+;     --          ;           ;                                   ;             ; dut|MUX_exposer4x32Impl_awChecker_checkers_2_calc$in_put_1__SEL_1~1                                          ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awChecker_checkers_2_calc|reduce_nor_3                                                   ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[174]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[180]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awChecker_checkers_2_calc|inReg_register[121]                                            ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awChecker_checkers_2_calc|inReg_register_BITS_143_TO_136_8_XOR_inReg_reg_ETC___d60[4]    ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awChecker_checkers_2_calc|inReg_register_BITS_175_TO_168_5_XOR_inReg_reg_ETC___d47[4]    ;
+; short           ; up        ; [(256, 96), (263, 103)]           ; 54.988 %    ;    Long Distance                                                                                             ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[171]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[225]                                                         ;
+;     --          ;           ;                                   ;             ; dut|i276626~18                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[240]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[149]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[198]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[224]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[193]                                                         ;
+;     --          ;           ;                                   ;             ; dut|i276626~17                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[145]                                                         ;
+; short           ; down      ; [(248, 64), (255, 71)]            ; 74.942 %    ;    High Routing Fan-Out                                                                                      ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awChecker_checkers_7_decodeState[131]                                                    ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awChecker_checkers_7_savedAuthFlit[273]                                                  ;
+;     --          ;           ;                                   ;             ; i|shift_reg[225]                                                                                             ;
+;     --          ;           ;                                   ;             ; i|shift_reg[224]                                                                                             ;
+;     --          ;           ;                                   ;             ; i|shift_reg[439]                                                                                             ;
+;     --          ;           ;                                   ;             ; i|shift_reg[226]                                                                                             ;
+;     --          ;           ;                                   ;             ; dut|WILL_FIRE_RL_exposer4x32Impl_awChecker_checkers_3_fetch~1                                                ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awChecker_checkers_3_fsmWorking                                                          ;
+;     --          ;           ;                                   ;             ; dut|MUX_exposer4x32Impl_awChecker_checkers_3_working_elem_count$write_1__SEL_1                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_awChecker_checkers_3_working_one_cav                                                     ;
+; short           ; down      ; [(248, 64), (255, 71)]            ; 74.942 %    ;    Long Distance                                                                                             ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[229]                                                         ;
+;     --          ;           ;                                   ;             ; dut|Mux_5167~0                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[224]                                                         ;
+;     --          ;           ;                                   ;             ; i|shift_reg[226]                                                                                             ;
+;     --          ;           ;                                   ;             ; dut|Mux_5126~0                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[0]                                                           ;
+;     --          ;           ;                                   ;             ; dut|i248521~40                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i270978~0xsyn                                                                                            ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[254]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[252]                                                         ;
+; long high speed ; right     ; [(216, 56), (223, 63)]            ; 100.000 %   ;    High Routing Fan-Out                                                                                      ;
+;     --          ;           ;                                   ;             ; dut|reduce_or_12                                                                                             ;
+;     --          ;           ;                                   ;             ; dut|i247609~0                                                                                                ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register_BITS_143_TO_136_8_XOR_inReg_reg_ETC___d60[0]    ;
+;     --          ;           ;                                   ;             ; dut|i259761~42                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259891~15                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259891~55                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259891~29                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259761~37                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259761~31                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259891~50                                                                                               ;
+; long high speed ; right     ; [(216, 56), (223, 63)]            ; 100.000 %   ;    Long Distance                                                                                             ;
+;     --          ;           ;                                   ;             ; dut|i259761~15                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259761~14                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259761~16                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259761~50                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259761~58                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259761~46                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259891~50                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259891~55                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259891~15                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259761~37                                                                                               ;
+; long high speed ; left      ; [(232, 64), (239, 71)]            ; 100.000 %   ;    High Routing Fan-Out                                                                                      ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|d0h~0                                                                  ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|d0di~0                                                                 ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_inFlitsFIFO|d0di~0                                                                  ;
+;     --          ;           ;                                   ;             ; i|shift_reg[226]                                                                                             ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_0_incomingFlit$whas~1                                                 ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_insertPointer[2]                                                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_insertPointer[3]                                                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[134]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[130]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[176]                                                         ;
+; long high speed ; left      ; [(232, 64), (239, 71)]            ; 100.000 %   ;    Long Distance                                                                                             ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[163]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[153]                                                         ;
+;     --          ;           ;                                   ;             ; dut|i259761~3                                                                                                ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[177]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[240]                                                         ;
+;     --          ;           ;                                   ;             ; dut|i259761~36                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259761~4                                                                                                ;
+;     --          ;           ;                                   ;             ; dut|i259891~56                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[237]                                                         ;
+;     --          ;           ;                                   ;             ; dut|i259891~59                                                                                               ;
+; long high speed ; up        ; [(208, 56), (215, 63)]            ; 100.000 %   ;    High Routing Fan-Out                                                                                      ;
+;     --          ;           ;                                   ;             ; dut|i247609~0                                                                                                ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[136]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[180]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[160]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[148]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[164]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register_BITS_167_TO_160_8_XOR_inReg_reg_ETC___d50[4]    ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register_BITS_135_TO_128_2_XOR_inReg_reg_ETC___d64[4]    ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_0_calc|inReg_register_BITS_135_TO_128_2_XOR_inReg_reg_ETC___d64[1]    ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[129]                                                         ;
+; long high speed ; up        ; [(208, 56), (215, 63)]            ; 100.000 %   ;    Long Distance                                                                                             ;
+;     --          ;           ;                                   ;             ; dut|i259891~41                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[139]                                                         ;
+;     --          ;           ;                                   ;             ; dut|i259761~1                                                                                                ;
+;     --          ;           ;                                   ;             ; dut|i259761~34                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259761~49                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259761~12                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[129]                                                         ;
+;     --          ;           ;                                   ;             ; dut|i259891~45                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259891~13                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259761~62                                                                                               ;
+; long high speed ; down      ; [(208, 80), (215, 87)]            ; 100.000 %   ;    High Routing Fan-Out                                                                                      ;
+;     --          ;           ;                                   ;             ; CLK_FAST~input                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[170]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[172]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_5_calc|inReg_register_BITS_135_TO_128_2_XOR_inReg_reg_ETC___d64[0]~90 ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_5_calc|inReg_register_BITS_135_TO_128_2_XOR_inReg_reg_ETC___d64[0]~93 ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_5_calc|inReg_register_BITS_135_TO_128_2_XOR_inReg_reg_ETC___d64[0]~69 ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_5_calc|inReg_register_BITS_135_TO_128_2_XOR_inReg_reg_ETC___d64[0]~70 ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_5_calc|inReg_register_BITS_135_TO_128_2_XOR_inReg_reg_ETC___d64[0]~67 ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_5_calc|inReg_register[126]                                            ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_5_calc|inReg_register_BITS_135_TO_128_2_XOR_inReg_reg_ETC___d64[0]~94 ;
+; long high speed ; down      ; [(208, 80), (215, 87)]            ; 100.000 %   ;    Long Distance                                                                                             ;
+;     --          ;           ;                                   ;             ; CLK_FAST~input                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|i259761~21                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[170]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[110]                                                         ;
+;     --          ;           ;                                   ;             ; dut|Mux_5166~0                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[30]                                                          ;
+;     --          ;           ;                                   ;             ; dut|Mux_5101~0                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|Mux_5106~0                                                                                               ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[172]                                                         ;
+;     --          ;           ;                                   ;             ; dut|exposer4x32Impl_arChecker_checkers_3_decodeInFIFO|full_reg                                               ;
++-----------------+-----------+-----------------------------------+-------------+--------------------------------------------------------------------------------------------------------------+
+
+
++-----------------------------------------------------------------------------+
+; Peak Total Grid Crossings                                                   ;
++------------------------------------------------------+----------------------+
+; Net Name                                             ; Total Grid Crossings ;
++------------------------------------------------------+----------------------+
+; CLK_FAST~input                                       ; 142                  ;
+; RST_N~input                                          ; 134                  ;
+; dut|i259761~14                                       ; 49                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[166] ; 41                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[143] ; 41                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[134] ; 40                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[163] ; 39                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[130] ; 39                   ;
+; dut|i259761~16                                       ; 38                   ;
+; dut|Mux_5101~0                                       ; 38                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[159] ; 38                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[162] ; 38                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[132] ; 38                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[128] ; 37                   ;
+; dut|Mux_5163~0                                       ; 37                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[161] ; 37                   ;
+; dut|Mux_5093~0                                       ; 37                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[164] ; 37                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[202] ; 36                   ;
+; dut|Mux_5049~0                                       ; 36                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[135] ; 36                   ;
+; dut|Mux_5092~0                                       ; 36                   ;
+; dut|Mux_5097~0                                       ; 36                   ;
+; dut|Mux_5108~0                                       ; 36                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[129] ; 36                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[131] ; 36                   ;
+; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[167] ; 35                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[139] ; 35                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[136] ; 35                   ;
+; dut|i259761~36                                       ; 35                   ;
+; dut|Mux_5169~0                                       ; 35                   ;
+; dut|Mux_5060~0                                       ; 35                   ;
+; dut|Mux_5095~0                                       ; 35                   ;
+; dut|Mux_5056~0                                       ; 35                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[160] ; 35                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[157] ; 35                   ;
+; dut|i259761~51                                       ; 35                   ;
+; dut|Mux_5078~0                                       ; 35                   ;
+; dut|Mux_5094~0                                       ; 35                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[149] ; 35                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[148] ; 35                   ;
+; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[153] ; 35                   ;
+; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[170] ; 34                   ;
+; dut|exposer4x32Impl_awIn_authFlitFIFO|data0_reg[143] ; 34                   ;
+; dut|Mux_5165~0                                       ; 34                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[146] ; 34                   ;
+; dut|exposer4x32Impl_arIn_authFlitFIFO|data0_reg[212] ; 34                   ;
+; dut|Mux_5068~0                                       ; 34                   ;
+; dut|i259761~38                                       ; 34                   ;
+; dut|Mux_5110~0                                       ; 34                   ;
++------------------------------------------------------+----------------------+
+
+

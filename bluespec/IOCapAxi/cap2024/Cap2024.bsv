@@ -216,4 +216,10 @@ typeclass Cap#(type tcap) provisos (UpToTwoCaveats#(tcap), Bits#(tcap, 128), FSh
     function AesState stateOfCap(tcap cap);
 endtypeclass
 
+typedef struct {
+    tcap cap;
+    Bit#(128) expectedSig;
+    Bit#(128) secret;
+} CapSigCheckIn#(type tcap) deriving (Bits, FShow);
+
 endpackage

@@ -16,6 +16,7 @@ import IOCapAxi_CreditValve :: *;
 import IOCapAxi_Checker3s :: *;
 import IOCapAxi_Konata :: *;
 
+import Cap2024 :: *;
 import Cap2024_11 :: *;
 import Cap2024_11_Decode_FastFSM :: *;
 
@@ -199,7 +200,8 @@ module mkSimpleIOCapExposerV6#(
     KonataMode kMode,
     IOCapAxi_KeyManager2_ExposerIfc keyStore,
     Bool blockInvalid,
-    NumProxy#(n_pool) perAddrChannelPoolSize
+    NumProxy#(n_pool) perAddrChannelPoolSize,
+    function module#(Empty) makeSigChecker(ReadOnly#(Maybe#(CapSigCheckIn#(Cap2024_11))) in, WriteOnly#(CapCheckResult#(Bit#(0))) out)
 )(IOCapSingleExposer#(t_id, t_data)) provisos (
     Add#(t_id, a__, 64),
     Add#(b__, TLog#(n_pool), 64)
@@ -268,6 +270,7 @@ module mkSimpleIOCapExposerV6#(
         kMode,
         perAddrChannelPoolSize,
         connectFastFSMCapDecode_2024_11,
+        makeSigChecker,
         keyStore.checker.killKeyMessage
     );
     Sink#(Tuple2#(AXI4_AWFlit#(t_id, 64, 3), KFlitId)) awIn <- mkChecker3CombinedPipelinedFrontend(
@@ -316,6 +319,7 @@ module mkSimpleIOCapExposerV6#(
         kMode,
         perAddrChannelPoolSize,
         connectFastFSMCapDecode_2024_11,
+        makeSigChecker,
         keyStore.checker.killKeyMessage
     );
     Sink#(Tuple2#(AXI4_ARFlit#(t_id, 64, 3), KFlitId)) arIn <- mkChecker3CombinedPipelinedFrontend(
