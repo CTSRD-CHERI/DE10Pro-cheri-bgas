@@ -312,7 +312,7 @@ set_global_assignment -name FAMILY "Stratix 10"
 set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 256
 set_location_assignment PIN_BF21 -to CLK_FAST -comment IOBANK_3C
 set_instance_assignment -name IO_STANDARD "1.8 V" -to CLK_FAST -entity {project_name}
-set_location_assignment PIN_BD20 -to CLK_SLOW -comment IOBANK_3C
+set_location_assignment PIN_BD19 -to CLK_SLOW -comment IOBANK_3C
 set_instance_assignment -name IO_STANDARD "1.8 V" -to CLK_SLOW -entity {project_name}
 set_instance_assignment -name IO_STANDARD "1.8 V" -to pin_out -entity {project_name}
 set_instance_assignment -name IO_STANDARD "1.8 V" -to pin_in -entity {project_name}
@@ -321,6 +321,7 @@ set_location_assignment PIN_BJ19 -to pin_in -comment IOBANK_3C
 set_location_assignment PIN_BH18 -to pin_out -comment IOBANK_3C
 set_location_assignment PIN_BH20 -to RST_N -comment IOBANK_3C
 set_global_assignment -name POWER_APPLY_THERMAL_MARGIN ADDITIONAL
+set_instance_assignment -name PARTITION_COLOUR 4286709717 -to {project_name} -entity {project_name}
 """
     print(suffix, file=file)
 
