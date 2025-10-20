@@ -1,0 +1,7 @@
+
+default:
+    @just --list
+
+synth:
+    quartus_sh --flow compile mkSimpleIOCapExposerV6_blockinvalid_Tb_SimpleIOCapExposerKeyMngrV2Tb_design
+
