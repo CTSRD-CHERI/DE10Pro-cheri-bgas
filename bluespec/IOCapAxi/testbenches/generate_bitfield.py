@@ -18,6 +18,25 @@ class Field:
     def __post_init__(self):
         if self.width < 1:
             raise RuntimeError(f"Cannot generate field '{self.field}' with <1 size")
+        
+@dataclasses.dataclass(frozen=True)
+class PackedArrayField:
+    name: str
+    entry_width: int
+    len: int
+    msb: bool
+
+    @property
+    def width(self) -> int:
+        return self.entry_width * self.len
+    
+    @staticmethod
+    def MSB(name: str, entry_width: int, len: int) -> "PackedArrayField":
+        return PackedArrayField(name, entry_width, len, msb=True)
+    
+    @staticmethod
+    def LSB(name: str, entry_width: int, len: int) -> "PackedArrayField":
+        return PackedArrayField(name, entry_width, len, msb=False)
 
 @dataclasses.dataclass(frozen=True)
 class BackingPrimitive:
@@ -53,7 +72,24 @@ Backing = Union[BackingPrimitive, BackingArray]
 class Struct:
     name: str
     backing: Backing
-    fields: List[Field]
+    fields: List[Field | PackedArrayField]
+
+    @property
+    def flat_fields(self) -> List[Field]:
+        fs = []
+        for f in self.fields:
+            if isinstance(f, Field):
+                fs.append(f)
+            else:
+                # TODO check MSB vs LSB?
+                fs.extend(
+                    Field(
+                        name=f"{f.name}[{i}]",
+                        width=f.entry_width
+                    )
+                    for i in range(f.len)
+                )
+        return fs
 
 class Generator:
     def generate(self, struct: Struct):
@@ -159,7 +195,23 @@ class CppGenerator:
         else:
             raise RuntimeError(f"C++ cannot express the field {field}. Maximum size 64 bits")
         
-    def cpp_type_for_field(self, field: Field) -> str:
+    def backing_array_for_packed_array(self, field: PackedArrayField) -> BackingArray:
+        backing_field: BackingPrimitive
+        if field.entry_width <= 8:
+            backing_field = U8
+        elif field.entry_width <= 16:
+            backing_field = U16
+        elif field.entry_width <= 32:
+            backing_field = U32
+        elif field.entry_width <= 64:
+            backing_field = U64
+        else:
+            raise RuntimeError(f"C++ cannot express the entry of width {field.entry_width}. Maximum size 64 bits")
+        return BackingArray(backing_field, field.len, msb=False)
+
+    def cpp_type_for_field(self, field: Field | PackedArrayField) -> str:
+        if isinstance(field, PackedArrayField):
+            return self.cpp_type_for_backing(self.backing_array_for_packed_array(field))
         return self.cpp_type_for_backing(self.backing_prim_for_field(field))
     
     # OR bit-fields from multiple names together to create a single primitive
@@ -211,7 +263,7 @@ class CppGenerator:
         pack_plan: Dict[Tuple[str, BackingPrimitive], List[OrComponent]] = defaultdict(list)
         idx_backing_elem = 0
         idx_backing_elem_bit = 0
-        for field in struct.fields:
+        for field in struct.flat_fields:
             bits_needed = field.width
             or_components = []
             while bits_needed > 0:
@@ -481,6 +533,69 @@ BLUESPEC_SANITIZEDAXI_STRUCTS = [
     ),
 ]
 
+
+BLUESPEC_AXI4LITE_STRUCTS = [
+    Struct(
+        "AWFlit_addr64_user0",
+        BackingArray.LSB(U32, 3),
+        revlist([
+            # Field("awid", 4),
+            Field("awaddr", 64),
+            # Field("awlen", 8),
+            # Field("awsize", 3),
+            # Field("awburst", 2),
+            # Field("awlock", 1),
+            # Field("awcache", 4),
+            Field("awprot", 3),
+            # Field("awqos", 4),
+            # Field("awregion", 4),
+        ]),
+    ),
+    Struct(
+        "WFlit_data32_user0",
+        U64,
+        revlist([
+            Field("wdata", 32),
+            Field("wstrb", 4),
+            # Field("wlast", 1),
+        ]),
+    ),
+    Struct(
+        "BFlit_user0",
+        U8,
+        revlist([
+            # Field("bid", 4),
+            Field("bresp", 2),
+        ]),
+    ),
+    Struct(
+        "ARFlit_addr64_user0",
+        BackingArray.LSB(U32, 3),
+        revlist([
+            # Field("arid", 4),
+            Field("araddr", 64),
+            # Field("arlen", 8),
+            # Field("arsize", 3),
+            # Field("arburst", 2),
+            # Field("arlock", 1),
+            # Field("arcache", 4),
+            Field("arprot", 3),
+            # Field("arqos", 4),
+            # Field("arregion", 4),
+        ]),
+    ),
+    Struct(
+        "RFlit_data32_user0",
+        U64,
+        revlist([
+            # Field("rid", 4),
+            Field("rdata", 32),
+            Field("rresp", 2),
+            # Field("rlast", 1),
+        ]),
+    ),
+]
+
 BLUESPEC_MAYBE_KEYID = [
     Struct(
         "MaybeKeyId",
@@ -546,6 +661,20 @@ BLUESPEC_CAPCHECKRESULT_TUPLE2_CAPPERMS_CAPRANGE = [
     )
 ]
 
+BLUESPEC_VECTOR_KEYSTATUS = [
+    Struct(
+        "KeyStatuses",
+        BackingArray.LSB(U32, 256 * 2 // 32),
+        [
+            PackedArrayField.LSB(
+                name="keyStatuses",
+                entry_width=2,
+                len=256,
+            )
+        ]
+    )
+]
+
 gen = CppGenerator(cpp_version=20, define_equality=True, define_format="fmtlib")
 for struct in BLUESPEC_IOCAPAXI_STRUCTS:
     gen.add_struct(struct, namespace="axi::IOCapAxi")
@@ -553,11 +682,16 @@ for struct in BLUESPEC_IOCAPAXI_STRUCTS:
 for struct in BLUESPEC_SANITIZEDAXI_STRUCTS:
     gen.add_struct(struct, namespace="axi::SanitizedAxi")
 
+for struct in BLUESPEC_AXI4LITE_STRUCTS:
+    gen.add_struct(struct, namespace="axi::AxiLite")
+
 for struct in BLUESPEC_TUPLE2_KEYID_MAYBE_KEY:
     gen.add_struct(struct, namespace="key_manager")
 
 for struct in BLUESPEC_MAYBE_KEYID:
     gen.add_struct(struct, namespace="key_manager2::refcountpipe")
+for struct in BLUESPEC_VECTOR_KEYSTATUS:
+    gen.add_struct(struct, namespace="key_manager2")
 
 for struct in BLUESPEC_CAPCHECKRESULT_TUPLE2_CAPPERMS_CAPRANGE:
     gen.add_struct(struct, namespace="decoder") 

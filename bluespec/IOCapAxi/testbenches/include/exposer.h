@@ -68,6 +68,7 @@ template <> class fmt::formatter<exposer::ExposerOutput> {
 enum KeyMngrVersion {
     KeyMngrV1,
     KeyMngrV2,
+    KeyMngrV2_AsDUT,
 };
 
 template<KeyMngrVersion V>
@@ -108,6 +109,28 @@ template <> class fmt::formatter<KeyMngrShimInput<KeyMngrV2>> {
     template <typename Context>
     constexpr auto format (KeyMngrShimInput<KeyMngrV2> const& x, Context& ctx) const {
         return format_to(ctx.out(), "KeyMngrShimInput<KeyMngrV2> {{ .killKeyMessage = {}, .keyResponse = {} }}", x.killKeyMessage, x.keyResponse);
+    }
+};
+
+// When the KeyMngr is an actual DUT, we only shim the AXI inputs
+template<>
+struct KeyMngrShimInput<KeyMngrV2_AsDUT> {
+    std::optional<axi::AxiLite::AWFlit_addr64_user0> ar;
+    std::optional<axi::AxiLite::ARFlit_addr64_user0> aw;
+    std::optional<axi::AxiLite::WFlit_data32_user0> w;
+
+    bool operator==(const KeyMngrShimInput<KeyMngrV2_AsDUT>&) const = default;
+    bool is_notable() const {
+        return (ar.has_value()) || (aw.has_value()) || (w.has_value());
+
+    }
+};
+template <> class fmt::formatter<KeyMngrShimInput<KeyMngrV2_AsDUT>> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (KeyMngrShimInput<KeyMngrV2_AsDUT> const& x, Context& ctx) const {
+        return format_to(ctx.out(), "KeyMngrShimInput<KeyMngrV2_AsDUT> {{ .ar = {}, .aw = {}, .w = {} }}", x.ar, x.aw, x.w);
     }
 };
 
@@ -191,6 +214,46 @@ template <> class fmt::formatter<KeyMngrShimOutput<KeyMngrV2>> {
         return format_to(ctx.out(), "KeyMngrShimOutput<KeyMngrV2> {{ .bumpPerfCounterGoodWrite = {}, ....BadWrite = {}, ....GoodRead = {}, ....BadRead = {}, .keyRequest = {}, .rValve_Inc = {}, ...r_Dec = {}, ...w_Inc = {}, ...wDec = {} }}", x.bumpPerfCounterGoodWrite, x.bumpPerfCounterBadWrite, x.bumpPerfCounterGoodRead, x.bumpPerfCounterBadRead, x.keyRequest, x.rValve_Increment, x.rValve_Decrement, x.wValve_Increment, x.wValve_Decrement);
     }
 };
+
+// When the KeyMngr is an actual DUT, we can still inspect the innards?
+template<>
+struct KeyMngrShimOutput<KeyMngrV2_AsDUT> {
+    std::optional<axi::AxiLite::RFlit_data32_user0> r;
+    std::optional<axi::AxiLite::BFlit_user0> b;
+
+
+    // bool bumpPerfCounterGoodWrite;
+    // bool bumpPerfCounterBadWrite;
+    // bool bumpPerfCounterGoodRead;
+    // bool bumpPerfCounterBadRead;
+
+    // std::optional<key_manager::KeyId> keyRequest;
+    // std::optional<key_manager::KeyId> rValve_Increment;
+    // std::optional<key_manager::KeyId> rValve_Decrement;
+    // std::optional<key_manager::KeyId> wValve_Increment;
+    // std::optional<key_manager::KeyId> wValve_Decrement;
+
+    key_manager2::KeyStatuses keyStatuses;
+
+    bool operator==(const KeyMngrShimOutput<KeyMngrV2_AsDUT>&) const = default;
+    bool is_notable() {
+        return (b.has_value()) || (r.has_value());
+        // return (bumpPerfCounterGoodWrite) || (bumpPerfCounterBadWrite) ||
+        //         (bumpPerfCounterGoodRead) || (bumpPerfCounterBadRead) ||
+        //         (keyRequest) ||
+        //         (rValve_Increment) || (rValve_Decrement) ||
+        //         (wValve_Increment) || (wValve_Decrement);
+    }
+};
+template <> class fmt::formatter<KeyMngrShimOutput<KeyMngrV2_AsDUT>> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (KeyMngrShimOutput<KeyMngrV2_AsDUT> const& x, Context& ctx) const {
+        return format_to(ctx.out(), "KeyMngrShimOutput<KeyMngrV2_AsDUT> {{ .r = {}, .b = {} }}", x.r, x.b);
+    }
+};
+
 
 template<KeyMngrVersion V>
 struct ShimmedExposerOutput : exposer::ExposerOutput {

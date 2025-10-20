@@ -555,6 +555,150 @@ namespace axi::SanitizedAxi {
 	
 }
 
+namespace axi::AxiLite {
+	struct AWFlit_addr64_user0 {
+		/** 3-bit field */
+		uint8_t awprot;
+		/** 64-bit field */
+		uint64_t awaddr;
+	
+		static AWFlit_addr64_user0 unpack(const std::array<uint32_t, 3>& backing) {
+			AWFlit_addr64_user0 value{};
+			value.awprot = (
+				uint8_t((backing[0] >> 0u) & 0x7u)
+			);
+			value.awaddr = (
+				(uint64_t((backing[0] >> 3u) & 0x1fffffffu) << 0) | 
+				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 29) | 
+				(uint64_t((backing[2] >> 0u) & 0x7u) << 61)
+			);
+			return value;
+		}
+		std::array<uint32_t, 3> pack() const {
+			std::array<uint32_t, 3> backing{};
+			backing[0] = (
+				(uint32_t((awprot >> 0u) & uint8_t(0x7ul)) << 0) | 
+				(uint32_t((awaddr >> 0u) & 0x1ffffffful) << 3)
+			);
+			backing[1] = (
+				uint32_t((awaddr >> 29u) & 0xfffffffful)
+			);
+			backing[2] = (
+				uint32_t((awaddr >> 61u) & 0x7ul)
+			);
+			return backing;
+		}
+		bool operator==(const AWFlit_addr64_user0&) const = default;
+	};
+	struct WFlit_data32_user0 {
+		/** 4-bit field */
+		uint8_t wstrb;
+		/** 32-bit field */
+		uint32_t wdata;
+	
+		static WFlit_data32_user0 unpack(const uint64_t& backing) {
+			WFlit_data32_user0 value{};
+			value.wstrb = (
+				uint8_t((backing >> 0u) & 0xful)
+			);
+			value.wdata = (
+				uint32_t((backing >> 4u) & 0xfffffffful)
+			);
+			return value;
+		}
+		uint64_t pack() const {
+			uint64_t backing{};
+			backing = (
+				(uint64_t((wstrb >> 0u) & uint8_t(0xful)) << 0) | 
+				(uint64_t((wdata >> 0u) & 0xffffffffu) << 4)
+			);
+			return backing;
+		}
+		bool operator==(const WFlit_data32_user0&) const = default;
+	};
+	struct BFlit_user0 {
+		/** 2-bit field */
+		uint8_t bresp;
+	
+		static BFlit_user0 unpack(const uint8_t& backing) {
+			BFlit_user0 value{};
+			value.bresp = (
+				((backing >> 0u) & uint8_t(0x3ul))
+			);
+			return value;
+		}
+		uint8_t pack() const {
+			uint8_t backing{};
+			backing = (
+				((bresp >> 0u) & uint8_t(0x3ul))
+			);
+			return backing;
+		}
+		bool operator==(const BFlit_user0&) const = default;
+	};
+	struct ARFlit_addr64_user0 {
+		/** 3-bit field */
+		uint8_t arprot;
+		/** 64-bit field */
+		uint64_t araddr;
+	
+		static ARFlit_addr64_user0 unpack(const std::array<uint32_t, 3>& backing) {
+			ARFlit_addr64_user0 value{};
+			value.arprot = (
+				uint8_t((backing[0] >> 0u) & 0x7u)
+			);
+			value.araddr = (
+				(uint64_t((backing[0] >> 3u) & 0x1fffffffu) << 0) | 
+				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 29) | 
+				(uint64_t((backing[2] >> 0u) & 0x7u) << 61)
+			);
+			return value;
+		}
+		std::array<uint32_t, 3> pack() const {
+			std::array<uint32_t, 3> backing{};
+			backing[0] = (
+				(uint32_t((arprot >> 0u) & uint8_t(0x7ul)) << 0) | 
+				(uint32_t((araddr >> 0u) & 0x1ffffffful) << 3)
+			);
+			backing[1] = (
+				uint32_t((araddr >> 29u) & 0xfffffffful)
+			);
+			backing[2] = (
+				uint32_t((araddr >> 61u) & 0x7ul)
+			);
+			return backing;
+		}
+		bool operator==(const ARFlit_addr64_user0&) const = default;
+	};
+	struct RFlit_data32_user0 {
+		/** 2-bit field */
+		uint8_t rresp;
+		/** 32-bit field */
+		uint32_t rdata;
+	
+		static RFlit_data32_user0 unpack(const uint64_t& backing) {
+			RFlit_data32_user0 value{};
+			value.rresp = (
+				uint8_t((backing >> 0u) & 0x3ul)
+			);
+			value.rdata = (
+				uint32_t((backing >> 2u) & 0xfffffffful)
+			);
+			return value;
+		}
+		uint64_t pack() const {
+			uint64_t backing{};
+			backing = (
+				(uint64_t((rresp >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint64_t((rdata >> 0u) & 0xffffffffu) << 2)
+			);
+			return backing;
+		}
+		bool operator==(const RFlit_data32_user0&) const = default;
+	};
+	
+}
+
 namespace key_manager {
 	struct Tuple2_KeyId_MaybeKey {
 		/** 64-bit field */
@@ -635,6 +779,1080 @@ namespace key_manager2::refcountpipe {
 			return backing;
 		}
 		bool operator==(const MaybeKeyId&) const = default;
+	};
+	
+}
+
+namespace key_manager2 {
+	struct KeyStatuses {
+		/** 512-bit field */
+		std::array<uint8_t, 256> keyStatuses;
+	
+		static KeyStatuses unpack(const std::array<uint32_t, 16>& backing) {
+			KeyStatuses value{};
+			value.keyStatuses[0] = (
+				uint8_t((backing[0] >> 0u) & 0x3u)
+			);
+			value.keyStatuses[1] = (
+				uint8_t((backing[0] >> 2u) & 0x3u)
+			);
+			value.keyStatuses[2] = (
+				uint8_t((backing[0] >> 4u) & 0x3u)
+			);
+			value.keyStatuses[3] = (
+				uint8_t((backing[0] >> 6u) & 0x3u)
+			);
+			value.keyStatuses[4] = (
+				uint8_t((backing[0] >> 8u) & 0x3u)
+			);
+			value.keyStatuses[5] = (
+				uint8_t((backing[0] >> 10u) & 0x3u)
+			);
+			value.keyStatuses[6] = (
+				uint8_t((backing[0] >> 12u) & 0x3u)
+			);
+			value.keyStatuses[7] = (
+				uint8_t((backing[0] >> 14u) & 0x3u)
+			);
+			value.keyStatuses[8] = (
+				uint8_t((backing[0] >> 16u) & 0x3u)
+			);
+			value.keyStatuses[9] = (
+				uint8_t((backing[0] >> 18u) & 0x3u)
+			);
+			value.keyStatuses[10] = (
+				uint8_t((backing[0] >> 20u) & 0x3u)
+			);
+			value.keyStatuses[11] = (
+				uint8_t((backing[0] >> 22u) & 0x3u)
+			);
+			value.keyStatuses[12] = (
+				uint8_t((backing[0] >> 24u) & 0x3u)
+			);
+			value.keyStatuses[13] = (
+				uint8_t((backing[0] >> 26u) & 0x3u)
+			);
+			value.keyStatuses[14] = (
+				uint8_t((backing[0] >> 28u) & 0x3u)
+			);
+			value.keyStatuses[15] = (
+				uint8_t((backing[0] >> 30u) & 0x3u)
+			);
+			value.keyStatuses[16] = (
+				uint8_t((backing[1] >> 0u) & 0x3u)
+			);
+			value.keyStatuses[17] = (
+				uint8_t((backing[1] >> 2u) & 0x3u)
+			);
+			value.keyStatuses[18] = (
+				uint8_t((backing[1] >> 4u) & 0x3u)
+			);
+			value.keyStatuses[19] = (
+				uint8_t((backing[1] >> 6u) & 0x3u)
+			);
+			value.keyStatuses[20] = (
+				uint8_t((backing[1] >> 8u) & 0x3u)
+			);
+			value.keyStatuses[21] = (
+				uint8_t((backing[1] >> 10u) & 0x3u)
+			);
+			value.keyStatuses[22] = (
+				uint8_t((backing[1] >> 12u) & 0x3u)
+			);
+			value.keyStatuses[23] = (
+				uint8_t((backing[1] >> 14u) & 0x3u)
+			);
+			value.keyStatuses[24] = (
+				uint8_t((backing[1] >> 16u) & 0x3u)
+			);
+			value.keyStatuses[25] = (
+				uint8_t((backing[1] >> 18u) & 0x3u)
+			);
+			value.keyStatuses[26] = (
+				uint8_t((backing[1] >> 20u) & 0x3u)
+			);
+			value.keyStatuses[27] = (
+				uint8_t((backing[1] >> 22u) & 0x3u)
+			);
+			value.keyStatuses[28] = (
+				uint8_t((backing[1] >> 24u) & 0x3u)
+			);
+			value.keyStatuses[29] = (
+				uint8_t((backing[1] >> 26u) & 0x3u)
+			);
+			value.keyStatuses[30] = (
+				uint8_t((backing[1] >> 28u) & 0x3u)
+			);
+			value.keyStatuses[31] = (
+				uint8_t((backing[1] >> 30u) & 0x3u)
+			);
+			value.keyStatuses[32] = (
+				uint8_t((backing[2] >> 0u) & 0x3u)
+			);
+			value.keyStatuses[33] = (
+				uint8_t((backing[2] >> 2u) & 0x3u)
+			);
+			value.keyStatuses[34] = (
+				uint8_t((backing[2] >> 4u) & 0x3u)
+			);
+			value.keyStatuses[35] = (
+				uint8_t((backing[2] >> 6u) & 0x3u)
+			);
+			value.keyStatuses[36] = (
+				uint8_t((backing[2] >> 8u) & 0x3u)
+			);
+			value.keyStatuses[37] = (
+				uint8_t((backing[2] >> 10u) & 0x3u)
+			);
+			value.keyStatuses[38] = (
+				uint8_t((backing[2] >> 12u) & 0x3u)
+			);
+			value.keyStatuses[39] = (
+				uint8_t((backing[2] >> 14u) & 0x3u)
+			);
+			value.keyStatuses[40] = (
+				uint8_t((backing[2] >> 16u) & 0x3u)
+			);
+			value.keyStatuses[41] = (
+				uint8_t((backing[2] >> 18u) & 0x3u)
+			);
+			value.keyStatuses[42] = (
+				uint8_t((backing[2] >> 20u) & 0x3u)
+			);
+			value.keyStatuses[43] = (
+				uint8_t((backing[2] >> 22u) & 0x3u)
+			);
+			value.keyStatuses[44] = (
+				uint8_t((backing[2] >> 24u) & 0x3u)
+			);
+			value.keyStatuses[45] = (
+				uint8_t((backing[2] >> 26u) & 0x3u)
+			);
+			value.keyStatuses[46] = (
+				uint8_t((backing[2] >> 28u) & 0x3u)
+			);
+			value.keyStatuses[47] = (
+				uint8_t((backing[2] >> 30u) & 0x3u)
+			);
+			value.keyStatuses[48] = (
+				uint8_t((backing[3] >> 0u) & 0x3u)
+			);
+			value.keyStatuses[49] = (
+				uint8_t((backing[3] >> 2u) & 0x3u)
+			);
+			value.keyStatuses[50] = (
+				uint8_t((backing[3] >> 4u) & 0x3u)
+			);
+			value.keyStatuses[51] = (
+				uint8_t((backing[3] >> 6u) & 0x3u)
+			);
+			value.keyStatuses[52] = (
+				uint8_t((backing[3] >> 8u) & 0x3u)
+			);
+			value.keyStatuses[53] = (
+				uint8_t((backing[3] >> 10u) & 0x3u)
+			);
+			value.keyStatuses[54] = (
+				uint8_t((backing[3] >> 12u) & 0x3u)
+			);
+			value.keyStatuses[55] = (
+				uint8_t((backing[3] >> 14u) & 0x3u)
+			);
+			value.keyStatuses[56] = (
+				uint8_t((backing[3] >> 16u) & 0x3u)
+			);
+			value.keyStatuses[57] = (
+				uint8_t((backing[3] >> 18u) & 0x3u)
+			);
+			value.keyStatuses[58] = (
+				uint8_t((backing[3] >> 20u) & 0x3u)
+			);
+			value.keyStatuses[59] = (
+				uint8_t((backing[3] >> 22u) & 0x3u)
+			);
+			value.keyStatuses[60] = (
+				uint8_t((backing[3] >> 24u) & 0x3u)
+			);
+			value.keyStatuses[61] = (
+				uint8_t((backing[3] >> 26u) & 0x3u)
+			);
+			value.keyStatuses[62] = (
+				uint8_t((backing[3] >> 28u) & 0x3u)
+			);
+			value.keyStatuses[63] = (
+				uint8_t((backing[3] >> 30u) & 0x3u)
+			);
+			value.keyStatuses[64] = (
+				uint8_t((backing[4] >> 0u) & 0x3u)
+			);
+			value.keyStatuses[65] = (
+				uint8_t((backing[4] >> 2u) & 0x3u)
+			);
+			value.keyStatuses[66] = (
+				uint8_t((backing[4] >> 4u) & 0x3u)
+			);
+			value.keyStatuses[67] = (
+				uint8_t((backing[4] >> 6u) & 0x3u)
+			);
+			value.keyStatuses[68] = (
+				uint8_t((backing[4] >> 8u) & 0x3u)
+			);
+			value.keyStatuses[69] = (
+				uint8_t((backing[4] >> 10u) & 0x3u)
+			);
+			value.keyStatuses[70] = (
+				uint8_t((backing[4] >> 12u) & 0x3u)
+			);
+			value.keyStatuses[71] = (
+				uint8_t((backing[4] >> 14u) & 0x3u)
+			);
+			value.keyStatuses[72] = (
+				uint8_t((backing[4] >> 16u) & 0x3u)
+			);
+			value.keyStatuses[73] = (
+				uint8_t((backing[4] >> 18u) & 0x3u)
+			);
+			value.keyStatuses[74] = (
+				uint8_t((backing[4] >> 20u) & 0x3u)
+			);
+			value.keyStatuses[75] = (
+				uint8_t((backing[4] >> 22u) & 0x3u)
+			);
+			value.keyStatuses[76] = (
+				uint8_t((backing[4] >> 24u) & 0x3u)
+			);
+			value.keyStatuses[77] = (
+				uint8_t((backing[4] >> 26u) & 0x3u)
+			);
+			value.keyStatuses[78] = (
+				uint8_t((backing[4] >> 28u) & 0x3u)
+			);
+			value.keyStatuses[79] = (
+				uint8_t((backing[4] >> 30u) & 0x3u)
+			);
+			value.keyStatuses[80] = (
+				uint8_t((backing[5] >> 0u) & 0x3u)
+			);
+			value.keyStatuses[81] = (
+				uint8_t((backing[5] >> 2u) & 0x3u)
+			);
+			value.keyStatuses[82] = (
+				uint8_t((backing[5] >> 4u) & 0x3u)
+			);
+			value.keyStatuses[83] = (
+				uint8_t((backing[5] >> 6u) & 0x3u)
+			);
+			value.keyStatuses[84] = (
+				uint8_t((backing[5] >> 8u) & 0x3u)
+			);
+			value.keyStatuses[85] = (
+				uint8_t((backing[5] >> 10u) & 0x3u)
+			);
+			value.keyStatuses[86] = (
+				uint8_t((backing[5] >> 12u) & 0x3u)
+			);
+			value.keyStatuses[87] = (
+				uint8_t((backing[5] >> 14u) & 0x3u)
+			);
+			value.keyStatuses[88] = (
+				uint8_t((backing[5] >> 16u) & 0x3u)
+			);
+			value.keyStatuses[89] = (
+				uint8_t((backing[5] >> 18u) & 0x3u)
+			);
+			value.keyStatuses[90] = (
+				uint8_t((backing[5] >> 20u) & 0x3u)
+			);
+			value.keyStatuses[91] = (
+				uint8_t((backing[5] >> 22u) & 0x3u)
+			);
+			value.keyStatuses[92] = (
+				uint8_t((backing[5] >> 24u) & 0x3u)
+			);
+			value.keyStatuses[93] = (
+				uint8_t((backing[5] >> 26u) & 0x3u)
+			);
+			value.keyStatuses[94] = (
+				uint8_t((backing[5] >> 28u) & 0x3u)
+			);
+			value.keyStatuses[95] = (
+				uint8_t((backing[5] >> 30u) & 0x3u)
+			);
+			value.keyStatuses[96] = (
+				uint8_t((backing[6] >> 0u) & 0x3u)
+			);
+			value.keyStatuses[97] = (
+				uint8_t((backing[6] >> 2u) & 0x3u)
+			);
+			value.keyStatuses[98] = (
+				uint8_t((backing[6] >> 4u) & 0x3u)
+			);
+			value.keyStatuses[99] = (
+				uint8_t((backing[6] >> 6u) & 0x3u)
+			);
+			value.keyStatuses[100] = (
+				uint8_t((backing[6] >> 8u) & 0x3u)
+			);
+			value.keyStatuses[101] = (
+				uint8_t((backing[6] >> 10u) & 0x3u)
+			);
+			value.keyStatuses[102] = (
+				uint8_t((backing[6] >> 12u) & 0x3u)
+			);
+			value.keyStatuses[103] = (
+				uint8_t((backing[6] >> 14u) & 0x3u)
+			);
+			value.keyStatuses[104] = (
+				uint8_t((backing[6] >> 16u) & 0x3u)
+			);
+			value.keyStatuses[105] = (
+				uint8_t((backing[6] >> 18u) & 0x3u)
+			);
+			value.keyStatuses[106] = (
+				uint8_t((backing[6] >> 20u) & 0x3u)
+			);
+			value.keyStatuses[107] = (
+				uint8_t((backing[6] >> 22u) & 0x3u)
+			);
+			value.keyStatuses[108] = (
+				uint8_t((backing[6] >> 24u) & 0x3u)
+			);
+			value.keyStatuses[109] = (
+				uint8_t((backing[6] >> 26u) & 0x3u)
+			);
+			value.keyStatuses[110] = (
+				uint8_t((backing[6] >> 28u) & 0x3u)
+			);
+			value.keyStatuses[111] = (
+				uint8_t((backing[6] >> 30u) & 0x3u)
+			);
+			value.keyStatuses[112] = (
+				uint8_t((backing[7] >> 0u) & 0x3u)
+			);
+			value.keyStatuses[113] = (
+				uint8_t((backing[7] >> 2u) & 0x3u)
+			);
+			value.keyStatuses[114] = (
+				uint8_t((backing[7] >> 4u) & 0x3u)
+			);
+			value.keyStatuses[115] = (
+				uint8_t((backing[7] >> 6u) & 0x3u)
+			);
+			value.keyStatuses[116] = (
+				uint8_t((backing[7] >> 8u) & 0x3u)
+			);
+			value.keyStatuses[117] = (
+				uint8_t((backing[7] >> 10u) & 0x3u)
+			);
+			value.keyStatuses[118] = (
+				uint8_t((backing[7] >> 12u) & 0x3u)
+			);
+			value.keyStatuses[119] = (
+				uint8_t((backing[7] >> 14u) & 0x3u)
+			);
+			value.keyStatuses[120] = (
+				uint8_t((backing[7] >> 16u) & 0x3u)
+			);
+			value.keyStatuses[121] = (
+				uint8_t((backing[7] >> 18u) & 0x3u)
+			);
+			value.keyStatuses[122] = (
+				uint8_t((backing[7] >> 20u) & 0x3u)
+			);
+			value.keyStatuses[123] = (
+				uint8_t((backing[7] >> 22u) & 0x3u)
+			);
+			value.keyStatuses[124] = (
+				uint8_t((backing[7] >> 24u) & 0x3u)
+			);
+			value.keyStatuses[125] = (
+				uint8_t((backing[7] >> 26u) & 0x3u)
+			);
+			value.keyStatuses[126] = (
+				uint8_t((backing[7] >> 28u) & 0x3u)
+			);
+			value.keyStatuses[127] = (
+				uint8_t((backing[7] >> 30u) & 0x3u)
+			);
+			value.keyStatuses[128] = (
+				uint8_t((backing[8] >> 0u) & 0x3u)
+			);
+			value.keyStatuses[129] = (
+				uint8_t((backing[8] >> 2u) & 0x3u)
+			);
+			value.keyStatuses[130] = (
+				uint8_t((backing[8] >> 4u) & 0x3u)
+			);
+			value.keyStatuses[131] = (
+				uint8_t((backing[8] >> 6u) & 0x3u)
+			);
+			value.keyStatuses[132] = (
+				uint8_t((backing[8] >> 8u) & 0x3u)
+			);
+			value.keyStatuses[133] = (
+				uint8_t((backing[8] >> 10u) & 0x3u)
+			);
+			value.keyStatuses[134] = (
+				uint8_t((backing[8] >> 12u) & 0x3u)
+			);
+			value.keyStatuses[135] = (
+				uint8_t((backing[8] >> 14u) & 0x3u)
+			);
+			value.keyStatuses[136] = (
+				uint8_t((backing[8] >> 16u) & 0x3u)
+			);
+			value.keyStatuses[137] = (
+				uint8_t((backing[8] >> 18u) & 0x3u)
+			);
+			value.keyStatuses[138] = (
+				uint8_t((backing[8] >> 20u) & 0x3u)
+			);
+			value.keyStatuses[139] = (
+				uint8_t((backing[8] >> 22u) & 0x3u)
+			);
+			value.keyStatuses[140] = (
+				uint8_t((backing[8] >> 24u) & 0x3u)
+			);
+			value.keyStatuses[141] = (
+				uint8_t((backing[8] >> 26u) & 0x3u)
+			);
+			value.keyStatuses[142] = (
+				uint8_t((backing[8] >> 28u) & 0x3u)
+			);
+			value.keyStatuses[143] = (
+				uint8_t((backing[8] >> 30u) & 0x3u)
+			);
+			value.keyStatuses[144] = (
+				uint8_t((backing[9] >> 0u) & 0x3u)
+			);
+			value.keyStatuses[145] = (
+				uint8_t((backing[9] >> 2u) & 0x3u)
+			);
+			value.keyStatuses[146] = (
+				uint8_t((backing[9] >> 4u) & 0x3u)
+			);
+			value.keyStatuses[147] = (
+				uint8_t((backing[9] >> 6u) & 0x3u)
+			);
+			value.keyStatuses[148] = (
+				uint8_t((backing[9] >> 8u) & 0x3u)
+			);
+			value.keyStatuses[149] = (
+				uint8_t((backing[9] >> 10u) & 0x3u)
+			);
+			value.keyStatuses[150] = (
+				uint8_t((backing[9] >> 12u) & 0x3u)
+			);
+			value.keyStatuses[151] = (
+				uint8_t((backing[9] >> 14u) & 0x3u)
+			);
+			value.keyStatuses[152] = (
+				uint8_t((backing[9] >> 16u) & 0x3u)
+			);
+			value.keyStatuses[153] = (
+				uint8_t((backing[9] >> 18u) & 0x3u)
+			);
+			value.keyStatuses[154] = (
+				uint8_t((backing[9] >> 20u) & 0x3u)
+			);
+			value.keyStatuses[155] = (
+				uint8_t((backing[9] >> 22u) & 0x3u)
+			);
+			value.keyStatuses[156] = (
+				uint8_t((backing[9] >> 24u) & 0x3u)
+			);
+			value.keyStatuses[157] = (
+				uint8_t((backing[9] >> 26u) & 0x3u)
+			);
+			value.keyStatuses[158] = (
+				uint8_t((backing[9] >> 28u) & 0x3u)
+			);
+			value.keyStatuses[159] = (
+				uint8_t((backing[9] >> 30u) & 0x3u)
+			);
+			value.keyStatuses[160] = (
+				uint8_t((backing[10] >> 0u) & 0x3u)
+			);
+			value.keyStatuses[161] = (
+				uint8_t((backing[10] >> 2u) & 0x3u)
+			);
+			value.keyStatuses[162] = (
+				uint8_t((backing[10] >> 4u) & 0x3u)
+			);
+			value.keyStatuses[163] = (
+				uint8_t((backing[10] >> 6u) & 0x3u)
+			);
+			value.keyStatuses[164] = (
+				uint8_t((backing[10] >> 8u) & 0x3u)
+			);
+			value.keyStatuses[165] = (
+				uint8_t((backing[10] >> 10u) & 0x3u)
+			);
+			value.keyStatuses[166] = (
+				uint8_t((backing[10] >> 12u) & 0x3u)
+			);
+			value.keyStatuses[167] = (
+				uint8_t((backing[10] >> 14u) & 0x3u)
+			);
+			value.keyStatuses[168] = (
+				uint8_t((backing[10] >> 16u) & 0x3u)
+			);
+			value.keyStatuses[169] = (
+				uint8_t((backing[10] >> 18u) & 0x3u)
+			);
+			value.keyStatuses[170] = (
+				uint8_t((backing[10] >> 20u) & 0x3u)
+			);
+			value.keyStatuses[171] = (
+				uint8_t((backing[10] >> 22u) & 0x3u)
+			);
+			value.keyStatuses[172] = (
+				uint8_t((backing[10] >> 24u) & 0x3u)
+			);
+			value.keyStatuses[173] = (
+				uint8_t((backing[10] >> 26u) & 0x3u)
+			);
+			value.keyStatuses[174] = (
+				uint8_t((backing[10] >> 28u) & 0x3u)
+			);
+			value.keyStatuses[175] = (
+				uint8_t((backing[10] >> 30u) & 0x3u)
+			);
+			value.keyStatuses[176] = (
+				uint8_t((backing[11] >> 0u) & 0x3u)
+			);
+			value.keyStatuses[177] = (
+				uint8_t((backing[11] >> 2u) & 0x3u)
+			);
+			value.keyStatuses[178] = (
+				uint8_t((backing[11] >> 4u) & 0x3u)
+			);
+			value.keyStatuses[179] = (
+				uint8_t((backing[11] >> 6u) & 0x3u)
+			);
+			value.keyStatuses[180] = (
+				uint8_t((backing[11] >> 8u) & 0x3u)
+			);
+			value.keyStatuses[181] = (
+				uint8_t((backing[11] >> 10u) & 0x3u)
+			);
+			value.keyStatuses[182] = (
+				uint8_t((backing[11] >> 12u) & 0x3u)
+			);
+			value.keyStatuses[183] = (
+				uint8_t((backing[11] >> 14u) & 0x3u)
+			);
+			value.keyStatuses[184] = (
+				uint8_t((backing[11] >> 16u) & 0x3u)
+			);
+			value.keyStatuses[185] = (
+				uint8_t((backing[11] >> 18u) & 0x3u)
+			);
+			value.keyStatuses[186] = (
+				uint8_t((backing[11] >> 20u) & 0x3u)
+			);
+			value.keyStatuses[187] = (
+				uint8_t((backing[11] >> 22u) & 0x3u)
+			);
+			value.keyStatuses[188] = (
+				uint8_t((backing[11] >> 24u) & 0x3u)
+			);
+			value.keyStatuses[189] = (
+				uint8_t((backing[11] >> 26u) & 0x3u)
+			);
+			value.keyStatuses[190] = (
+				uint8_t((backing[11] >> 28u) & 0x3u)
+			);
+			value.keyStatuses[191] = (
+				uint8_t((backing[11] >> 30u) & 0x3u)
+			);
+			value.keyStatuses[192] = (
+				uint8_t((backing[12] >> 0u) & 0x3u)
+			);
+			value.keyStatuses[193] = (
+				uint8_t((backing[12] >> 2u) & 0x3u)
+			);
+			value.keyStatuses[194] = (
+				uint8_t((backing[12] >> 4u) & 0x3u)
+			);
+			value.keyStatuses[195] = (
+				uint8_t((backing[12] >> 6u) & 0x3u)
+			);
+			value.keyStatuses[196] = (
+				uint8_t((backing[12] >> 8u) & 0x3u)
+			);
+			value.keyStatuses[197] = (
+				uint8_t((backing[12] >> 10u) & 0x3u)
+			);
+			value.keyStatuses[198] = (
+				uint8_t((backing[12] >> 12u) & 0x3u)
+			);
+			value.keyStatuses[199] = (
+				uint8_t((backing[12] >> 14u) & 0x3u)
+			);
+			value.keyStatuses[200] = (
+				uint8_t((backing[12] >> 16u) & 0x3u)
+			);
+			value.keyStatuses[201] = (
+				uint8_t((backing[12] >> 18u) & 0x3u)
+			);
+			value.keyStatuses[202] = (
+				uint8_t((backing[12] >> 20u) & 0x3u)
+			);
+			value.keyStatuses[203] = (
+				uint8_t((backing[12] >> 22u) & 0x3u)
+			);
+			value.keyStatuses[204] = (
+				uint8_t((backing[12] >> 24u) & 0x3u)
+			);
+			value.keyStatuses[205] = (
+				uint8_t((backing[12] >> 26u) & 0x3u)
+			);
+			value.keyStatuses[206] = (
+				uint8_t((backing[12] >> 28u) & 0x3u)
+			);
+			value.keyStatuses[207] = (
+				uint8_t((backing[12] >> 30u) & 0x3u)
+			);
+			value.keyStatuses[208] = (
+				uint8_t((backing[13] >> 0u) & 0x3u)
+			);
+			value.keyStatuses[209] = (
+				uint8_t((backing[13] >> 2u) & 0x3u)
+			);
+			value.keyStatuses[210] = (
+				uint8_t((backing[13] >> 4u) & 0x3u)
+			);
+			value.keyStatuses[211] = (
+				uint8_t((backing[13] >> 6u) & 0x3u)
+			);
+			value.keyStatuses[212] = (
+				uint8_t((backing[13] >> 8u) & 0x3u)
+			);
+			value.keyStatuses[213] = (
+				uint8_t((backing[13] >> 10u) & 0x3u)
+			);
+			value.keyStatuses[214] = (
+				uint8_t((backing[13] >> 12u) & 0x3u)
+			);
+			value.keyStatuses[215] = (
+				uint8_t((backing[13] >> 14u) & 0x3u)
+			);
+			value.keyStatuses[216] = (
+				uint8_t((backing[13] >> 16u) & 0x3u)
+			);
+			value.keyStatuses[217] = (
+				uint8_t((backing[13] >> 18u) & 0x3u)
+			);
+			value.keyStatuses[218] = (
+				uint8_t((backing[13] >> 20u) & 0x3u)
+			);
+			value.keyStatuses[219] = (
+				uint8_t((backing[13] >> 22u) & 0x3u)
+			);
+			value.keyStatuses[220] = (
+				uint8_t((backing[13] >> 24u) & 0x3u)
+			);
+			value.keyStatuses[221] = (
+				uint8_t((backing[13] >> 26u) & 0x3u)
+			);
+			value.keyStatuses[222] = (
+				uint8_t((backing[13] >> 28u) & 0x3u)
+			);
+			value.keyStatuses[223] = (
+				uint8_t((backing[13] >> 30u) & 0x3u)
+			);
+			value.keyStatuses[224] = (
+				uint8_t((backing[14] >> 0u) & 0x3u)
+			);
+			value.keyStatuses[225] = (
+				uint8_t((backing[14] >> 2u) & 0x3u)
+			);
+			value.keyStatuses[226] = (
+				uint8_t((backing[14] >> 4u) & 0x3u)
+			);
+			value.keyStatuses[227] = (
+				uint8_t((backing[14] >> 6u) & 0x3u)
+			);
+			value.keyStatuses[228] = (
+				uint8_t((backing[14] >> 8u) & 0x3u)
+			);
+			value.keyStatuses[229] = (
+				uint8_t((backing[14] >> 10u) & 0x3u)
+			);
+			value.keyStatuses[230] = (
+				uint8_t((backing[14] >> 12u) & 0x3u)
+			);
+			value.keyStatuses[231] = (
+				uint8_t((backing[14] >> 14u) & 0x3u)
+			);
+			value.keyStatuses[232] = (
+				uint8_t((backing[14] >> 16u) & 0x3u)
+			);
+			value.keyStatuses[233] = (
+				uint8_t((backing[14] >> 18u) & 0x3u)
+			);
+			value.keyStatuses[234] = (
+				uint8_t((backing[14] >> 20u) & 0x3u)
+			);
+			value.keyStatuses[235] = (
+				uint8_t((backing[14] >> 22u) & 0x3u)
+			);
+			value.keyStatuses[236] = (
+				uint8_t((backing[14] >> 24u) & 0x3u)
+			);
+			value.keyStatuses[237] = (
+				uint8_t((backing[14] >> 26u) & 0x3u)
+			);
+			value.keyStatuses[238] = (
+				uint8_t((backing[14] >> 28u) & 0x3u)
+			);
+			value.keyStatuses[239] = (
+				uint8_t((backing[14] >> 30u) & 0x3u)
+			);
+			value.keyStatuses[240] = (
+				uint8_t((backing[15] >> 0u) & 0x3u)
+			);
+			value.keyStatuses[241] = (
+				uint8_t((backing[15] >> 2u) & 0x3u)
+			);
+			value.keyStatuses[242] = (
+				uint8_t((backing[15] >> 4u) & 0x3u)
+			);
+			value.keyStatuses[243] = (
+				uint8_t((backing[15] >> 6u) & 0x3u)
+			);
+			value.keyStatuses[244] = (
+				uint8_t((backing[15] >> 8u) & 0x3u)
+			);
+			value.keyStatuses[245] = (
+				uint8_t((backing[15] >> 10u) & 0x3u)
+			);
+			value.keyStatuses[246] = (
+				uint8_t((backing[15] >> 12u) & 0x3u)
+			);
+			value.keyStatuses[247] = (
+				uint8_t((backing[15] >> 14u) & 0x3u)
+			);
+			value.keyStatuses[248] = (
+				uint8_t((backing[15] >> 16u) & 0x3u)
+			);
+			value.keyStatuses[249] = (
+				uint8_t((backing[15] >> 18u) & 0x3u)
+			);
+			value.keyStatuses[250] = (
+				uint8_t((backing[15] >> 20u) & 0x3u)
+			);
+			value.keyStatuses[251] = (
+				uint8_t((backing[15] >> 22u) & 0x3u)
+			);
+			value.keyStatuses[252] = (
+				uint8_t((backing[15] >> 24u) & 0x3u)
+			);
+			value.keyStatuses[253] = (
+				uint8_t((backing[15] >> 26u) & 0x3u)
+			);
+			value.keyStatuses[254] = (
+				uint8_t((backing[15] >> 28u) & 0x3u)
+			);
+			value.keyStatuses[255] = (
+				uint8_t((backing[15] >> 30u) & 0x3u)
+			);
+			return value;
+		}
+		std::array<uint32_t, 16> pack() const {
+			std::array<uint32_t, 16> backing{};
+			backing[0] = (
+				(uint32_t((keyStatuses[0] >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((keyStatuses[1] >> 0u) & uint8_t(0x3ul)) << 2) | 
+				(uint32_t((keyStatuses[2] >> 0u) & uint8_t(0x3ul)) << 4) | 
+				(uint32_t((keyStatuses[3] >> 0u) & uint8_t(0x3ul)) << 6) | 
+				(uint32_t((keyStatuses[4] >> 0u) & uint8_t(0x3ul)) << 8) | 
+				(uint32_t((keyStatuses[5] >> 0u) & uint8_t(0x3ul)) << 10) | 
+				(uint32_t((keyStatuses[6] >> 0u) & uint8_t(0x3ul)) << 12) | 
+				(uint32_t((keyStatuses[7] >> 0u) & uint8_t(0x3ul)) << 14) | 
+				(uint32_t((keyStatuses[8] >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((keyStatuses[9] >> 0u) & uint8_t(0x3ul)) << 18) | 
+				(uint32_t((keyStatuses[10] >> 0u) & uint8_t(0x3ul)) << 20) | 
+				(uint32_t((keyStatuses[11] >> 0u) & uint8_t(0x3ul)) << 22) | 
+				(uint32_t((keyStatuses[12] >> 0u) & uint8_t(0x3ul)) << 24) | 
+				(uint32_t((keyStatuses[13] >> 0u) & uint8_t(0x3ul)) << 26) | 
+				(uint32_t((keyStatuses[14] >> 0u) & uint8_t(0x3ul)) << 28) | 
+				(uint32_t((keyStatuses[15] >> 0u) & uint8_t(0x3ul)) << 30)
+			);
+			backing[1] = (
+				(uint32_t((keyStatuses[16] >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((keyStatuses[17] >> 0u) & uint8_t(0x3ul)) << 2) | 
+				(uint32_t((keyStatuses[18] >> 0u) & uint8_t(0x3ul)) << 4) | 
+				(uint32_t((keyStatuses[19] >> 0u) & uint8_t(0x3ul)) << 6) | 
+				(uint32_t((keyStatuses[20] >> 0u) & uint8_t(0x3ul)) << 8) | 
+				(uint32_t((keyStatuses[21] >> 0u) & uint8_t(0x3ul)) << 10) | 
+				(uint32_t((keyStatuses[22] >> 0u) & uint8_t(0x3ul)) << 12) | 
+				(uint32_t((keyStatuses[23] >> 0u) & uint8_t(0x3ul)) << 14) | 
+				(uint32_t((keyStatuses[24] >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((keyStatuses[25] >> 0u) & uint8_t(0x3ul)) << 18) | 
+				(uint32_t((keyStatuses[26] >> 0u) & uint8_t(0x3ul)) << 20) | 
+				(uint32_t((keyStatuses[27] >> 0u) & uint8_t(0x3ul)) << 22) | 
+				(uint32_t((keyStatuses[28] >> 0u) & uint8_t(0x3ul)) << 24) | 
+				(uint32_t((keyStatuses[29] >> 0u) & uint8_t(0x3ul)) << 26) | 
+				(uint32_t((keyStatuses[30] >> 0u) & uint8_t(0x3ul)) << 28) | 
+				(uint32_t((keyStatuses[31] >> 0u) & uint8_t(0x3ul)) << 30)
+			);
+			backing[2] = (
+				(uint32_t((keyStatuses[32] >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((keyStatuses[33] >> 0u) & uint8_t(0x3ul)) << 2) | 
+				(uint32_t((keyStatuses[34] >> 0u) & uint8_t(0x3ul)) << 4) | 
+				(uint32_t((keyStatuses[35] >> 0u) & uint8_t(0x3ul)) << 6) | 
+				(uint32_t((keyStatuses[36] >> 0u) & uint8_t(0x3ul)) << 8) | 
+				(uint32_t((keyStatuses[37] >> 0u) & uint8_t(0x3ul)) << 10) | 
+				(uint32_t((keyStatuses[38] >> 0u) & uint8_t(0x3ul)) << 12) | 
+				(uint32_t((keyStatuses[39] >> 0u) & uint8_t(0x3ul)) << 14) | 
+				(uint32_t((keyStatuses[40] >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((keyStatuses[41] >> 0u) & uint8_t(0x3ul)) << 18) | 
+				(uint32_t((keyStatuses[42] >> 0u) & uint8_t(0x3ul)) << 20) | 
+				(uint32_t((keyStatuses[43] >> 0u) & uint8_t(0x3ul)) << 22) | 
+				(uint32_t((keyStatuses[44] >> 0u) & uint8_t(0x3ul)) << 24) | 
+				(uint32_t((keyStatuses[45] >> 0u) & uint8_t(0x3ul)) << 26) | 
+				(uint32_t((keyStatuses[46] >> 0u) & uint8_t(0x3ul)) << 28) | 
+				(uint32_t((keyStatuses[47] >> 0u) & uint8_t(0x3ul)) << 30)
+			);
+			backing[3] = (
+				(uint32_t((keyStatuses[48] >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((keyStatuses[49] >> 0u) & uint8_t(0x3ul)) << 2) | 
+				(uint32_t((keyStatuses[50] >> 0u) & uint8_t(0x3ul)) << 4) | 
+				(uint32_t((keyStatuses[51] >> 0u) & uint8_t(0x3ul)) << 6) | 
+				(uint32_t((keyStatuses[52] >> 0u) & uint8_t(0x3ul)) << 8) | 
+				(uint32_t((keyStatuses[53] >> 0u) & uint8_t(0x3ul)) << 10) | 
+				(uint32_t((keyStatuses[54] >> 0u) & uint8_t(0x3ul)) << 12) | 
+				(uint32_t((keyStatuses[55] >> 0u) & uint8_t(0x3ul)) << 14) | 
+				(uint32_t((keyStatuses[56] >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((keyStatuses[57] >> 0u) & uint8_t(0x3ul)) << 18) | 
+				(uint32_t((keyStatuses[58] >> 0u) & uint8_t(0x3ul)) << 20) | 
+				(uint32_t((keyStatuses[59] >> 0u) & uint8_t(0x3ul)) << 22) | 
+				(uint32_t((keyStatuses[60] >> 0u) & uint8_t(0x3ul)) << 24) | 
+				(uint32_t((keyStatuses[61] >> 0u) & uint8_t(0x3ul)) << 26) | 
+				(uint32_t((keyStatuses[62] >> 0u) & uint8_t(0x3ul)) << 28) | 
+				(uint32_t((keyStatuses[63] >> 0u) & uint8_t(0x3ul)) << 30)
+			);
+			backing[4] = (
+				(uint32_t((keyStatuses[64] >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((keyStatuses[65] >> 0u) & uint8_t(0x3ul)) << 2) | 
+				(uint32_t((keyStatuses[66] >> 0u) & uint8_t(0x3ul)) << 4) | 
+				(uint32_t((keyStatuses[67] >> 0u) & uint8_t(0x3ul)) << 6) | 
+				(uint32_t((keyStatuses[68] >> 0u) & uint8_t(0x3ul)) << 8) | 
+				(uint32_t((keyStatuses[69] >> 0u) & uint8_t(0x3ul)) << 10) | 
+				(uint32_t((keyStatuses[70] >> 0u) & uint8_t(0x3ul)) << 12) | 
+				(uint32_t((keyStatuses[71] >> 0u) & uint8_t(0x3ul)) << 14) | 
+				(uint32_t((keyStatuses[72] >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((keyStatuses[73] >> 0u) & uint8_t(0x3ul)) << 18) | 
+				(uint32_t((keyStatuses[74] >> 0u) & uint8_t(0x3ul)) << 20) | 
+				(uint32_t((keyStatuses[75] >> 0u) & uint8_t(0x3ul)) << 22) | 
+				(uint32_t((keyStatuses[76] >> 0u) & uint8_t(0x3ul)) << 24) | 
+				(uint32_t((keyStatuses[77] >> 0u) & uint8_t(0x3ul)) << 26) | 
+				(uint32_t((keyStatuses[78] >> 0u) & uint8_t(0x3ul)) << 28) | 
+				(uint32_t((keyStatuses[79] >> 0u) & uint8_t(0x3ul)) << 30)
+			);
+			backing[5] = (
+				(uint32_t((keyStatuses[80] >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((keyStatuses[81] >> 0u) & uint8_t(0x3ul)) << 2) | 
+				(uint32_t((keyStatuses[82] >> 0u) & uint8_t(0x3ul)) << 4) | 
+				(uint32_t((keyStatuses[83] >> 0u) & uint8_t(0x3ul)) << 6) | 
+				(uint32_t((keyStatuses[84] >> 0u) & uint8_t(0x3ul)) << 8) | 
+				(uint32_t((keyStatuses[85] >> 0u) & uint8_t(0x3ul)) << 10) | 
+				(uint32_t((keyStatuses[86] >> 0u) & uint8_t(0x3ul)) << 12) | 
+				(uint32_t((keyStatuses[87] >> 0u) & uint8_t(0x3ul)) << 14) | 
+				(uint32_t((keyStatuses[88] >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((keyStatuses[89] >> 0u) & uint8_t(0x3ul)) << 18) | 
+				(uint32_t((keyStatuses[90] >> 0u) & uint8_t(0x3ul)) << 20) | 
+				(uint32_t((keyStatuses[91] >> 0u) & uint8_t(0x3ul)) << 22) | 
+				(uint32_t((keyStatuses[92] >> 0u) & uint8_t(0x3ul)) << 24) | 
+				(uint32_t((keyStatuses[93] >> 0u) & uint8_t(0x3ul)) << 26) | 
+				(uint32_t((keyStatuses[94] >> 0u) & uint8_t(0x3ul)) << 28) | 
+				(uint32_t((keyStatuses[95] >> 0u) & uint8_t(0x3ul)) << 30)
+			);
+			backing[6] = (
+				(uint32_t((keyStatuses[96] >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((keyStatuses[97] >> 0u) & uint8_t(0x3ul)) << 2) | 
+				(uint32_t((keyStatuses[98] >> 0u) & uint8_t(0x3ul)) << 4) | 
+				(uint32_t((keyStatuses[99] >> 0u) & uint8_t(0x3ul)) << 6) | 
+				(uint32_t((keyStatuses[100] >> 0u) & uint8_t(0x3ul)) << 8) | 
+				(uint32_t((keyStatuses[101] >> 0u) & uint8_t(0x3ul)) << 10) | 
+				(uint32_t((keyStatuses[102] >> 0u) & uint8_t(0x3ul)) << 12) | 
+				(uint32_t((keyStatuses[103] >> 0u) & uint8_t(0x3ul)) << 14) | 
+				(uint32_t((keyStatuses[104] >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((keyStatuses[105] >> 0u) & uint8_t(0x3ul)) << 18) | 
+				(uint32_t((keyStatuses[106] >> 0u) & uint8_t(0x3ul)) << 20) | 
+				(uint32_t((keyStatuses[107] >> 0u) & uint8_t(0x3ul)) << 22) | 
+				(uint32_t((keyStatuses[108] >> 0u) & uint8_t(0x3ul)) << 24) | 
+				(uint32_t((keyStatuses[109] >> 0u) & uint8_t(0x3ul)) << 26) | 
+				(uint32_t((keyStatuses[110] >> 0u) & uint8_t(0x3ul)) << 28) | 
+				(uint32_t((keyStatuses[111] >> 0u) & uint8_t(0x3ul)) << 30)
+			);
+			backing[7] = (
+				(uint32_t((keyStatuses[112] >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((keyStatuses[113] >> 0u) & uint8_t(0x3ul)) << 2) | 
+				(uint32_t((keyStatuses[114] >> 0u) & uint8_t(0x3ul)) << 4) | 
+				(uint32_t((keyStatuses[115] >> 0u) & uint8_t(0x3ul)) << 6) | 
+				(uint32_t((keyStatuses[116] >> 0u) & uint8_t(0x3ul)) << 8) | 
+				(uint32_t((keyStatuses[117] >> 0u) & uint8_t(0x3ul)) << 10) | 
+				(uint32_t((keyStatuses[118] >> 0u) & uint8_t(0x3ul)) << 12) | 
+				(uint32_t((keyStatuses[119] >> 0u) & uint8_t(0x3ul)) << 14) | 
+				(uint32_t((keyStatuses[120] >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((keyStatuses[121] >> 0u) & uint8_t(0x3ul)) << 18) | 
+				(uint32_t((keyStatuses[122] >> 0u) & uint8_t(0x3ul)) << 20) | 
+				(uint32_t((keyStatuses[123] >> 0u) & uint8_t(0x3ul)) << 22) | 
+				(uint32_t((keyStatuses[124] >> 0u) & uint8_t(0x3ul)) << 24) | 
+				(uint32_t((keyStatuses[125] >> 0u) & uint8_t(0x3ul)) << 26) | 
+				(uint32_t((keyStatuses[126] >> 0u) & uint8_t(0x3ul)) << 28) | 
+				(uint32_t((keyStatuses[127] >> 0u) & uint8_t(0x3ul)) << 30)
+			);
+			backing[8] = (
+				(uint32_t((keyStatuses[128] >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((keyStatuses[129] >> 0u) & uint8_t(0x3ul)) << 2) | 
+				(uint32_t((keyStatuses[130] >> 0u) & uint8_t(0x3ul)) << 4) | 
+				(uint32_t((keyStatuses[131] >> 0u) & uint8_t(0x3ul)) << 6) | 
+				(uint32_t((keyStatuses[132] >> 0u) & uint8_t(0x3ul)) << 8) | 
+				(uint32_t((keyStatuses[133] >> 0u) & uint8_t(0x3ul)) << 10) | 
+				(uint32_t((keyStatuses[134] >> 0u) & uint8_t(0x3ul)) << 12) | 
+				(uint32_t((keyStatuses[135] >> 0u) & uint8_t(0x3ul)) << 14) | 
+				(uint32_t((keyStatuses[136] >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((keyStatuses[137] >> 0u) & uint8_t(0x3ul)) << 18) | 
+				(uint32_t((keyStatuses[138] >> 0u) & uint8_t(0x3ul)) << 20) | 
+				(uint32_t((keyStatuses[139] >> 0u) & uint8_t(0x3ul)) << 22) | 
+				(uint32_t((keyStatuses[140] >> 0u) & uint8_t(0x3ul)) << 24) | 
+				(uint32_t((keyStatuses[141] >> 0u) & uint8_t(0x3ul)) << 26) | 
+				(uint32_t((keyStatuses[142] >> 0u) & uint8_t(0x3ul)) << 28) | 
+				(uint32_t((keyStatuses[143] >> 0u) & uint8_t(0x3ul)) << 30)
+			);
+			backing[9] = (
+				(uint32_t((keyStatuses[144] >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((keyStatuses[145] >> 0u) & uint8_t(0x3ul)) << 2) | 
+				(uint32_t((keyStatuses[146] >> 0u) & uint8_t(0x3ul)) << 4) | 
+				(uint32_t((keyStatuses[147] >> 0u) & uint8_t(0x3ul)) << 6) | 
+				(uint32_t((keyStatuses[148] >> 0u) & uint8_t(0x3ul)) << 8) | 
+				(uint32_t((keyStatuses[149] >> 0u) & uint8_t(0x3ul)) << 10) | 
+				(uint32_t((keyStatuses[150] >> 0u) & uint8_t(0x3ul)) << 12) | 
+				(uint32_t((keyStatuses[151] >> 0u) & uint8_t(0x3ul)) << 14) | 
+				(uint32_t((keyStatuses[152] >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((keyStatuses[153] >> 0u) & uint8_t(0x3ul)) << 18) | 
+				(uint32_t((keyStatuses[154] >> 0u) & uint8_t(0x3ul)) << 20) | 
+				(uint32_t((keyStatuses[155] >> 0u) & uint8_t(0x3ul)) << 22) | 
+				(uint32_t((keyStatuses[156] >> 0u) & uint8_t(0x3ul)) << 24) | 
+				(uint32_t((keyStatuses[157] >> 0u) & uint8_t(0x3ul)) << 26) | 
+				(uint32_t((keyStatuses[158] >> 0u) & uint8_t(0x3ul)) << 28) | 
+				(uint32_t((keyStatuses[159] >> 0u) & uint8_t(0x3ul)) << 30)
+			);
+			backing[10] = (
+				(uint32_t((keyStatuses[160] >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((keyStatuses[161] >> 0u) & uint8_t(0x3ul)) << 2) | 
+				(uint32_t((keyStatuses[162] >> 0u) & uint8_t(0x3ul)) << 4) | 
+				(uint32_t((keyStatuses[163] >> 0u) & uint8_t(0x3ul)) << 6) | 
+				(uint32_t((keyStatuses[164] >> 0u) & uint8_t(0x3ul)) << 8) | 
+				(uint32_t((keyStatuses[165] >> 0u) & uint8_t(0x3ul)) << 10) | 
+				(uint32_t((keyStatuses[166] >> 0u) & uint8_t(0x3ul)) << 12) | 
+				(uint32_t((keyStatuses[167] >> 0u) & uint8_t(0x3ul)) << 14) | 
+				(uint32_t((keyStatuses[168] >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((keyStatuses[169] >> 0u) & uint8_t(0x3ul)) << 18) | 
+				(uint32_t((keyStatuses[170] >> 0u) & uint8_t(0x3ul)) << 20) | 
+				(uint32_t((keyStatuses[171] >> 0u) & uint8_t(0x3ul)) << 22) | 
+				(uint32_t((keyStatuses[172] >> 0u) & uint8_t(0x3ul)) << 24) | 
+				(uint32_t((keyStatuses[173] >> 0u) & uint8_t(0x3ul)) << 26) | 
+				(uint32_t((keyStatuses[174] >> 0u) & uint8_t(0x3ul)) << 28) | 
+				(uint32_t((keyStatuses[175] >> 0u) & uint8_t(0x3ul)) << 30)
+			);
+			backing[11] = (
+				(uint32_t((keyStatuses[176] >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((keyStatuses[177] >> 0u) & uint8_t(0x3ul)) << 2) | 
+				(uint32_t((keyStatuses[178] >> 0u) & uint8_t(0x3ul)) << 4) | 
+				(uint32_t((keyStatuses[179] >> 0u) & uint8_t(0x3ul)) << 6) | 
+				(uint32_t((keyStatuses[180] >> 0u) & uint8_t(0x3ul)) << 8) | 
+				(uint32_t((keyStatuses[181] >> 0u) & uint8_t(0x3ul)) << 10) | 
+				(uint32_t((keyStatuses[182] >> 0u) & uint8_t(0x3ul)) << 12) | 
+				(uint32_t((keyStatuses[183] >> 0u) & uint8_t(0x3ul)) << 14) | 
+				(uint32_t((keyStatuses[184] >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((keyStatuses[185] >> 0u) & uint8_t(0x3ul)) << 18) | 
+				(uint32_t((keyStatuses[186] >> 0u) & uint8_t(0x3ul)) << 20) | 
+				(uint32_t((keyStatuses[187] >> 0u) & uint8_t(0x3ul)) << 22) | 
+				(uint32_t((keyStatuses[188] >> 0u) & uint8_t(0x3ul)) << 24) | 
+				(uint32_t((keyStatuses[189] >> 0u) & uint8_t(0x3ul)) << 26) | 
+				(uint32_t((keyStatuses[190] >> 0u) & uint8_t(0x3ul)) << 28) | 
+				(uint32_t((keyStatuses[191] >> 0u) & uint8_t(0x3ul)) << 30)
+			);
+			backing[12] = (
+				(uint32_t((keyStatuses[192] >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((keyStatuses[193] >> 0u) & uint8_t(0x3ul)) << 2) | 
+				(uint32_t((keyStatuses[194] >> 0u) & uint8_t(0x3ul)) << 4) | 
+				(uint32_t((keyStatuses[195] >> 0u) & uint8_t(0x3ul)) << 6) | 
+				(uint32_t((keyStatuses[196] >> 0u) & uint8_t(0x3ul)) << 8) | 
+				(uint32_t((keyStatuses[197] >> 0u) & uint8_t(0x3ul)) << 10) | 
+				(uint32_t((keyStatuses[198] >> 0u) & uint8_t(0x3ul)) << 12) | 
+				(uint32_t((keyStatuses[199] >> 0u) & uint8_t(0x3ul)) << 14) | 
+				(uint32_t((keyStatuses[200] >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((keyStatuses[201] >> 0u) & uint8_t(0x3ul)) << 18) | 
+				(uint32_t((keyStatuses[202] >> 0u) & uint8_t(0x3ul)) << 20) | 
+				(uint32_t((keyStatuses[203] >> 0u) & uint8_t(0x3ul)) << 22) | 
+				(uint32_t((keyStatuses[204] >> 0u) & uint8_t(0x3ul)) << 24) | 
+				(uint32_t((keyStatuses[205] >> 0u) & uint8_t(0x3ul)) << 26) | 
+				(uint32_t((keyStatuses[206] >> 0u) & uint8_t(0x3ul)) << 28) | 
+				(uint32_t((keyStatuses[207] >> 0u) & uint8_t(0x3ul)) << 30)
+			);
+			backing[13] = (
+				(uint32_t((keyStatuses[208] >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((keyStatuses[209] >> 0u) & uint8_t(0x3ul)) << 2) | 
+				(uint32_t((keyStatuses[210] >> 0u) & uint8_t(0x3ul)) << 4) | 
+				(uint32_t((keyStatuses[211] >> 0u) & uint8_t(0x3ul)) << 6) | 
+				(uint32_t((keyStatuses[212] >> 0u) & uint8_t(0x3ul)) << 8) | 
+				(uint32_t((keyStatuses[213] >> 0u) & uint8_t(0x3ul)) << 10) | 
+				(uint32_t((keyStatuses[214] >> 0u) & uint8_t(0x3ul)) << 12) | 
+				(uint32_t((keyStatuses[215] >> 0u) & uint8_t(0x3ul)) << 14) | 
+				(uint32_t((keyStatuses[216] >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((keyStatuses[217] >> 0u) & uint8_t(0x3ul)) << 18) | 
+				(uint32_t((keyStatuses[218] >> 0u) & uint8_t(0x3ul)) << 20) | 
+				(uint32_t((keyStatuses[219] >> 0u) & uint8_t(0x3ul)) << 22) | 
+				(uint32_t((keyStatuses[220] >> 0u) & uint8_t(0x3ul)) << 24) | 
+				(uint32_t((keyStatuses[221] >> 0u) & uint8_t(0x3ul)) << 26) | 
+				(uint32_t((keyStatuses[222] >> 0u) & uint8_t(0x3ul)) << 28) | 
+				(uint32_t((keyStatuses[223] >> 0u) & uint8_t(0x3ul)) << 30)
+			);
+			backing[14] = (
+				(uint32_t((keyStatuses[224] >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((keyStatuses[225] >> 0u) & uint8_t(0x3ul)) << 2) | 
+				(uint32_t((keyStatuses[226] >> 0u) & uint8_t(0x3ul)) << 4) | 
+				(uint32_t((keyStatuses[227] >> 0u) & uint8_t(0x3ul)) << 6) | 
+				(uint32_t((keyStatuses[228] >> 0u) & uint8_t(0x3ul)) << 8) | 
+				(uint32_t((keyStatuses[229] >> 0u) & uint8_t(0x3ul)) << 10) | 
+				(uint32_t((keyStatuses[230] >> 0u) & uint8_t(0x3ul)) << 12) | 
+				(uint32_t((keyStatuses[231] >> 0u) & uint8_t(0x3ul)) << 14) | 
+				(uint32_t((keyStatuses[232] >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((keyStatuses[233] >> 0u) & uint8_t(0x3ul)) << 18) | 
+				(uint32_t((keyStatuses[234] >> 0u) & uint8_t(0x3ul)) << 20) | 
+				(uint32_t((keyStatuses[235] >> 0u) & uint8_t(0x3ul)) << 22) | 
+				(uint32_t((keyStatuses[236] >> 0u) & uint8_t(0x3ul)) << 24) | 
+				(uint32_t((keyStatuses[237] >> 0u) & uint8_t(0x3ul)) << 26) | 
+				(uint32_t((keyStatuses[238] >> 0u) & uint8_t(0x3ul)) << 28) | 
+				(uint32_t((keyStatuses[239] >> 0u) & uint8_t(0x3ul)) << 30)
+			);
+			backing[15] = (
+				(uint32_t((keyStatuses[240] >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((keyStatuses[241] >> 0u) & uint8_t(0x3ul)) << 2) | 
+				(uint32_t((keyStatuses[242] >> 0u) & uint8_t(0x3ul)) << 4) | 
+				(uint32_t((keyStatuses[243] >> 0u) & uint8_t(0x3ul)) << 6) | 
+				(uint32_t((keyStatuses[244] >> 0u) & uint8_t(0x3ul)) << 8) | 
+				(uint32_t((keyStatuses[245] >> 0u) & uint8_t(0x3ul)) << 10) | 
+				(uint32_t((keyStatuses[246] >> 0u) & uint8_t(0x3ul)) << 12) | 
+				(uint32_t((keyStatuses[247] >> 0u) & uint8_t(0x3ul)) << 14) | 
+				(uint32_t((keyStatuses[248] >> 0u) & uint8_t(0x3ul)) << 16) | 
+				(uint32_t((keyStatuses[249] >> 0u) & uint8_t(0x3ul)) << 18) | 
+				(uint32_t((keyStatuses[250] >> 0u) & uint8_t(0x3ul)) << 20) | 
+				(uint32_t((keyStatuses[251] >> 0u) & uint8_t(0x3ul)) << 22) | 
+				(uint32_t((keyStatuses[252] >> 0u) & uint8_t(0x3ul)) << 24) | 
+				(uint32_t((keyStatuses[253] >> 0u) & uint8_t(0x3ul)) << 26) | 
+				(uint32_t((keyStatuses[254] >> 0u) & uint8_t(0x3ul)) << 28) | 
+				(uint32_t((keyStatuses[255] >> 0u) & uint8_t(0x3ul)) << 30)
+			);
+			return backing;
+		}
+		bool operator==(const KeyStatuses&) const = default;
 	};
 	
 }
@@ -791,6 +2009,51 @@ template <> class fmt::formatter<axi::SanitizedAxi::RFlit_id4_data32> {
 		return format_to(ctx.out(), "RFlit_id4_data32 {{ .rlast = 0x{:01x}, .rresp = 0x{:01x}, .rdata = 0x{:08x}, .rid = 0x{:01x} }}", s.rlast, s.rresp, s.rdata, s.rid);
 	}
 };
+template <> class fmt::formatter<axi::AxiLite::AWFlit_addr64_user0> {
+	public:
+	// Ignore parse formats - only {} is supported for this type
+	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+	template <typename Context>
+	constexpr auto format (axi::AxiLite::AWFlit_addr64_user0 const& s, Context& ctx) const {
+		return format_to(ctx.out(), "AWFlit_addr64_user0 {{ .awprot = 0x{:01x}, .awaddr = 0x{:016x} }}", s.awprot, s.awaddr);
+	}
+};
+template <> class fmt::formatter<axi::AxiLite::WFlit_data32_user0> {
+	public:
+	// Ignore parse formats - only {} is supported for this type
+	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+	template <typename Context>
+	constexpr auto format (axi::AxiLite::WFlit_data32_user0 const& s, Context& ctx) const {
+		return format_to(ctx.out(), "WFlit_data32_user0 {{ .wstrb = 0x{:01x}, .wdata = 0x{:08x} }}", s.wstrb, s.wdata);
+	}
+};
+template <> class fmt::formatter<axi::AxiLite::BFlit_user0> {
+	public:
+	// Ignore parse formats - only {} is supported for this type
+	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+	template <typename Context>
+	constexpr auto format (axi::AxiLite::BFlit_user0 const& s, Context& ctx) const {
+		return format_to(ctx.out(), "BFlit_user0 {{ .bresp = 0x{:01x} }}", s.bresp);
+	}
+};
+template <> class fmt::formatter<axi::AxiLite::ARFlit_addr64_user0> {
+	public:
+	// Ignore parse formats - only {} is supported for this type
+	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+	template <typename Context>
+	constexpr auto format (axi::AxiLite::ARFlit_addr64_user0 const& s, Context& ctx) const {
+		return format_to(ctx.out(), "ARFlit_addr64_user0 {{ .arprot = 0x{:01x}, .araddr = 0x{:016x} }}", s.arprot, s.araddr);
+	}
+};
+template <> class fmt::formatter<axi::AxiLite::RFlit_data32_user0> {
+	public:
+	// Ignore parse formats - only {} is supported for this type
+	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+	template <typename Context>
+	constexpr auto format (axi::AxiLite::RFlit_data32_user0 const& s, Context& ctx) const {
+		return format_to(ctx.out(), "RFlit_data32_user0 {{ .rresp = 0x{:01x}, .rdata = 0x{:08x} }}", s.rresp, s.rdata);
+	}
+};
 template <> class fmt::formatter<key_manager::Tuple2_KeyId_MaybeKey> {
 	public:
 	// Ignore parse formats - only {} is supported for this type
@@ -807,6 +2070,15 @@ template <> class fmt::formatter<key_manager2::refcountpipe::MaybeKeyId> {
 	template <typename Context>
 	constexpr auto format (key_manager2::refcountpipe::MaybeKeyId const& s, Context& ctx) const {
 		return format_to(ctx.out(), "MaybeKeyId {{ .keyId = 0x{:02x}, .keyIdValid = 0x{:01x} }}", s.keyId, s.keyIdValid);
+	}
+};
+template <> class fmt::formatter<key_manager2::KeyStatuses> {
+	public:
+	// Ignore parse formats - only {} is supported for this type
+	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+	template <typename Context>
+	constexpr auto format (key_manager2::KeyStatuses const& s, Context& ctx) const {
+		return format_to(ctx.out(), "KeyStatuses {{ .keyStatuses = 0x{:0128x} }}", s.keyStatuses);
 	}
 };
 template <> class fmt::formatter<decoder::CapCheckResult_Tuple2_CapPerms_CapRange> {
