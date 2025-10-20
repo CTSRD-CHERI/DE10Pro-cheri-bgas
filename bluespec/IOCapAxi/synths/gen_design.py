@@ -453,6 +453,10 @@ default:
 
 synth:
     quartus_sh --flow compile {project_name}
+
+reports:
+    grep -B 1 -A 6 "; Fmax Summary" output_files/{project_name}.sta.rpt
+    grep -B 1 -A 90 "; Fitter Resource Usage Summary" output_files/{project_name}.fit.place.rpt
 """
     print(contents, file=file)
 
