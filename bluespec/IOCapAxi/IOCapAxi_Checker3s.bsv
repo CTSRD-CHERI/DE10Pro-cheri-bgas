@@ -17,18 +17,36 @@ import IOCapAxi_Konata :: *;
 import Cap2024 :: *;
 import Cap2024_11 :: *;
 import Cap2024_11_Decode_FastFSM :: *;
-import Cap2024_SigCheck_Aes_1RoundPerCycle :: *; // Get CapSigCheckIn
+import Cap2024_SigCheck_Aes_1RoundPerCycleFast :: *;
 import Cap2024_SigCheck_Aes_2RoundPerCycleFast :: *;
 
 export IOCapAxiChecker3(..);
+export IOCapAxiChecker3_Read(..);
+export IOCapAxiChecker3_Write(..);
 export mkSimpleIOCapAxiChecker3V1;
+export mkSimpleIOCapAxiChecker3V1_FastDecode_1CycleAES_Read;
+export mkSimpleIOCapAxiChecker3V1_FastDecode_1CycleAES_Write;
+export mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Read;
+export mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Write;
 export mkInOrderIOCapAxiChecker3V1Pool;
+export mkInOrderIOCapAxiChecker3V1Pool_Read;
+export mkInOrderIOCapAxiChecker3V1Pool_Write;
 export mkChecker3CombinedFrontend;
 export mkChecker3CombinedPipelinedFrontend;
 
 interface IOCapAxiChecker3#(type no_iocap_flit);
     interface Sink#(Tuple4#(AuthenticatedFlit#(no_iocap_flit, Cap2024_11), KFlitId, KeyId, Maybe#(Key))) in;
     interface Source#(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool)) checkResponse;
+
+    interface WriteOnly#(Maybe#(KeyId)) keyToKill;
+endinterface
+
+interface IOCapAxiChecker3_Read;
+    interface IOCapAxiChecker3#(AXI4_ARFlit#(4, 64, 0)) checker;
+endinterface
+
+interface IOCapAxiChecker3_Write;
+    interface IOCapAxiChecker3#(AXI4_AWFlit#(4, 64, 0)) checker;
 endinterface
 
 typedef union tagged {
@@ -108,16 +126,16 @@ typedef union tagged {
 module mkSimpleIOCapAxiChecker3V1#(
     KonataMode kMode,
     function module#(Empty) makeDecoder(Get#(Cap2024_11) ins, Put#(CapCheckResult#(Tuple2#(CapPerms, CapRange))) outs),
-    function module#(Empty) makeSigChecker(ReadOnly#(Maybe#(CapSigCheckIn#(Cap2024_11))) in, WriteOnly#(CapCheckResult#(Bit#(0))) out),
-    ReadOnly#(Maybe#(KeyId)) keyToKill
+    function module#(Empty) makeSigChecker(ReadOnly#(Maybe#(CapSigCheckIn#(Cap2024_11))) in, WriteOnly#(CapCheckResult#(Bit#(0))) out)
 )(IOCapAxiChecker3#(no_iocap_flit)) provisos (
     Bits#(AuthenticatedFlit#(no_iocap_flit, Cap2024_11), a__),
     Bits#(FlitState#(no_iocap_flit), b__),
     AxiCtrlFlit64#(no_iocap_flit),
     FShow#(no_iocap_flit)
 );
+    RWire#(KeyId) keyToKillRWire <- mkRWire;
     function Tuple4#(t, KFlitId, KeyId, Bool) checkKeyNotKilled(Tuple4#(t, KFlitId, KeyId, Bool) tup);
-        if (keyToKill == tagged Valid tpl_3(tup)) begin
+        if (keyToKillRWire.wget() == tagged Valid tpl_3(tup)) begin
             return tuple4(tpl_1(tup), tpl_2(tup), tpl_3(tup), False);
         end else begin
             return tup;
@@ -187,7 +205,7 @@ module mkSimpleIOCapAxiChecker3V1#(
                     flitId = incomingFlitId;
                     savedFlitId <= incomingFlitId;
                     // $display("SigCheckIdle triggering on ", fshow(keyIdForConstructingFlit.wget()));
-                    if (keyToKill == tagged Valid keyId || !isValid(key)) begin
+                    if (keyToKillRWire.wget() == tagged Valid keyId || !isValid(key)) begin
                         newSigCheckState = tagged SigCheckFailedEarly keyId;
                     end else if (sigCheckIn.canPut() && decodeIn.canPut()) begin
                         sigCheckIn.put(CapSigCheckIn {
@@ -226,7 +244,7 @@ module mkSimpleIOCapAxiChecker3V1#(
             end
             tagged AwaitingSigCheck { keyId: .keyId, failed: .failed1 } : begin
                 let failed = failed1;
-                if (keyToKill == tagged Valid keyId) begin
+                if (keyToKillRWire.wget() == tagged Valid keyId) begin
                     // For now, don't skip ahead to SigChecked
                     // - don't want to leave a spare entry in the output FIFO
                     failed = True;
@@ -268,7 +286,7 @@ module mkSimpleIOCapAxiChecker3V1#(
             end
             tagged AwaitingRespAvailable { keyId: .keyId, failed: .failed1 } : begin
                 let failed = failed1;
-                if (keyToKill == tagged Valid keyId) begin
+                if (keyToKillRWire.wget() == tagged Valid keyId) begin
                     // For now, don't skip ahead to SigChecked
                     // - don't want to leave a spare entry in the output FIFO
                     failed = True;
@@ -419,8 +437,55 @@ module mkSimpleIOCapAxiChecker3V1#(
 
     interface in = reqIn;
     interface checkResponse = respsMapFIFO.deq;
+    interface keyToKill = interface WriteOnly;
+        method Action _write(Maybe#(KeyId) val);
+            if (val matches tagged Valid .keyId) begin
+                keyToKillRWire.wset(keyId);
+            end
+        endmethod
+    endinterface;
 endmodule
 
+// Synthesizable versions of mkSimpleIOCapAxiChecker3V1
+(* synthesize *)
+module mkSimpleIOCapAxiChecker3V1_FastDecode_1CycleAES_Write#(KonataMode kMode)(IOCapAxiChecker3_Write);
+    let m <- mkSimpleIOCapAxiChecker3V1(
+        kMode,
+        connectFastFSMCapDecode_2024_11,
+        mk1RoundPerCycleCapSigCheckFast
+    );
+    interface checker = m;
+endmodule
+
+(* synthesize *)
+module mkSimpleIOCapAxiChecker3V1_FastDecode_1CycleAES_Read#(KonataMode kMode)(IOCapAxiChecker3_Read);
+    let m <- mkSimpleIOCapAxiChecker3V1(
+        kMode,
+        connectFastFSMCapDecode_2024_11,
+        mk1RoundPerCycleCapSigCheckFast
+    );
+    interface checker = m;
+endmodule
+
+(* synthesize *)
+module mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Write#(KonataMode kMode)(IOCapAxiChecker3_Write);
+    let m <- mkSimpleIOCapAxiChecker3V1(
+        kMode,
+        connectFastFSMCapDecode_2024_11,
+        mk2RoundPerCycleCapSigCheckFast
+    );
+    interface checker = m;
+endmodule
+
+(* synthesize *)
+module mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Read#(KonataMode kMode)(IOCapAxiChecker3_Read);
+    let m <- mkSimpleIOCapAxiChecker3V1(
+        kMode,
+        connectFastFSMCapDecode_2024_11,
+        mk2RoundPerCycleCapSigCheckFast
+    );
+    interface checker = m;
+endmodule
 
 // mkIOCapAxiCheckerPool#(n, flit) to make a Vector#(n, someChecker) and take the first available one.
 // Max input/output rate are still 1/cycle, n should be tuned such that n = ceil((x cycles for one check)/(y cycles to receive an authenticated IOCapAxiFlit))
@@ -435,9 +500,7 @@ endmodule
 module mkInOrderIOCapAxiChecker3V1Pool#(
     KonataMode kMode,
     NumProxy#(n) n_proxy,
-    function module#(Empty) makeDecoder(Get#(Cap2024_11) ins, Put#(CapCheckResult#(Tuple2#(CapPerms, CapRange))) outs),
-    function module#(Empty) makeSigChecker(ReadOnly#(Maybe#(CapSigCheckIn#(Cap2024_11))) in, WriteOnly#(CapCheckResult#(Bit#(0))) out),
-    ReadOnly#(Maybe#(KeyId)) keyToKill
+    Vector#(n, IOCapAxiChecker3#(no_iocap_flit)) checkers
 )(IOCapAxiChecker3#(no_iocap_flit)) provisos (
     Bits#(AuthenticatedFlit#(no_iocap_flit, Cap2024_11), a__),
     Bits#(FlitState#(no_iocap_flit), b__),
@@ -474,13 +537,6 @@ module mkInOrderIOCapAxiChecker3V1Pool#(
                 retrievePointer <= newRetrievePointer;
         end
     endrule
-   
-    Vector#(n, IOCapAxiChecker3#(no_iocap_flit)) checkers <- replicateM(mkSimpleIOCapAxiChecker3V1(
-        kMode,
-        makeDecoder,
-        makeSigChecker,
-        keyToKill
-    ));
 
     interface in = interface Sink;
         method Bool canPut;
@@ -505,8 +561,54 @@ module mkInOrderIOCapAxiChecker3V1Pool#(
             incrementRetrieve.send();
         endmethod
     endinterface;
+    interface keyToKill = interface WriteOnly;
+        method Action _write(Maybe#(KeyId) val);
+            for (Integer i = 0; i < valueOf(n); i = i + 1) begin
+                checkers[i].keyToKill <= val;
+            end
+        endmethod
+    endinterface;
 endmodule
 
+module mkInOrderIOCapAxiChecker3V1Pool_Read#(
+    KonataMode kMode,
+    NumProxy#(n) n_proxy,
+    function module#(IOCapAxiChecker3_Read) makeChecker(KonataMode kMode)
+)(IOCapAxiChecker3_Read) provisos (Add#(n__, TLog#(n), 64));
+   
+    function IOCapAxiChecker3#(AXI4_ARFlit#(4, 64, 0)) baseCheckerOf(IOCapAxiChecker3_Read r) = r.checker;
+
+    Vector#(n, IOCapAxiChecker3_Read) checkers <- replicateM(makeChecker(
+        kMode
+    ));
+
+    let m <- mkInOrderIOCapAxiChecker3V1Pool(
+        kMode,
+        n_proxy,
+        map(baseCheckerOf, checkers)
+    );
+    interface checker = m;
+endmodule
+
+module mkInOrderIOCapAxiChecker3V1Pool_Write#(
+    KonataMode kMode,
+    NumProxy#(n) n_proxy,
+    function module#(IOCapAxiChecker3_Write) makeChecker(KonataMode kMode)
+)(IOCapAxiChecker3_Write) provisos (Add#(n__, TLog#(n), 64));
+   
+    function IOCapAxiChecker3#(AXI4_AWFlit#(4, 64, 0)) baseCheckerOf(IOCapAxiChecker3_Write r) = r.checker;
+
+    Vector#(n, IOCapAxiChecker3_Write) checkers <- replicateM(makeChecker(
+        kMode
+    ));
+
+    let m <- mkInOrderIOCapAxiChecker3V1Pool(
+        kMode,
+        n_proxy,
+        map(baseCheckerOf, checkers)
+    );
+    interface checker = m;
+endmodule
 
 typedef union tagged {
     void NoFlit;

@@ -2,6 +2,10 @@ set_global_assignment -name TOP_LEVEL_ENTITY SimpleIOCapExposerKeyMngrV2Tb_desig
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 23.2.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:50:32  OCTOBER 16, 2025"
 set_global_assignment -name LAST_QUARTUS_VERSION "23.2.0 Pro Edition"
+set_global_assignment -name VERILOG_FILE ../build/verilog/mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Write.v
+set_global_assignment -name VERILOG_FILE ../build/verilog/mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Read.v
+set_global_assignment -name VERILOG_FILE ../build/verilog/mkSimpleIOCapAxiChecker3V1_FastDecode_1CycleAES_Write.v
+set_global_assignment -name VERILOG_FILE ../build/verilog/mkSimpleIOCapAxiChecker3V1_FastDecode_1CycleAES_Read.v
 set_global_assignment -name VERILOG_FILE ../build/verilog/mkInternalCalc_2024Aes1RoundPerCycleFast.v
 set_global_assignment -name VERILOG_FILE ../build/verilog/mkSimpleIOCapExposerV6_blockinvalid_1percycle_Tb.v
 set_global_assignment -name VERILOG_FILE ../build/verilog/mkInternalCalc_2024Aes2RoundPerCycleFast.v

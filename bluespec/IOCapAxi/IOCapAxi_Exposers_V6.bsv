@@ -196,14 +196,17 @@ endmodule
 // Changes from V5
 // - Use Checker3, reverting to the style where the Exposer handles finding keys before dispatching to the pool.
 // - See Revocation notes 2025-10-10
+// - forces t_id = 4 to allow for nicer synthesis
 module mkSimpleIOCapExposerV6#(
     KonataMode kMode,
     IOCapAxi_KeyManager2_ExposerIfc keyStore,
     Bool blockInvalid,
     NumProxy#(n_pool) perAddrChannelPoolSize,
-    function module#(Empty) makeSigChecker(ReadOnly#(Maybe#(CapSigCheckIn#(Cap2024_11))) in, WriteOnly#(CapCheckResult#(Bit#(0))) out)
-)(IOCapSingleExposer#(t_id, t_data)) provisos (
-    Add#(t_id, a__, 64),
+    function module#(IOCapAxiChecker3_Read) makeReadChecker(KonataMode kMode),
+    function module#(IOCapAxiChecker3_Write) makeWriteChecker(KonataMode kMode)
+)(IOCapSingleExposer#(4, t_data)) provisos (
+    NumAlias#(t_id, 4),
+    // Add#(t_id, a__, 64),
     Add#(b__, TLog#(n_pool), 64)
 );
     // IOCapAxiChecker2 Doesn't support WRAP bursts right now
@@ -266,13 +269,12 @@ module mkSimpleIOCapExposerV6#(
     //     keyStore.checker.killKeyMessage,
     //     keyIdForFlit
     // );
-    IOCapAxiChecker3#(AXI4_AWFlit#(t_id, 64, 0)) awChecker <- mkInOrderIOCapAxiChecker3V1Pool(
+    let awCheckerGeneric <- mkInOrderIOCapAxiChecker3V1Pool_Write(
         kMode,
         perAddrChannelPoolSize,
-        connectFastFSMCapDecode_2024_11,
-        makeSigChecker,
-        keyStore.checker.killKeyMessage
+        makeWriteChecker
     );
+    IOCapAxiChecker3#(AXI4_AWFlit#(t_id, 64, 0)) awChecker = awCheckerGeneric.checker;
     Sink#(Tuple2#(AXI4_AWFlit#(t_id, 64, 3), KFlitId)) awIn <- mkChecker3CombinedPipelinedFrontend(
         kMode,
         awChecker.in,
@@ -315,13 +317,12 @@ module mkSimpleIOCapExposerV6#(
     //     keyStore.checker.killKeyMessage,
     //     keyIdForFlit
     // );
-    IOCapAxiChecker3#(AXI4_ARFlit#(t_id, 64, 0)) arChecker <- mkInOrderIOCapAxiChecker3V1Pool(
+    let arCheckerGeneric <- mkInOrderIOCapAxiChecker3V1Pool_Read(
         kMode,
         perAddrChannelPoolSize,
-        connectFastFSMCapDecode_2024_11,
-        makeSigChecker,
-        keyStore.checker.killKeyMessage
+        makeReadChecker
     );
+    IOCapAxiChecker3#(AXI4_ARFlit#(t_id, 64, 0)) arChecker = arCheckerGeneric.checker;
     Sink#(Tuple2#(AXI4_ARFlit#(t_id, 64, 3), KFlitId)) arIn <- mkChecker3CombinedPipelinedFrontend(
         kMode,
         arChecker.in,
@@ -337,6 +338,11 @@ module mkSimpleIOCapExposerV6#(
     TxnKeyIdScoreboard#(t_id, Tuple2#(KFlitId, KeyId)) rScoreboard <- mkSimpleTxnKeyIdScoreboard(kMode);
     FIFOF#(AXI4_RFlit#(t_id, t_data, 0)) rIn <- mkFIFOF;
     FIFOF#(AXI4_RFlit#(t_id, t_data, 0)) rOut <- mkFIFOF;
+
+    rule write_keyToKill;
+        awChecker.keyToKill <= keyStore.checker.killKeyMessage;
+        arChecker.keyToKill <= keyStore.checker.killKeyMessage;
+    endrule
 
     rule check_aw if (awChecker.checkResponse.canPeek && (
         // If !blockInvalid, we will always be in Pass mode.
