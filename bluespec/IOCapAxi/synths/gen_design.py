@@ -457,6 +457,9 @@ synth:
 reports:
     grep -B 1 -A 6 "; Fmax Summary" output_files/{project_name}.sta.rpt
     grep -B 1 -A 90 "; Fitter Resource Usage Summary" output_files/{project_name}.fit.place.rpt
+
+gui:
+    quartus {project_name}.qpf &
 """
     print(contents, file=file)
 
