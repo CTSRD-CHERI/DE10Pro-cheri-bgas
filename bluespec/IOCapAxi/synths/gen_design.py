@@ -310,9 +310,9 @@ set_global_assignment -name MAX_CORE_JUNCTION_TEMP 100
 set_global_assignment -name DEVICE 1SX280HU2F50E1VG
 set_global_assignment -name FAMILY "Stratix 10"
 set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 256
-set_location_assignment PIN_BD20 -to CLK_FAST -comment IOBANK_3C
+set_location_assignment PIN_BF21 -to CLK_FAST -comment IOBANK_3C
 set_instance_assignment -name IO_STANDARD "1.8 V" -to CLK_FAST -entity {project_name}
-set_location_assignment PIN_BF21 -to CLK_SLOW -comment IOBANK_3C
+set_location_assignment PIN_BD20 -to CLK_SLOW -comment IOBANK_3C
 set_instance_assignment -name IO_STANDARD "1.8 V" -to CLK_SLOW -entity {project_name}
 set_instance_assignment -name IO_STANDARD "1.8 V" -to pin_out -entity {project_name}
 set_instance_assignment -name IO_STANDARD "1.8 V" -to pin_in -entity {project_name}
