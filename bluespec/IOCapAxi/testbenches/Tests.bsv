@@ -188,7 +188,11 @@ interface SimpleIOCapExposerKeyMngrV2Tb;
 endinterface
 
 interface UnifiedSingleExposerKeyMngrTb;
-    interface AXI4Lite_Master#(TLog#('h2000), 32 /* data bits */, 0, 0, 0, 0, 0) keyStore;
+    interface AXI4Lite_Slave#(TLog#('h2000), 32 /* data bits */, 0, 0, 0, 0, 0) keyStore;
+    interface ReadOnly#(Vector#(256, KeyStatus)) debugKeyState;
+
+    // TODO expose KeyStore2Shim_ReadOnly
+
     interface IOCapSingleExposer#(4 /* ID bits */, 32 /* data bits */) exposer4x32;
 endinterface
 

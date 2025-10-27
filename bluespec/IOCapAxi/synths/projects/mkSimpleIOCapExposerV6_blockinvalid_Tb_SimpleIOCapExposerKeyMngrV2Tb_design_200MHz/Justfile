@@ -1,0 +1,14 @@
+
+default:
+    @just --list
+
+synth:
+    quartus_sh --flow compile mkSimpleIOCapExposerV6_blockinvalid_Tb_SimpleIOCapExposerKeyMngrV2Tb_design
+
+reports:
+    grep -B 1 -A 6 "; Fmax Summary" output_files/mkSimpleIOCapExposerV6_blockinvalid_Tb_SimpleIOCapExposerKeyMngrV2Tb_design.sta.rpt
+    grep -B 1 -A 90 "; Fitter Resource Usage Summary" output_files/mkSimpleIOCapExposerV6_blockinvalid_Tb_SimpleIOCapExposerKeyMngrV2Tb_design.fit.place.rpt
+
+gui:
+    quartus mkSimpleIOCapExposerV6_blockinvalid_Tb_SimpleIOCapExposerKeyMngrV2Tb_design.qpf &
+

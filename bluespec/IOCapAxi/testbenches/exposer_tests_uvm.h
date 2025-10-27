@@ -1587,59 +1587,6 @@ public:
         // killOnNextCycle(std::nullopt)
         {}
     virtual ~ExposerScoreboard() override = default;
-    /*
-    // Should raise a test_failure on failure
-    virtual void endTest() override {
-        // TODO log inputs and outputs
-        if (
-            !expectedEpochCompletions.empty() ||
-            !this->awInProgress.empty() ||
-            !this->expectedAw.empty() ||
-            !this->wInProgress.empty() ||
-            !this->expectedW.empty() ||
-            !this->arInProgress.empty() ||
-            !this->expectedAr.empty() ||
-            // Check foreach ID in {B, R}
-            std::any_of(this->expectedB.begin(), this->expectedB.end(), [](auto& expectedForId) { return !expectedForId.empty(); }) ||
-            std::any_of(this->expectedR.begin(), this->expectedR.end(), [](auto& expectedForId) { return !expectedForId.empty(); }) ||
-            (this->expectedGoodWrite != this->signalledGoodWrite) ||
-            (this->expectedBadWrite != this->signalledBadWrite) ||
-            (this->expectedGoodRead != this->signalledGoodRead) ||
-            (this->expectedBadRead != this->signalledBadRead)
-        ) {
-            throw test_failure(fmt::format(
-                "BaseExposerScoreboard unexpected outcome:\n"
-                "epoch completions: {}\n"
-                "aw: {} in progress, {} expected\n"
-                "w: {} in progress, {} expected\n"
-                "ar: {} in progress, {} expected\n"
-                "b: {}\n"
-                "r: {}\n"
-                "perf counters exp/act:\n"
-                "good write {}/{}\n"
-                "bad write {}/{}\n"
-                "bad write bad cap {}\n"
-                "bad write good cap bad range {}\n"
-                "good read {}/{}\n"
-                "bad read {}/{}\n"
-                "bad read bad cap {}\n"
-                "bad read good cap bad range {}\n"
-                ,
-                expectedEpochCompletions,
-                this->awInProgress, this->expectedAw,
-                this->wInProgress, this->expectedW,
-                this->arInProgress, this->expectedAr,
-                this->expectedB,
-                this->expectedR,
-                this->expectedGoodWrite, this->signalledGoodWrite,
-                this->expectedBadWrite, this->signalledBadWrite,
-                this->expectedBadWriteBadCap, this->expectedBadWriteGoodCapBadRange,
-                this->expectedGoodRead, this->signalledGoodRead,
-                this->expectedBadRead, this->signalledBadRead,
-                this->expectedBadReadBadCap, this->expectedBadReadGoodCapBadRange
-            ));
-        }
-    }*/
 };
 
 template<class DUT, CapType ctype = CapType::Cap2024_02, KeyMngrVersion V = KeyMngrV1>

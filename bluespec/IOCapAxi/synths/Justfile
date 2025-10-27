@@ -9,4 +9,7 @@ gen ifc blu_design mhz:
 
 gen-all: \
     (gen "SimpleIOCapExposerKeyMngrV2Tb.txt" "mkSimpleIOCapExposerV6_blockinvalid_1percycle_Tb" "500") \
-    (gen "SimpleIOCapExposerKeyMngrV2Tb.txt" "mkSimpleIOCapExposerV6_blockinvalid_Tb" "500")
+    (gen "SimpleIOCapExposerKeyMngrV2Tb.txt" "mkSimpleIOCapExposerV6_blockinvalid_Tb" "500") \
+    (gen "SimpleIOCapExposerKeyMngrV2Tb.txt" "mkSimpleIOCapExposerV6_blockinvalid_1percycle_Tb" "200") \
+    (gen "SimpleIOCapExposerKeyMngrV2Tb.txt" "mkSimpleIOCapExposerV6_blockinvalid_Tb" "200") \
+    (gen "UnifiedSingleExposerKeyMngrTb.txt" "mkCombinedIOCapExposerV6_blockinvalid_1percycle_KeyManager2V1_Tb" "200")

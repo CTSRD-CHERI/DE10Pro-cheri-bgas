@@ -48,6 +48,8 @@ interface IOCapAxi_KeyManager2_KeyStatePipe;
     interface IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc mmio;
     interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc keydata;
     interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc refcount;
+
+    interface ReadOnly#(Vector#(256, KeyStatus)) debugKeyState;
 endinterface
 
 module mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg#(KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_KeyStatePipe);
@@ -81,6 +83,7 @@ module mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg#(KeyManager2ErrorUnit error
                     val[i] = KeyValid;
                 end
             endcase
+        keyStates <= val;
     endrule
 
     interface mmio = interface IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc;
@@ -125,4 +128,7 @@ module mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg#(KeyManager2ErrorUnit error
         interface keyToStartRevoking = keyToStartRevoking;
     endinterface;
 
+    interface debugKeyState = interface ReadOnly;
+        method _read = keyStates;
+    endinterface;
 endmodule

@@ -45,7 +45,7 @@ test-keymgr2-all: test-keymgr2-keydata-dualportsingle
 test-keymgr2-keydata-dualportsingle *args: (sim-v "mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_Tb" args)
 test-keymgr2-refcount-twovalve *args: (sim-v "mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve_Tb" args)
 
-test-combined-v5-2v1 *args: (sim-v "mkCombinedIOCapExposerV5_blockinvalid_KeyManager2V1_Tb" args)
+test-combined-v6-2v1 *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_1percycle_KeyManager2V1_Tb" args)
 
 build-all: \
     (build-sim-v "mkSimpleIOCapKeyManager_Tb") \

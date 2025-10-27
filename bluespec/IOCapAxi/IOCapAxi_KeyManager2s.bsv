@@ -44,6 +44,8 @@ interface IOCapAxi_KeyManager2#(numeric type t_data, numeric type n_exposers);
     interface AXI4Lite_Slave#(TLog#('h2000), t_data, 0, 0, 0, 0, 0) hostFacingSlave;
 
     interface KeyManager2ErrorUnit errorUnit;
+
+    interface ReadOnly#(Vector#(256, KeyStatus)) debugKeyState;
 endinterface
 
 
@@ -158,4 +160,6 @@ module mkIOCapAxi_KeyManager2_V1(IOCapAxi_KeyManager2#(t_data, 1)) provisos (
     interface hostFacingSlave = mmio.hostFacingSlave;
 
     interface errorUnit = error;
+
+    interface debugKeyState = keyState.debugKeyState;
 endmodule
