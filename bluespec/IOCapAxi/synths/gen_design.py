@@ -447,20 +447,23 @@ set_false_path -from [get_clocks {{CLK_SLOW}}] -to [get_clocks {{CLK_FAST}}]
 """
     print(contents, file=file)
 
-def justfile(project_name, file):
-    contents = f"""
+def justfile(project_name, dut, file):
+    contents = f"""project_name := "{project_name}"
+dut := "{dut}"
+
 default:
     @just --list
 
 synth:
-    quartus_sh --flow compile {project_name}
+    cd ../../../ && make ./build/verilog/{{{{dut}}}}.v 
+    quartus_sh --flow compile {{{{project_name}}}}
 
 reports:
-    grep -B 1 -A 6 "; Fmax Summary" output_files/{project_name}.sta.rpt
-    grep -B 1 -A 90 "; Fitter Resource Usage Summary" output_files/{project_name}.fit.place.rpt
+    grep -B 1 -A 6 "; Fmax Summary" output_files/{{{{project_name}}}}.sta.rpt
+    grep -B 1 -A 90 "; Fitter Resource Usage Summary" output_files/{{{{project_name}}}}.fit.place.rpt
 
 gui:
-    quartus {project_name}.qpf &
+    quartus {{{{project_name}}}}.qpf &
 """
     print(contents, file=file)
 
@@ -501,4 +504,4 @@ if __name__ == '__main__':
         sdc(target_mhz, f)
     
     with open(JUSTFILE, "w", encoding="ascii") as f:
-        justfile(PROJECT_NAME, f)
+        justfile(PROJECT_NAME, dut, f)

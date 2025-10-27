@@ -1,5 +1,5 @@
-project_name := "mkSimpleIOCapExposerV6_blockinvalid_Tb_SimpleIOCapExposerKeyMngrV2Tb_design"
-dut := "mkSimpleIOCapExposerV6_blockinvalid_Tb"
+project_name := "mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design"
+dut := "mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb"
 
 default:
     @just --list

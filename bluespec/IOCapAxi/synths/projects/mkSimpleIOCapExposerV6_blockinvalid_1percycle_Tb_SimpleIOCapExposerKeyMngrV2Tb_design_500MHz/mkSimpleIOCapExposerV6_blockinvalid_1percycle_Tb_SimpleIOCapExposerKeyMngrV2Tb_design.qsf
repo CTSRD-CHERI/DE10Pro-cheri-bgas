@@ -122,6 +122,7 @@ set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapExp
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapAxiChecker3V1_FastDecode_1CycleAES_Write.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapExposerV2_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Write.v
+set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkInternalCalc_2024Aes2RoundPerCycleFast.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkInternalCalc_2024Aes1RoundPerCycleFast.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCombinedIOCapExposerV6_blockinvalid_1percycle_KeyManager2V1_Tb.v

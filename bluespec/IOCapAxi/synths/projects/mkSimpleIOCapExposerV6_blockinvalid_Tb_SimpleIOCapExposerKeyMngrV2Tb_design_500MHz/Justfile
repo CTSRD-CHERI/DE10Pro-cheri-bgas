@@ -1,14 +1,17 @@
+project_name := "mkSimpleIOCapExposerV6_blockinvalid_Tb_SimpleIOCapExposerKeyMngrV2Tb_design"
+dut := "mkSimpleIOCapExposerV6_blockinvalid_Tb"
 
 default:
     @just --list
 
 synth:
-    quartus_sh --flow compile mkSimpleIOCapExposerV6_blockinvalid_Tb_SimpleIOCapExposerKeyMngrV2Tb_design
+    cd ../../../ && make ./build/verilog/{{dut}}.v 
+    quartus_sh --flow compile {{project_name}}
 
 reports:
-    grep -B 1 -A 6 "; Fmax Summary" output_files/mkSimpleIOCapExposerV6_blockinvalid_Tb_SimpleIOCapExposerKeyMngrV2Tb_design.sta.rpt
-    grep -B 1 -A 90 "; Fitter Resource Usage Summary" output_files/mkSimpleIOCapExposerV6_blockinvalid_Tb_SimpleIOCapExposerKeyMngrV2Tb_design.fit.place.rpt
+    grep -B 1 -A 6 "; Fmax Summary" output_files/{{project_name}}.sta.rpt
+    grep -B 1 -A 90 "; Fitter Resource Usage Summary" output_files/{{project_name}}.fit.place.rpt
 
 gui:
-    quartus mkSimpleIOCapExposerV6_blockinvalid_Tb_SimpleIOCapExposerKeyMngrV2Tb_design.qpf &
+    quartus {{project_name}}.qpf &
 

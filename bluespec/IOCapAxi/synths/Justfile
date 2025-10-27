@@ -2,7 +2,7 @@ default:
     @just --list
 
 gen ifc blu_design mhz:
-    # Make the verilog
+    # Make the verilog, which ensures all the relevant files exist for the project generator
     (cd ../ && make ./build/verilog/{{blu_design}}.v)
     # Make the working directory for quartus
     python3 gen_design.py {{ifc}} {{blu_design}} {{mhz}}
@@ -12,4 +12,5 @@ gen-all: \
     (gen "SimpleIOCapExposerKeyMngrV2Tb.txt" "mkSimpleIOCapExposerV6_blockinvalid_Tb" "500") \
     (gen "SimpleIOCapExposerKeyMngrV2Tb.txt" "mkSimpleIOCapExposerV6_blockinvalid_1percycle_Tb" "200") \
     (gen "SimpleIOCapExposerKeyMngrV2Tb.txt" "mkSimpleIOCapExposerV6_blockinvalid_Tb" "200") \
-    (gen "UnifiedSingleExposerKeyMngrTb.txt" "mkCombinedIOCapExposerV6_blockinvalid_1percycle_KeyManager2V1_Tb" "200")
+    (gen "UnifiedSingleExposerKeyMngrTb.txt" "mkCombinedIOCapExposerV6_blockinvalid_1percycle_KeyManager2V1_Tb" "200") \
+    (gen "UnifiedSingleExposerKeyMngrTb.txt" "mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb" "200")
