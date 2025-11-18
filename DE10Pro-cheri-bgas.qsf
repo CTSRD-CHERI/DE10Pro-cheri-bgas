@@ -1883,3 +1883,4 @@ set_instance_assignment -name HSSI_PARAMETER "pma_tx_buf_powermode_dc_post_tap =
 set_instance_assignment -name HSSI_PARAMETER "pma_tx_buf_pre_emp_switching_ctrl_1st_post_tap=9" -to QSFP28D_TX_p[3]
 # set_instance_assignment -name HSSI_PARAMETER "pma_tx_buf_term_sel=<value>" -to QSFP28D_TX_p[3]
 set_global_assignment -name BOARD default
+set_global_assignment -name HPS_DAP_NO_CERTIFICATE on
