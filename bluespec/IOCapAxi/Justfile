@@ -46,6 +46,18 @@ test-keymgr2-keydata-dualportsingle *args: (sim-v "mkIOCapAxi_KeyManager2_KeyDat
 test-keymgr2-refcount-twovalve *args: (sim-v "mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve_Tb" args)
 
 test-combined-v6-2v1 *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_1percycle_KeyManager2V1_Tb" args)
+test-combined-v6-1per-0pool *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_0pool_1percycle_KeyManager2V1_Tb" args)
+test-combined-v6-1per-1pool *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_1pool_1percycle_KeyManager2V1_Tb" args)
+test-combined-v6-1per-2pool *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb" args)
+test-combined-v6-1per-3pool *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_3pool_1percycle_KeyManager2V1_Tb" args)
+test-combined-v6-1per-4pool *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_4pool_1percycle_KeyManager2V1_Tb" args)
+
+
+# TODO why does the 0pool fail?
+test-combined-v6-1per-allpool: (test-combined-v6-1per-2pool) (test-combined-v6-1per-3pool) (test-combined-v6-1per-4pool)
+
+test-single-checker3-1per *args: (sim-v "mkSingleChecker3_1percycle" args)
+test-single-checker3-2per *args: (sim-v "mkSingleChecker3_2percycle" args)
 
 build-all: \
     (build-sim-v "mkSimpleIOCapKeyManager_Tb") \
@@ -57,13 +69,22 @@ build-all: \
     (build-sim-v "mkSimpleIOCapExposerV5_noblock_Tb") \
     (build-sim-v "mkSimpleIOCapExposerV5_blockinvalid_Tb") \
     (build-sim-v "mkSimpleIOCapExposerV6_blockinvalid_Tb") \
+    (build-sim-v "mkSimpleIOCapExposerV6_blockinvalid_1percycle_Tb") \
     (build-sim-v "mkCap2024_11_Decode_Comb_Tb") \
     (build-sim-v "mkCap2024_02_Decode_Comb_Tb") \
     (build-sim-v "mkCap2024_11_Decode_FastFSM_Tb") \
     (build-sim-v "mkCap2024_02_Decode_FastFSM_Tb") \
     (build-sim-v "mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_Tb") \
     (build-sim-v "mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve_Tb") \
-    (build-sim-v "mkCombinedIOCapExposerV5_blockinvalid_KeyManager2V1_Tb")
+    (build-sim-v "mkCombinedIOCapExposerV5_blockinvalid_KeyManager2V1_Tb") \
+    (build-sim-v "mkCombinedIOCapExposerV6_blockinvalid_1percycle_KeyManager2V1_Tb") \
+    (build-sim-v "mkCombinedIOCapExposerV6_blockinvalid_0pool_1percycle_KeyManager2V1_Tb") \
+    (build-sim-v "mkCombinedIOCapExposerV6_blockinvalid_1pool_1percycle_KeyManager2V1_Tb") \
+    (build-sim-v "mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb") \
+    (build-sim-v "mkCombinedIOCapExposerV6_blockinvalid_3pool_1percycle_KeyManager2V1_Tb") \
+    (build-sim-v "mkCombinedIOCapExposerV6_blockinvalid_4pool_1percycle_KeyManager2V1_Tb") \
+    (build-sim-v "mkSingleChecker3_1percycle") \
+    (build-sim-v "mkSingleChecker3_2percycle") \
 
 konatify name pattern *args:
     just {{name}} --konata {{args}} | python sanitize_konata.py ./testbenches/results/konata/{{name}} --pattern "{{pattern}}"

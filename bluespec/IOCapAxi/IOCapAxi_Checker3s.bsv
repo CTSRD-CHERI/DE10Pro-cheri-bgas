@@ -28,6 +28,8 @@ export mkSimpleIOCapAxiChecker3V1_FastDecode_1CycleAES_Read;
 export mkSimpleIOCapAxiChecker3V1_FastDecode_1CycleAES_Write;
 export mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Read;
 export mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Write;
+export mkNullIOCapAxiChecker3V1_Read;
+export mkNullIOCapAxiChecker3V1_Write;
 export mkInOrderIOCapAxiChecker3V1Pool;
 export mkInOrderIOCapAxiChecker3V1Pool_Read;
 export mkInOrderIOCapAxiChecker3V1Pool_Write;
@@ -484,6 +486,40 @@ module mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Read#(KonataMode kMode)(I
         connectFastFSMCapDecode_2024_11,
         mk2RoundPerCycleCapSigCheckFast
     );
+    interface checker = m;
+endmodule
+
+module mkNullIOCapAxiChecker3V1#(KonataMode kMode)(IOCapAxiChecker3#(no_iocap_flit)) provisos (
+    Bits#(AuthenticatedFlit#(no_iocap_flit, Cap2024_11), a__),
+    Bits#(FlitState#(no_iocap_flit), b__),
+    AxiCtrlFlit64#(no_iocap_flit),
+    FShow#(no_iocap_flit)
+);
+    FIFOF#(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool)) fifo <- mkFIFOF;
+    Sink#(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool)) fifoSink = toSink(fifo);
+
+    interface in = interface Sink;
+        method Bool canPut = fifoSink.canPut;
+        method Action put(x);
+            match { .authFlit, .flitId, .keyId, .key } = x;
+            fifoSink.put(tuple4(authFlit.flit, flitId, keyId, True));
+        endmethod
+    endinterface;
+    interface checkResponse = toSource(fifo);
+    interface keyToKill = interface WriteOnly;
+        method Action _write(Maybe#(KeyId) val) = noAction;
+    endinterface;
+endmodule
+
+(* synthesize *)
+module mkNullIOCapAxiChecker3V1_Write#(KonataMode kMode)(IOCapAxiChecker3_Write);
+    let m <- mkNullIOCapAxiChecker3V1(kMode);
+    interface checker = m;
+endmodule
+
+(* synthesize *)
+module mkNullIOCapAxiChecker3V1_Read#(KonataMode kMode)(IOCapAxiChecker3_Read);
+    let m <- mkNullIOCapAxiChecker3V1(kMode);
     interface checker = m;
 endmodule
 
