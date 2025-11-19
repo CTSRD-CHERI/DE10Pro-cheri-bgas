@@ -178,7 +178,7 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort#(IOCapAxi_Ke
 
     interface mmio = interface IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc;
         // This will never cause backpressure, because it's dual-port - there's no reason to be delayed.
-        method ActionValue#(Bool) tryWriteKey(KeyId id, Bit#(128) data, Bit#(16) byteEn);
+        method ActionValue#(Bool) tryWriteKey(KeyId id, Bit#(128) data, Bit#(16) byteEn) if (hasClearedBram);
             let canWrite <- keyState.tryWriteKey(id);
             if (canWrite) begin
                 pendingKeyWrite.wset(tuple3(id, data, byteEn));
@@ -189,7 +189,7 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort#(IOCapAxi_Ke
         endmethod
 
         // Mutually exclusive with tryWriteKey
-        method ActionValue#(Bool) tryRevokeAndClearKey(KeyId id);
+        method ActionValue#(Bool) tryRevokeAndClearKey(KeyId id) if (hasClearedBram);
             let canClear <- keyState.tryRevokeAndClearKey(id);
             if (canClear) begin
                 pendingKeyRevoke.wset(id);
