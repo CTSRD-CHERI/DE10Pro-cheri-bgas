@@ -1,0 +1,17 @@
+project_name := "mkCombinedIOCapExposerV6_blockinvalid_0pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design"
+dut := "mkCombinedIOCapExposerV6_blockinvalid_0pool_1percycle_KeyManager2V1_Tb"
+
+default:
+    @just --list
+
+synth:
+    cd ../../../ && make ./build/verilog/{{dut}}.v 
+    quartus_sh --flow compile {{project_name}}
+
+reports:
+    grep -B 1 -A 6 "; Fmax Summary" output_files/{{project_name}}.sta.rpt
+    grep -B 1 -A 90 "; Fitter Resource Usage Summary" output_files/{{project_name}}.fit.place.rpt
+
+gui:
+    quartus {{project_name}}.qpf &
+

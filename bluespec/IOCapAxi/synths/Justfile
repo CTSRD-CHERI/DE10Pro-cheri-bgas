@@ -13,4 +13,29 @@ gen-all: \
     (gen "SimpleIOCapExposerKeyMngrV2Tb.txt" "mkSimpleIOCapExposerV6_blockinvalid_1percycle_Tb" "200") \
     (gen "SimpleIOCapExposerKeyMngrV2Tb.txt" "mkSimpleIOCapExposerV6_blockinvalid_Tb" "200") \
     (gen "UnifiedSingleExposerKeyMngrTb.txt" "mkCombinedIOCapExposerV6_blockinvalid_1percycle_KeyManager2V1_Tb" "200") \
-    (gen "UnifiedSingleExposerKeyMngrTb.txt" "mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb" "200")
+    (gen "UnifiedSingleExposerKeyMngrTb.txt" "mkCombinedIOCapExposerV6_blockinvalid_0pool_1percycle_KeyManager2V1_Tb" "200") \
+    (gen "UnifiedSingleExposerKeyMngrTb.txt" "mkCombinedIOCapExposerV6_blockinvalid_1pool_1percycle_KeyManager2V1_Tb" "200") \
+    (gen "UnifiedSingleExposerKeyMngrTb.txt" "mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb" "200") \
+    (gen "UnifiedSingleExposerKeyMngrTb.txt" "mkCombinedIOCapExposerV6_blockinvalid_3pool_1percycle_KeyManager2V1_Tb" "200") \
+    (gen "UnifiedSingleExposerKeyMngrTb.txt" "mkCombinedIOCapExposerV6_blockinvalid_4pool_1percycle_KeyManager2V1_Tb" "200") \
+    (gen "SingleChecker3.txt" "mkSingleChecker3_1percycle" "200") \
+    (gen "SingleChecker3.txt" "mkSingleChecker3_2percycle" "200")
+
+resynth-paper-reports:
+    just projects/mkSingleChecker3_1percycle_SingleChecker3_design_200MHz/synth
+    just projects/mkSingleChecker3_2percycle_SingleChecker3_design_200MHz/synth
+    just projects/mkCombinedIOCapExposerV6_blockinvalid_0pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/synth
+    just projects/mkCombinedIOCapExposerV6_blockinvalid_1pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/synth
+    just projects/mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/synth
+    just projects/mkCombinedIOCapExposerV6_blockinvalid_3pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/synth
+    just projects/mkCombinedIOCapExposerV6_blockinvalid_4pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/synth
+
+recheck-paper-reports:
+    # TODO actually combine these into some sort of toml
+    just projects/mkSingleChecker3_1percycle_SingleChecker3_design_200MHz/reports
+    just projects/mkSingleChecker3_2percycle_SingleChecker3_design_200MHz/reports
+    just projects/mkCombinedIOCapExposerV6_blockinvalid_0pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/reports
+    just projects/mkCombinedIOCapExposerV6_blockinvalid_1pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/reports
+    just projects/mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/reports
+    just projects/mkCombinedIOCapExposerV6_blockinvalid_3pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/reports
+    just projects/mkCombinedIOCapExposerV6_blockinvalid_4pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/reports

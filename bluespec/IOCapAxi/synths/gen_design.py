@@ -19,16 +19,22 @@ class InterfaceSpec:
     ifc_name: str
     ifc_inputs: List[Tuple[str, int]]
     ifc_outputs: List[Tuple[str, int]]
+    ifc_dbg_outputs: List[Tuple[str, int]]
     overall_input_width: int
+    # For output that isn't debug
+    # ---------------------------
     overall_output_width: int
     # overall_output_width padded to a power of two
     padded_output_width: int
     padded_output_lg2: int
+    # For output that is debug
+    overall_dbg_output_width: int
 
     @staticmethod
     def generate(ifc_file_path: str):
         ifc_name = os.path.basename(args.ifc).removesuffix(".txt")
         ifc_inputs = []
+        ifc_dbg_outputs = []
         ifc_outputs = []
 
         # TODO ignore debug signals
@@ -50,13 +56,17 @@ class InterfaceSpec:
                 if output_m:
                     signal_name = output_m.group(3)
                     width = (int(output_m.group(2)) + 1) if output_m.group(2) is not None else 1
-                    ifc_outputs.append((signal_name, width))
+                    if signal_name.startswith("debug"):
+                        ifc_dbg_outputs.append((signal_name, width))
+                    else:
+                        ifc_outputs.append((signal_name, width))
                     continue
 
                 raise RuntimeError(f"Line '{line}' doesn't match either input or output")
             
         overall_input_width = sum(w for (name, w) in ifc_inputs)
         overall_output_width = sum(w for (name, w) in ifc_outputs)
+        overall_dbg_output_width = sum(w for (name, w) in ifc_dbg_outputs)
         assert overall_input_width != 0
         assert overall_output_width != 0
         
@@ -69,10 +79,12 @@ class InterfaceSpec:
             ifc_name=ifc_name,
             ifc_inputs=ifc_inputs,
             ifc_outputs=ifc_outputs,
+            ifc_dbg_outputs=ifc_dbg_outputs,
             overall_input_width=overall_input_width,
             overall_output_width=overall_output_width,
             padded_output_width=padded_output_width,
-            padded_output_lg2=padded_output_lg2
+            padded_output_lg2=padded_output_lg2,
+            overall_dbg_output_width=overall_dbg_output_width,
         )
 
 def toplevel_verilog(ifc: InterfaceSpec, dut: str, file):
@@ -141,6 +153,13 @@ endmodule
         else:
             print(f"        .{name}(dut_out[{curr_output_start_bit+width-1}:{curr_output_start_bit}])", end='', file=file)
         curr_output_start_bit += width
+        first = False
+
+    # Tie off all debug outputs
+    for (name, width) in ifc.ifc_dbg_outputs:
+        if not first:
+            print(f",", file=file)
+        print(f"        .{name}()", end='', file=file)
         first = False
 
     print(suffix, file=file)

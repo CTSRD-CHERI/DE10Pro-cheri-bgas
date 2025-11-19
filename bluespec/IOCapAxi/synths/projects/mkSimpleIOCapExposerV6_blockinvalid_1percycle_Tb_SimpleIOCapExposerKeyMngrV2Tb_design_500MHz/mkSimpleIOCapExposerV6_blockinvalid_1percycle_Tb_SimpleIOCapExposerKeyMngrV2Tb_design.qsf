@@ -105,14 +105,18 @@ set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BypassWire
 set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BypassWire.v"
 set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BypassCrossingWire.v"
 
+set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCombinedIOCapExposerV6_blockinvalid_0pool_1percycle_KeyManager2V1_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapAxiChecker3V1_FastDecode_1CycleAES_Read.v
+set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSingleChecker3_1percycle.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapKeyManager_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapExposerV4_noblock_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleChecker_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCap2024_02_Decode_Comb_Tb.v
+set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkNullIOCapAxiChecker3V1_Write.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkInternalCalc_2024Aes2RoundPerCycle.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapExposerV6_blockinvalid_1percycle_Tb.v
+set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCombinedIOCapExposerV6_blockinvalid_4pool_1percycle_KeyManager2V1_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCap2024_02_Decode_FastFSM_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapExposerV1_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Read.v
@@ -121,11 +125,15 @@ set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCap2024_11_Dec
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapExposerV3_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapAxiChecker3V1_FastDecode_1CycleAES_Write.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapExposerV2_Tb.v
+set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkNullIOCapAxiChecker3V1_Read.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Write.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkInternalCalc_2024Aes2RoundPerCycleFast.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkInternalCalc_2024Aes1RoundPerCycleFast.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCombinedIOCapExposerV6_blockinvalid_1percycle_KeyManager2V1_Tb.v
+set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCombinedIOCapExposerV6_blockinvalid_3pool_1percycle_KeyManager2V1_Tb.v
+set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSingleChecker3_2percycle.v
+set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCombinedIOCapExposerV6_blockinvalid_1pool_1percycle_KeyManager2V1_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapExposerV4_blockinvalid_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapExposerV6_blockinvalid_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCap2024_11_Decode_Comb_Tb.v
