@@ -168,9 +168,17 @@ struct MaybeValidCapWithRange {
 template<class DUT, KeyMngrVersion V>
 class KeyManagerShimStimulus {
 public:
-    std::unordered_map<key_manager::KeyId, U128> secrets; // Fake keymanager proxy.
+    // The secrets stored in the key manager. TODO: Cannot change throughout the run.
+    std::unordered_map<key_manager::KeyId, U128> secrets;
 
     KeyManagerShimStimulus() : secrets() {}
+    // Assume the contents of `secrets` will not change, set up any pending transactions to populate the key store
+    virtual void setup() {}
+    // Has the internal key manager hardware been set up with the secrets?
+    virtual bool isReady() {
+        // By default, a fake key manager shim is always ready
+        return true;
+    }
     // Observe the key manager inputs (epoch fulfilments and key responses)
     virtual void driveInputsForKeyMgr(DUT& dut, uint64_t tick) = 0;
     virtual void dump_toml_stats(FILE* stats){}
@@ -188,7 +196,7 @@ class BasicKeyManagerShimStimulus<DUT, KeyMngrV1>: public KeyManagerShimStimulus
     std::deque<key_manager::KeyResponse> keyResponses;
 public:
     BasicKeyManagerShimStimulus() : KeyManagerShimStimulus<DUT, KeyMngrV1>() {}
-    virtual void driveInputsForKeyMgr(DUT& dut, uint64_t tick) {
+    virtual void driveInputsForKeyMgr(DUT& dut, uint64_t tick) override {
         if (!keyResponses.empty() && CANPUT_INPUT(keyStoreShim_keyResponses)) {
             auto keyResponse = keyResponses.front();
             keyResponses.pop_front();
@@ -222,7 +230,7 @@ class BasicKeyManagerShimStimulus<DUT, KeyMngrV2>: public KeyManagerShimStimulus
     std::unordered_map<key_manager::KeyId, int64_t> refcounts;
 public:
     BasicKeyManagerShimStimulus() : KeyManagerShimStimulus<DUT, KeyMngrV2>() {}
-    virtual void driveInputsForKeyMgr(DUT& dut, uint64_t tick) {
+    virtual void driveInputsForKeyMgr(DUT& dut, uint64_t tick) override {
         if (!keyResponses.empty() && CANPUT_INPUT(keyStoreShim_keyResponses)) {
             auto keyResponse = keyResponses.front();
             keyResponses.pop_front();
@@ -299,6 +307,110 @@ public:
             }
         } else {
             NOPOP_OUTPUT(keyStoreShim_wValve_Decrement);
+        }
+    }
+};
+
+template<class DUT>
+class BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT>: public KeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT> {
+    std::deque<std::pair<axi::AxiLite::AWFlit_addr13_user0, axi::AxiLite::WFlit_data32_user0>> pendingWrites;
+    uint64_t pendingResponses;
+public:
+    BasicKeyManagerShimStimulus() : KeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT>() {}
+    virtual void setup() override {
+        // Memory map:
+// [0x0, 0x10, 0x20, 0x30, 0x40... 0x1000) = read/write key status
+// [0x1000, 0x1010, 0x1020... 0x2000)      = write key values
+// [0x1000, 0x1008, 0x1010, 0x1018]        = read performance counters
+//                                           - good write
+//                                           - bad write
+//                                           - good read
+//                                           - bad read
+        for (auto& [key_id, key_val] : this->secrets) {
+            auto key_data = key_val.stdify();
+            const uint16_t KEY_STATUS_ADDR = 0 + (key_id * 16);
+            const uint16_t KEY_DATA_ADDR = 0x1000 + (key_id * 16);
+            // four writes of key data
+            pendingWrites.push_back(std::make_pair(
+                axi::AxiLite::AWFlit_addr13_user0 {
+                    .awprot=0,
+                    .awaddr=uint16_t(KEY_DATA_ADDR + 0)
+                },
+                axi::AxiLite::WFlit_data32_user0 {
+                    .wstrb=0b1111,
+                    .wdata=key_data[0],
+                }
+            ));
+            pendingWrites.push_back(std::make_pair(
+                axi::AxiLite::AWFlit_addr13_user0 {
+                    .awprot=0,
+                    .awaddr=uint16_t(KEY_DATA_ADDR + 4)
+                },
+                axi::AxiLite::WFlit_data32_user0 {
+                    .wstrb=0b1111,
+                    .wdata=key_data[1],
+                }
+            ));
+            pendingWrites.push_back(std::make_pair(
+                axi::AxiLite::AWFlit_addr13_user0 {
+                    .awprot=0,
+                    .awaddr=uint16_t(KEY_DATA_ADDR + 8)
+                },
+                axi::AxiLite::WFlit_data32_user0 {
+                    .wstrb=0b1111,
+                    .wdata=key_data[2],
+                }
+            ));
+            pendingWrites.push_back(std::make_pair(
+                axi::AxiLite::AWFlit_addr13_user0 {
+                    .awprot=0,
+                    .awaddr=uint16_t(KEY_DATA_ADDR + 12)
+                },
+                axi::AxiLite::WFlit_data32_user0 {
+                    .wstrb=0b1111,
+                    .wdata=key_data[3],
+                }
+            ));
+            // one write of key status
+            pendingWrites.push_back(std::make_pair(
+                axi::AxiLite::AWFlit_addr13_user0 {
+                    .awprot=0,
+                    .awaddr=KEY_STATUS_ADDR,
+                },
+                axi::AxiLite::WFlit_data32_user0 {
+                    .wstrb=0b1111,
+                    .wdata=1, // keyvalid
+                }
+            ));
+        }
+        pendingResponses = pendingWrites.size();
+    }
+    virtual bool isReady() override {
+        return pendingResponses == 0;
+    }
+    virtual void driveInputsForKeyMgr(DUT& dut, uint64_t tick) override {
+        if (!pendingWrites.empty() && CANPUT_INPUT(keyStore_aw) && CANPUT_INPUT(keyStore_w)) {
+            auto [awFlit, wFlit] = pendingWrites.front();
+
+            PUT_INPUT(keyStore_aw, awFlit.pack());
+            PUT_INPUT(keyStore_w, wFlit.pack());
+            
+            pendingWrites.pop_front();
+        } else {
+            NOPUT_INPUT(keyStore_aw);
+            NOPUT_INPUT(keyStore_w);
+        }
+
+        if (CANPEEK_OUTPUT(keyStore_b)) {
+            char bFlitPacked;
+            POP_OUTPUT(keyStore_b, bFlitPacked);
+            auto bFlit = axi::AxiLite::BFlit_user0::unpack(bFlitPacked);
+            pendingResponses--;
+            if (bFlit.bresp != 0) {
+                throw test_failure("KeyStore Write returned error");
+            }
+        } else {
+            NOPOP_OUTPUT(keyStore_b);
         }
     }
 };
@@ -423,6 +535,10 @@ template<class DUT, CapType ctype, KeyMngrVersion V>
 class ExposerStimulus : public StimulusGenerator<DUT> {
 public:
     std::unique_ptr<KeyManagerShimStimulus<DUT, V>> keyMgr;
+    // Make different stimuli set their ticks relative to the first tick where the test could actually start
+    // Initially a number that's far too big, but not near the 64-bit limit, so that it can be used as a proxy while the key manager is still being inited.
+    // Even while the key manager is being inited, firstTickWhereKeyMgrReady + x will always be a long way in the future, but will never overflow uint64_t
+    uint64_t firstTickWhereKeyMgrReady = 4'000'000'000'000;
 protected:
     std::unique_ptr<SanitizedMemStimulus<DUT>> sanitizedMem;
 
@@ -496,7 +612,17 @@ public:
         keyMgr(keyMgr), sanitizedMem(sanitizedMem), awInputs(), wInputs(), arInputs() {}
 
     virtual ~ExposerStimulus() = default;
-    virtual void driveInputsForTick(std::mt19937& rng, DUT& dut, uint64_t tick) {
+    virtual void setup(std::mt19937& rng) override {
+        keyMgr->setup();
+    }
+    virtual void driveInputsForTick(std::mt19937& rng, DUT& dut, uint64_t tick) override {
+        if (!keyMgr->isReady()) {
+            keyMgr->driveInputsForKeyMgr(dut, tick);
+            return;
+        } else if (firstTickWhereKeyMgrReady == 4'000'000'000'000) {
+            firstTickWhereKeyMgrReady = tick;
+        }
+
         keyMgr->driveInputsForKeyMgr(dut, tick);
         sanitizedMem->driveBAndRInputs(dut, tick);
 
@@ -1589,6 +1715,24 @@ public:
     virtual ~ExposerScoreboard() override = default;
 };
 
+template<class DUT, CapType ctype>
+class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT> : public BaseExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT> {
+    virtual void monitorAndScoreKeyManager(
+        DUT& dut, uint64_t tick,
+        KeyMngrShimInput<KeyMngrV2_AsDUT>& inputKeyManager, KeyMngrShimOutput<KeyMngrV2_AsDUT>& outputKeyManager
+    ) override {
+        this->signalledGoodWrite = outputKeyManager.debugGoodWrite;
+        this->signalledBadWrite = outputKeyManager.debugBadWrite;
+        this->signalledGoodRead = outputKeyManager.debugGoodRead;
+        this->signalledBadRead = outputKeyManager.debugBadRead;
+    }
+public:
+    ExposerScoreboard(std::unordered_map<key_manager::KeyId, U128>& secrets, bool expectPassthroughInvalidTransactions = false) :
+        BaseExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT>(secrets, expectPassthroughInvalidTransactions)
+        {}
+    virtual ~ExposerScoreboard() override = default;
+};
+
 template<class DUT, CapType ctype = CapType::Cap2024_02, KeyMngrVersion V = KeyMngrV1>
 class ExposerUVMishTest: public UVMishTest<DUT> {
 public:
@@ -1626,10 +1770,12 @@ public:
         if (perms & CCapPerms_Write) {
             this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
         }
+
+        ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual bool shouldFinish(uint64_t tick) override {
         // 100 cycles should do it
-        return tick >= 1000;
+        return tick >= this->firstTickWhereKeyMgrReady + 1000;
     }
 };
 
@@ -1646,7 +1792,7 @@ public:
         new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
     ), perms(perms) {}
-    virtual void setup(std::mt19937& rng) override {        
+    virtual void setup(std::mt19937& rng) override {
         const uint8_t axi_id = 0b1011;
         const key_manager::KeyId secret_id = 111;
         const U128 key = U128::random(rng);
@@ -1661,10 +1807,12 @@ public:
         if (perms & CCapPerms_Write) {
             this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
         }
+
+        ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual bool shouldFinish(uint64_t tick) override {
         // 100 cycles should do it
-        return tick >= 1000;
+        return tick >= this->firstTickWhereKeyMgrReady + 1000;
     }
 };
 
@@ -1681,7 +1829,7 @@ public:
         new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
     ), perms(perms) {}
-    virtual void setup(std::mt19937& rng) override {        
+    virtual void setup(std::mt19937& rng) override {
         const uint8_t axi_id = 0b1011;
         const key_manager::KeyId secret_id = 111;
         const U128 key = U128::random(rng);
@@ -1697,10 +1845,12 @@ public:
         if (perms & CCapPerms_Write) {
             this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
         }
+
+        ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual bool shouldFinish(uint64_t tick) override {
         // 100 cycles should do it
-        return tick >= 1000;
+        return tick >= this->firstTickWhereKeyMgrReady + 1000;
     }
 };
 
@@ -1715,7 +1865,7 @@ public:
         new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
     ) {}
-    virtual void setup(std::mt19937& rng) override {        
+    virtual void setup(std::mt19937& rng) override {
         const uint8_t axi_id = 0b1011;
         const key_manager::KeyId secret_id = 111;
         const U128 key = U128::random(rng);
@@ -1731,10 +1881,12 @@ public:
             auto axi_params = cap_data.valid_transfer_params(32, 20);
             this->enqueueReadBurst(cap_data.cap, axi_params, axi_id);
         }
+        
+        ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual bool shouldFinish(uint64_t tick) override {
         // 100 cycles should do it
-        return tick >= 1000;
+        return tick >= this->firstTickWhereKeyMgrReady + 1000;
     }
 };
 
@@ -1749,7 +1901,7 @@ public:
         new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
     ) {}
-    virtual void setup(std::mt19937& rng) override {        
+    virtual void setup(std::mt19937& rng) override {
         const uint8_t axi_id = 0b1011;
         const key_manager::KeyId secret_id = 111;
         const U128 key = U128::random(rng);
@@ -1771,10 +1923,12 @@ public:
             auto axi_params = cap_data.valid_transfer_params(32, 20);
             this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
         }
+        
+        ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual bool shouldFinish(uint64_t tick) override {
         // 100 cycles should do it
-        return tick >= 1000;
+        return tick >= this->firstTickWhereKeyMgrReady + 1000;
     }
 };
 
@@ -1843,7 +1997,7 @@ public:
     virtual bool shouldFinish(uint64_t tick) override {
         // Each revocation = 450 cycles of transactions then 50 for revocation
         // Plus some spare cycles - TODO why???
-        return tick >= (5000 * (n_revocations) + 350);
+        return tick >= this->firstTickWhereKeyMgrReady + (5000 * (n_revocations) + 350);
     }
 };
 
@@ -1898,9 +2052,11 @@ public:
         }
     }
     virtual bool shouldFinish(uint64_t tick) override {
-        return tick >= 1000 * 30 + 1000;
+        return tick >= this->firstTickWhereKeyMgrReady + 1000 * 30 + 1000;
     }
 };
+
+// TODO version of SimpleRevokeWhenChecking_KeyMngrV2
 
 template<class DUT, CapType ctype, KeyMngrVersion V>
 class UVMStreamOfNValidTransactions : public ExposerStimulus<DUT, ctype, V> {
@@ -1913,7 +2069,7 @@ class UVMStreamOfNValidTransactions : public ExposerStimulus<DUT, ctype, V> {
 public:
     virtual ~UVMStreamOfNValidTransactions() = default;
     virtual std::string name() override {
-        return fmt::format("Stream of {} {} transactions ({} data flits each)", n_transactions, ccap_perms_str(perms), n_data_flits_per_transaction);
+        return fmt::format("Stream of {} {} {}-flit transactions", n_transactions, ccap_perms_str(perms), n_data_flits_per_transaction);
     }
     UVMStreamOfNValidTransactions(CCapPerms perms, uint64_t n_transactions, uint8_t n_data_flits_per_transaction) : ExposerStimulus<DUT, ctype, V>(
         new BasicKeyManagerShimStimulus<DUT, V>(),
@@ -1935,6 +2091,8 @@ public:
                 this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
             }
         }
+        
+        ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual bool shouldFinish(uint64_t tick) override {
         if (final_tick == 0) {
@@ -1952,6 +2110,7 @@ public:
 template<class DUT, CapType ctype, KeyMngrVersion V>
 class UVMStreamOfNLibRustValidTransactions : public ExposerStimulus<DUT, ctype, V> {
     uint64_t n_transactions;
+    uint8_t n_data_flits_per_transaction;
     int n_cavs = -1;
 
     uint64_t final_tick = 0;
@@ -1960,15 +2119,15 @@ public:
     virtual ~UVMStreamOfNLibRustValidTransactions() = default;
     virtual std::string name() override {
         if (n_cavs == -1) {
-            return fmt::format("Stream of {} librust random valid {} transactions", n_transactions, ctype);
+            return fmt::format("Stream of {} librust random valid {} {}-flit transactions", n_transactions, ctype, n_data_flits_per_transaction);
         } else {
-            return fmt::format("Stream of {} librust random valid {} {}-caveat transactions", n_transactions, ctype, n_cavs);
+            return fmt::format("Stream of {} librust random valid {} {}-caveat {}-flit transactions", n_transactions, ctype, n_cavs, n_data_flits_per_transaction);
         }
     }
-    UVMStreamOfNLibRustValidTransactions(uint64_t n_transactions, int n_cavs = -1) : ExposerStimulus<DUT, ctype, V>(
+    UVMStreamOfNLibRustValidTransactions(uint64_t n_transactions, uint8_t n_data_flits_per_transaction, int n_cavs = -1) : ExposerStimulus<DUT, ctype, V>(
         new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
-    ), n_transactions(n_transactions), n_cavs(n_cavs) {
+    ), n_transactions(n_transactions), n_data_flits_per_transaction(n_data_flits_per_transaction), n_cavs(n_cavs) {
         if (n_cavs < -1 || n_cavs > 2) {
             throw std::runtime_error(fmt::format("Cannot have a stream of {}-caveat transactions - invalid caveat count", n_cavs));
         }
@@ -1981,7 +2140,7 @@ public:
         for (uint64_t i = 0; i < n_transactions; i++) {
             uint8_t axi_id = i & 0xF;
             auto cap_data = this->test_librust_random_valid_cap(rng, secret_id, n_cavs);
-            auto axi_params = cap_data.valid_transfer_params(32, 20);
+            auto axi_params = cap_data.valid_transfer_params(32, n_data_flits_per_transaction);
             if (cap_data.perms & CCapPerms_Read) {
                 this->enqueueReadBurst(cap_data.cap, axi_params, axi_id);
             }
@@ -1989,6 +2148,8 @@ public:
                 this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
             }
         }
+        
+        ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual bool shouldFinish(uint64_t tick) override {
         if (final_tick == 0) {
@@ -2035,6 +2196,8 @@ public:
                 this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
             }
         }
+        
+        ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual bool shouldFinish(uint64_t tick) override {
         if (final_tick == 0) {
@@ -2140,20 +2303,20 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         ),
 
         new ExposerUVMishTest(
-            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000),
+            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_data_flits_per_transaction */ 4),
             expectPassthroughInvalidTransactions
         ),
 
         new ExposerUVMishTest(
-            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_cavs */ 0),
+            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_data_flits_per_transaction */ 4, /* n_cavs */ 0),
             expectPassthroughInvalidTransactions
         ),
         new ExposerUVMishTest(
-            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_cavs */ 1),
+            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_data_flits_per_transaction */ 4, /* n_cavs */ 1),
             expectPassthroughInvalidTransactions
         ),
         new ExposerUVMishTest(
-            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_cavs */ 2),
+            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_data_flits_per_transaction */ 4, /* n_cavs */ 2),
             expectPassthroughInvalidTransactions
         ),
     };

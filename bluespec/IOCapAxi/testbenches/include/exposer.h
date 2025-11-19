@@ -115,8 +115,8 @@ template <> class fmt::formatter<KeyMngrShimInput<KeyMngrV2>> {
 // When the KeyMngr is an actual DUT, we only shim the AXI inputs
 template<>
 struct KeyMngrShimInput<KeyMngrV2_AsDUT> {
-    std::optional<axi::AxiLite::AWFlit_addr64_user0> ar;
-    std::optional<axi::AxiLite::ARFlit_addr64_user0> aw;
+    std::optional<axi::AxiLite::AWFlit_addr13_user0> ar;
+    std::optional<axi::AxiLite::ARFlit_addr13_user0> aw;
     std::optional<axi::AxiLite::WFlit_data32_user0> w;
 
     bool operator==(const KeyMngrShimInput<KeyMngrV2_AsDUT>&) const = default;
@@ -233,7 +233,11 @@ struct KeyMngrShimOutput<KeyMngrV2_AsDUT> {
     // std::optional<key_manager::KeyId> wValve_Increment;
     // std::optional<key_manager::KeyId> wValve_Decrement;
 
-    key_manager2::KeyStatuses keyStatuses;
+    key_manager2::KeyStatuses debugKeyStatuses;
+    uint64_t debugGoodWrite;
+    uint64_t debugBadWrite;
+    uint64_t debugGoodRead;
+    uint64_t debugBadRead;
 
     bool operator==(const KeyMngrShimOutput<KeyMngrV2_AsDUT>&) const = default;
     bool is_notable() {
@@ -646,6 +650,51 @@ void pull_output(DUT& dut, KeyMngrShimOutput<KeyMngrV2>& output) {
 
 template<class DUT>
 void pull_output(DUT& dut, ShimmedExposerOutput<KeyMngrV2>& output) {
+    pull_output(dut, (exposer::ExposerOutput&)output);
+    pull_output(dut, output.keyManager);
+}
+
+
+template<class DUT>
+void pull_output(DUT& dut, KeyMngrShimOutput<KeyMngrV2_AsDUT>& output) {
+    #define CANPEEK(from) (dut.RDY_## from ##_peek)
+    #define POP(from, into) \
+        assert(dut. from ##_canPeek); \
+        assert(dut.RDY_## from ##_drop); \
+        dut.EN_## from ##_drop = 1; \
+        into = dut. from ##_peek;
+    #define NOPOP(from) \
+        dut.EN_## from ##_drop = 0; \
+
+    if (CANPEEK(keyStore_r)){
+        uint64_t rFlitPacked;
+        POP(keyStore_r, rFlitPacked);
+        output.r = std::optional(axi::AxiLite::RFlit_data32_user0::unpack(rFlitPacked));
+    } else {
+        NOPOP(keyStore_r);
+    }
+
+    if (CANPEEK(keyStore_b)){
+        char bFlitPacked;
+        POP(keyStore_b, bFlitPacked);
+        output.b = std::optional(axi::AxiLite::BFlit_user0::unpack(bFlitPacked));
+    } else {
+        NOPOP(keyStore_b);
+    }
+
+    output.debugKeyStatuses = key_manager2::KeyStatuses::unpack(stdify_array(dut.debugKeyState___05Fread));
+    output.debugGoodWrite = dut.debugGoodWrite___05Fread;
+    output.debugBadWrite = dut.debugBadWrite___05Fread;
+    output.debugGoodRead = dut.debugGoodRead___05Fread;
+    output.debugBadRead = dut.debugBadRead___05Fread;
+
+    #undef NOPOP
+    #undef POP
+    #undef CANPEEK
+}
+
+template<class DUT>
+void pull_output(DUT& dut, ShimmedExposerOutput<KeyMngrV2_AsDUT>& output) {
     pull_output(dut, (exposer::ExposerOutput&)output);
     pull_output(dut, output.keyManager);
 }

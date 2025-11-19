@@ -556,39 +556,31 @@ namespace axi::SanitizedAxi {
 }
 
 namespace axi::AxiLite {
-	struct AWFlit_addr64_user0 {
+	struct AWFlit_addr13_user0 {
 		/** 3-bit field */
 		uint8_t awprot;
-		/** 64-bit field */
-		uint64_t awaddr;
+		/** 13-bit field */
+		uint16_t awaddr;
 	
-		static AWFlit_addr64_user0 unpack(const std::array<uint32_t, 3>& backing) {
-			AWFlit_addr64_user0 value{};
+		static AWFlit_addr13_user0 unpack(const uint16_t& backing) {
+			AWFlit_addr13_user0 value{};
 			value.awprot = (
-				uint8_t((backing[0] >> 0u) & 0x7u)
+				uint8_t((backing >> 0u) & uint16_t(0x7ul))
 			);
 			value.awaddr = (
-				(uint64_t((backing[0] >> 3u) & 0x1fffffffu) << 0) | 
-				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 29) | 
-				(uint64_t((backing[2] >> 0u) & 0x7u) << 61)
+				((backing >> 3u) & uint16_t(0x1ffful))
 			);
 			return value;
 		}
-		std::array<uint32_t, 3> pack() const {
-			std::array<uint32_t, 3> backing{};
-			backing[0] = (
-				(uint32_t((awprot >> 0u) & uint8_t(0x7ul)) << 0) | 
-				(uint32_t((awaddr >> 0u) & 0x1ffffffful) << 3)
-			);
-			backing[1] = (
-				uint32_t((awaddr >> 29u) & 0xfffffffful)
-			);
-			backing[2] = (
-				uint32_t((awaddr >> 61u) & 0x7ul)
+		uint16_t pack() const {
+			uint16_t backing{};
+			backing = (
+				(uint16_t((awprot >> 0u) & uint8_t(0x7ul)) << 0) | 
+				(((awaddr >> 0u) & uint16_t(0x1ffful)) << 3)
 			);
 			return backing;
 		}
-		bool operator==(const AWFlit_addr64_user0&) const = default;
+		bool operator==(const AWFlit_addr13_user0&) const = default;
 	};
 	struct WFlit_data32_user0 {
 		/** 4-bit field */
@@ -636,39 +628,31 @@ namespace axi::AxiLite {
 		}
 		bool operator==(const BFlit_user0&) const = default;
 	};
-	struct ARFlit_addr64_user0 {
+	struct ARFlit_addr13_user0 {
 		/** 3-bit field */
 		uint8_t arprot;
-		/** 64-bit field */
-		uint64_t araddr;
+		/** 13-bit field */
+		uint16_t araddr;
 	
-		static ARFlit_addr64_user0 unpack(const std::array<uint32_t, 3>& backing) {
-			ARFlit_addr64_user0 value{};
+		static ARFlit_addr13_user0 unpack(const uint16_t& backing) {
+			ARFlit_addr13_user0 value{};
 			value.arprot = (
-				uint8_t((backing[0] >> 0u) & 0x7u)
+				uint8_t((backing >> 0u) & uint16_t(0x7ul))
 			);
 			value.araddr = (
-				(uint64_t((backing[0] >> 3u) & 0x1fffffffu) << 0) | 
-				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 29) | 
-				(uint64_t((backing[2] >> 0u) & 0x7u) << 61)
+				((backing >> 3u) & uint16_t(0x1ffful))
 			);
 			return value;
 		}
-		std::array<uint32_t, 3> pack() const {
-			std::array<uint32_t, 3> backing{};
-			backing[0] = (
-				(uint32_t((arprot >> 0u) & uint8_t(0x7ul)) << 0) | 
-				(uint32_t((araddr >> 0u) & 0x1ffffffful) << 3)
-			);
-			backing[1] = (
-				uint32_t((araddr >> 29u) & 0xfffffffful)
-			);
-			backing[2] = (
-				uint32_t((araddr >> 61u) & 0x7ul)
+		uint16_t pack() const {
+			uint16_t backing{};
+			backing = (
+				(uint16_t((arprot >> 0u) & uint8_t(0x7ul)) << 0) | 
+				(((araddr >> 0u) & uint16_t(0x1ffful)) << 3)
 			);
 			return backing;
 		}
-		bool operator==(const ARFlit_addr64_user0&) const = default;
+		bool operator==(const ARFlit_addr13_user0&) const = default;
 	};
 	struct RFlit_data32_user0 {
 		/** 2-bit field */
@@ -2009,13 +1993,13 @@ template <> class fmt::formatter<axi::SanitizedAxi::RFlit_id4_data32> {
 		return format_to(ctx.out(), "RFlit_id4_data32 {{ .rlast = 0x{:01x}, .rresp = 0x{:01x}, .rdata = 0x{:08x}, .rid = 0x{:01x} }}", s.rlast, s.rresp, s.rdata, s.rid);
 	}
 };
-template <> class fmt::formatter<axi::AxiLite::AWFlit_addr64_user0> {
+template <> class fmt::formatter<axi::AxiLite::AWFlit_addr13_user0> {
 	public:
 	// Ignore parse formats - only {} is supported for this type
 	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
 	template <typename Context>
-	constexpr auto format (axi::AxiLite::AWFlit_addr64_user0 const& s, Context& ctx) const {
-		return format_to(ctx.out(), "AWFlit_addr64_user0 {{ .awprot = 0x{:01x}, .awaddr = 0x{:016x} }}", s.awprot, s.awaddr);
+	constexpr auto format (axi::AxiLite::AWFlit_addr13_user0 const& s, Context& ctx) const {
+		return format_to(ctx.out(), "AWFlit_addr13_user0 {{ .awprot = 0x{:01x}, .awaddr = 0x{:04x} }}", s.awprot, s.awaddr);
 	}
 };
 template <> class fmt::formatter<axi::AxiLite::WFlit_data32_user0> {
@@ -2036,13 +2020,13 @@ template <> class fmt::formatter<axi::AxiLite::BFlit_user0> {
 		return format_to(ctx.out(), "BFlit_user0 {{ .bresp = 0x{:01x} }}", s.bresp);
 	}
 };
-template <> class fmt::formatter<axi::AxiLite::ARFlit_addr64_user0> {
+template <> class fmt::formatter<axi::AxiLite::ARFlit_addr13_user0> {
 	public:
 	// Ignore parse formats - only {} is supported for this type
 	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
 	template <typename Context>
-	constexpr auto format (axi::AxiLite::ARFlit_addr64_user0 const& s, Context& ctx) const {
-		return format_to(ctx.out(), "ARFlit_addr64_user0 {{ .arprot = 0x{:01x}, .araddr = 0x{:016x} }}", s.arprot, s.araddr);
+	constexpr auto format (axi::AxiLite::ARFlit_addr13_user0 const& s, Context& ctx) const {
+		return format_to(ctx.out(), "ARFlit_addr13_user0 {{ .arprot = 0x{:01x}, .araddr = 0x{:04x} }}", s.arprot, s.araddr);
 	}
 };
 template <> class fmt::formatter<axi::AxiLite::RFlit_data32_user0> {

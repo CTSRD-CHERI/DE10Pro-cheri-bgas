@@ -19,5 +19,9 @@ module mkCombinedIOCapExposerV6_blockinvalid_1percycle_KeyManager2V1_Tb(UnifiedS
 
     interface keyStore = keyMgr32Impl.hostFacingSlave;
     interface debugKeyState = keyMgr32Impl.debugKeyState;
+    interface debugGoodWrite = keyMgr32Impl.debugGoodWrite;
+    interface debugBadWrite = keyMgr32Impl.debugBadWrite;
+    interface debugGoodRead = keyMgr32Impl.debugGoodRead;
+    interface debugBadRead = keyMgr32Impl.debugBadRead;
     interface exposer4x32 = exposerImpl;
 endmodule

@@ -536,11 +536,11 @@ BLUESPEC_SANITIZEDAXI_STRUCTS = [
 
 BLUESPEC_AXI4LITE_STRUCTS = [
     Struct(
-        "AWFlit_addr64_user0",
-        BackingArray.LSB(U32, 3),
+        "AWFlit_addr13_user0",
+        U16,
         revlist([
             # Field("awid", 4),
-            Field("awaddr", 64),
+            Field("awaddr", 13),
             # Field("awlen", 8),
             # Field("awsize", 3),
             # Field("awburst", 2),
@@ -569,11 +569,11 @@ BLUESPEC_AXI4LITE_STRUCTS = [
         ]),
     ),
     Struct(
-        "ARFlit_addr64_user0",
-        BackingArray.LSB(U32, 3),
+        "ARFlit_addr13_user0",
+        U16,
         revlist([
             # Field("arid", 4),
-            Field("araddr", 64),
+            Field("araddr", 13),
             # Field("arlen", 8),
             # Field("arsize", 3),
             # Field("arburst", 2),

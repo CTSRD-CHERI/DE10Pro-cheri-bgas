@@ -4,7 +4,7 @@
 #include "exposer_tests_uvm.h"
 #include "exposer_tests_legacy.h"
 
-using TheDUT = mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb;
+using TheDUT = VmkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb;
 constexpr bool expectPassthroughInvalidTransactions = false;
 
 int main(int argc, char** argv) {
