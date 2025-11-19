@@ -46,6 +46,10 @@ interface IOCapAxi_KeyManager2#(numeric type t_data, numeric type n_exposers);
     interface KeyManager2ErrorUnit errorUnit;
 
     interface ReadOnly#(Vector#(256, KeyStatus)) debugKeyState;
+    interface ReadOnly#(UInt#(64)) debugGoodWrite;
+    interface ReadOnly#(UInt#(64)) debugBadWrite;
+    interface ReadOnly#(UInt#(64)) debugGoodRead;
+    interface ReadOnly#(UInt#(64)) debugBadRead;
 endinterface
 
 
@@ -162,4 +166,8 @@ module mkIOCapAxi_KeyManager2_V1(IOCapAxi_KeyManager2#(t_data, 1)) provisos (
     interface errorUnit = error;
 
     interface debugKeyState = keyState.debugKeyState;
+    interface debugGoodWrite = mmio.debugGoodWrite;
+    interface debugBadWrite = mmio.debugBadWrite;
+    interface debugGoodRead = mmio.debugGoodRead;
+    interface debugBadRead = mmio.debugBadRead;
 endmodule

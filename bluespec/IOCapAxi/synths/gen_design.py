@@ -31,6 +31,8 @@ class InterfaceSpec:
         ifc_inputs = []
         ifc_outputs = []
 
+        # TODO ignore debug signals
+
         with open(args.ifc, "r") as f:
             for line in f:
                 if not line.strip():

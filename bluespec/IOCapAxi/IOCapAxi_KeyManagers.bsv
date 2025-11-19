@@ -89,19 +89,19 @@ module mkSimpleIOCapKeyManager(IOCap_KeyManager#(t_data)) provisos (
     rule update_perf_counters;
         if (reqGoodWrite) begin
             goodWrite <= goodWrite + 1;
-            $display("IOCap stats - good writes %d", (goodWrite + 1));
+            $display("// IOCap stats - good writes %d", (goodWrite + 1));
         end
         if (reqBadWrite) begin
             badWrite <= badWrite + 1;
-            $display("IOCap stats - bad writes %d", (badWrite + 1));
+            $display("// IOCap stats - bad writes %d", (badWrite + 1));
         end
         if (reqGoodRead) begin
             goodRead <= goodRead + 1;
-            $display("IOCap stats - good reads %d", (goodRead + 1));
+            $display("// IOCap stats - good reads %d", (goodRead + 1));
         end
         if (reqBadRead) begin
             badRead <= badRead + 1;
-            $display("IOCap stats - bad reads %d", (badRead + 1));
+            $display("// IOCap stats - bad reads %d", (badRead + 1));
         end
     endrule
 

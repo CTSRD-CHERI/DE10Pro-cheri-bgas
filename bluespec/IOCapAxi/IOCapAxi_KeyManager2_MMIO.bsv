@@ -39,6 +39,11 @@ interface IOCapAxi_KeyManager2_MMIO#(type t_data, numeric type n_checkers);
 
     // TODO make ReadOnly
     interface Vector#(n_checkers, RWire#(KeyId)) checkerKillKeyMessages;
+
+    interface ReadOnly#(UInt#(64)) debugGoodWrite;
+    interface ReadOnly#(UInt#(64)) debugBadWrite;
+    interface ReadOnly#(UInt#(64)) debugGoodRead;
+    interface ReadOnly#(UInt#(64)) debugBadRead;
 endinterface
 
 module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc keyState, IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc keyData, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_MMIO#(t_data, n_checkers))  provisos (
@@ -84,19 +89,19 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
 
         if (nGoodWrite != 0) begin
             goodWrite <= goodWrite + nGoodWrite;
-            $display("IOCap stats - good writes %d", (goodWrite + nGoodWrite));
+            $display("// IOCap stats - good writes %d", (goodWrite + nGoodWrite));
         end
         if (nBadWrite != 0) begin
             badWrite <= badWrite + nBadWrite;
-            $display("IOCap stats - bad writes %d", (badWrite + nBadWrite));
+            $display("// IOCap stats - bad writes %d", (badWrite + nBadWrite));
         end
-        if (goodRead != 0) begin
+        if (nGoodRead != 0) begin
             goodRead <= goodRead + nGoodRead;
-            $display("IOCap stats - good reads %d", (goodRead + nGoodRead));
+            $display("// IOCap stats - good reads %d", (goodRead + nGoodRead));
         end
         if (nBadRead != 0) begin
             badRead <= badRead + nBadRead;
-            $display("IOCap stats - bad reads %d", (badRead + nBadRead));
+            $display("// IOCap stats - bad reads %d", (badRead + nBadRead));
         end
     endrule
 
@@ -195,10 +200,10 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
             ) begin
                 // We're either trying to write 0 (invalid) or 1 (valid)
                 if (w.wdata[0] == 0) begin
-                    validWrite <- keyState.tryEnableKey(k);
+                    validWrite <- keyData.tryRevokeAndClearKey(k);
                     // TODO error for this if it fails
                 end else begin
-                    validWrite <- keyData.tryRevokeAndClearKey(k);
+                    validWrite <- keyState.tryEnableKey(k);
                     // TODO error for this if it fails
                 end
             end else begin
@@ -282,4 +287,8 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
     endinterface;
 
     interface checkerKillKeyMessages = replicate(killKey);
+    interface debugGoodWrite = regToReadOnly(goodWrite);
+    interface debugBadWrite = regToReadOnly(badWrite);
+    interface debugGoodRead = regToReadOnly(goodRead);
+    interface debugBadRead = regToReadOnly(badRead);
 endmodule
