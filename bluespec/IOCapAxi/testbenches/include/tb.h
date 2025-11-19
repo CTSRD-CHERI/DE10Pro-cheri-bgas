@@ -121,6 +121,7 @@ int tb_main(std::vector<TestBase*> tests, int argc, char** argv) {
 
             if (setup.toml_stats) {
                 fmt::println(setup.toml_stats, "[tests.\"{}\"]", test->name());
+                fmt::println(setup.toml_stats, "success = false");
                 test->dump_toml_stats(setup.toml_stats);
                 fmt::println(setup.toml_stats, "");
                 fflush(setup.toml_stats);
@@ -132,6 +133,7 @@ int tb_main(std::vector<TestBase*> tests, int argc, char** argv) {
             // Success
             if (setup.toml_stats) {
                 fmt::println(setup.toml_stats, "[tests.\"{}\"]", test->name());
+                fmt::println(setup.toml_stats, "success = true");
                 test->dump_toml_stats(setup.toml_stats);
                 fmt::println(setup.toml_stats, "");
                 fflush(setup.toml_stats);
@@ -143,6 +145,10 @@ int tb_main(std::vector<TestBase*> tests, int argc, char** argv) {
     fmt::println(stderr, "\033[1;36mPass Rate {}/{} ({:3.1f}% pass)\033[0m", tests_completed - failures, tests_completed, (1 - (failures * 1.0 / tests_completed)) * 100.0);
 
     if (setup.toml_stats) {
+        fmt::println(setup.toml_stats, "[summary]");
+        fmt::println(setup.toml_stats, "completed = {}", tests_completed);
+        fmt::println(setup.toml_stats, "success = {}", tests_completed - failures);
+        fmt::println(setup.toml_stats, "fail = {}", failures);
         fclose(setup.toml_stats);
     }
 
