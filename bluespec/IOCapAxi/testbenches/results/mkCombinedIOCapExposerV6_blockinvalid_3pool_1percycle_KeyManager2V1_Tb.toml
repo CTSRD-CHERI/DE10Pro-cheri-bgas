@@ -423,6 +423,81 @@ perf_valid_read = 5833
 perf_invalid_read = 0
 valid_txn_ratio = 1
 
+[tests."Stream of 10000 librust random valid Cap2024_11 0-caveat 1-flit transactions"]
+success = true
+ending_tick = 402761
+aw_throughput = 0.8873996416959724
+w_throughput = 0.22357071213640922
+ar_throughput = 0.8889038922458901
+b_throughput = 1
+r_throughput = 1
+aw_aw_latency_mean = 165.077015103933
+ar_ar_latency_mean = 165.0007595321282
+w_w_latency_mean = 2233.8507551966504
+b_b_latency_mean = 20
+r_r_latency_mean = 20
+total_write = 6687
+confirmed_write = 6687
+exp_invalid_write = 0
+perf_valid_write = 6687
+perf_invalid_write = 0
+total_read = 6583
+confirmed_read = 6583
+exp_invalid_read = 0
+perf_valid_read = 6583
+perf_invalid_read = 0
+valid_txn_ratio = 1
+
+[tests."Stream of 10000 librust random valid Cap2024_11 1-caveat 1-flit transactions"]
+success = true
+ending_tick = 583691
+aw_throughput = 0.5001347569192495
+w_throughput = 0.1259870482556925
+ar_throughput = 0.5001456330878375
+b_throughput = 1
+r_throughput = 1
+aw_aw_latency_mean = 309.99502570054716
+ar_ar_latency_mean = 309.99500831946756
+w_w_latency_mean = 3973.370916929199
+b_b_latency_mean = 20
+r_r_latency_mean = 20
+total_write = 6031
+confirmed_write = 6031
+exp_invalid_write = 0
+perf_valid_write = 6031
+perf_invalid_write = 0
+total_read = 6010
+confirmed_read = 6010
+exp_invalid_read = 0
+perf_valid_read = 6010
+perf_invalid_read = 0
+valid_txn_ratio = 1
+
+[tests."Stream of 10000 librust random valid Cap2024_11 2-caveat 1-flit transactions"]
+success = true
+ending_tick = 781581
+aw_throughput = 0.34300631374453616
+w_throughput = 0.0864456310531067
+ar_throughput = 0.3429965894390215
+b_throughput = 1
+r_throughput = 1
+aw_aw_latency_mean = 456.65486725663715
+ar_ar_latency_mean = 456.65523744213954
+w_w_latency_mean = 5798.003539823008
+b_b_latency_mean = 20
+r_r_latency_mean = 20
+total_write = 5650
+confirmed_write = 5650
+exp_invalid_write = 0
+perf_valid_write = 5650
+perf_invalid_write = 0
+total_read = 5833
+confirmed_read = 5833
+exp_invalid_read = 0
+perf_valid_read = 5833
+perf_invalid_read = 0
+valid_txn_ratio = 1
+
 [tests."Stream of 10000 librust random edge case Cap2024_11_EdgeCase::Cav1_NonZeroWhenUnused Cap2024_11 transactions"]
 success = true
 ending_tick = 1438741
@@ -624,6 +699,6 @@ perf_invalid_read = 5833
 valid_txn_ratio = 0
 
 [summary]
-completed = 25
-success = 25
+completed = 28
+success = 28
 fail = 0

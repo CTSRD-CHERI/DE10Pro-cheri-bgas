@@ -2319,6 +2319,19 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
             new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_data_flits_per_transaction */ 4, /* n_cavs */ 2),
             expectPassthroughInvalidTransactions
         ),
+
+        new ExposerUVMishTest(
+            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_data_flits_per_transaction */ 1, /* n_cavs */ 0),
+            expectPassthroughInvalidTransactions
+        ),
+        new ExposerUVMishTest(
+            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_data_flits_per_transaction */ 1, /* n_cavs */ 1),
+            expectPassthroughInvalidTransactions
+        ),
+        new ExposerUVMishTest(
+            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_data_flits_per_transaction */ 1, /* n_cavs */ 2),
+            expectPassthroughInvalidTransactions
+        ),
     };
 
     if constexpr (V == KeyMngrV1) {

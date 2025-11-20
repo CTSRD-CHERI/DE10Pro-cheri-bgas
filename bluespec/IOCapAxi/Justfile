@@ -87,3 +87,7 @@ build-all: \
 
 konatify name pattern *args:
     just {{name}} --konata {{args}} | python sanitize_konata.py ./testbenches/results/konata/{{name}} --pattern "{{pattern}}"
+
+
+regen-tb-paper-reports:
+    cd testbenches && uv run python3 gen_report.py ./results/reports ./results/hardware_latency.toml

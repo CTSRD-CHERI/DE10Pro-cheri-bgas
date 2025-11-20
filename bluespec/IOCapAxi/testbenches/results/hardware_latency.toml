@@ -1,0 +1,63 @@
+timestamp = "2025-11-20_15:53:15+00:00"
+generated_by = "gen_report.py"
+git_hash = "8df6dfb\n"
+
+[full_exposer_0checkers_1per]
+dut = "mkCombinedIOCapExposerV6_0pool_1percycle_KeyManager2V1_Tb"
+timestamp = "2025-11-20_15:43:20+00:00"
+aw_mean_latency_0cav_4flit = 75.07701510393301
+aw_mean_latency_1cav_4flit = 75.0174100480849
+aw_mean_latency_2cav_4flit = 75
+aw_throughput_0cav_1flit = 0.8873996416959724
+aw_throughput_1cav_1flit = 0.8885778481712033
+aw_throughput_2cav_1flit = 0.8888888888888888
+
+[full_exposer_1checkers_1per]
+dut = "mkCombinedIOCapExposerV6_blockinvalid_1pool_1percycle_KeyManager2V1_Tb"
+timestamp = "2025-11-20_15:43:59+00:00"
+aw_mean_latency_0cav_4flit = 249.98803648870944
+aw_mean_latency_1cav_4flit = 469.96849610346544
+aw_mean_latency_2cav_4flit = 689.9469026548672
+aw_throughput_0cav_1flit = 0.3077524909680834
+aw_throughput_1cav_1flit = 0.16671158563974983
+aw_throughput_2cav_1flit = 0.1143209789113203
+
+[full_exposer_2checkers_1per]
+dut = "mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb"
+timestamp = "2025-11-20_15:44:29+00:00"
+aw_mean_latency_0cav_4flit = 184.99775684163302
+aw_mean_latency_1cav_4flit = 349.98839330127674
+aw_mean_latency_2cav_4flit = 514.9557522123894
+aw_throughput_0cav_1flit = 0.615462494247584
+aw_throughput_1cav_1flit = 0.33343469246717344
+aw_throughput_2cav_1flit = 0.22863154913049197
+
+[full_exposer_3checkers_1per]
+dut = "mkCombinedIOCapExposerV6_blockinvalid_3pool_1percycle_KeyManager2V1_Tb"
+timestamp = "2025-11-20_15:45:09+00:00"
+aw_mean_latency_0cav_4flit = 165.077015103933
+aw_mean_latency_1cav_4flit = 309.99502570054716
+aw_mean_latency_2cav_4flit = 456.65486725663715
+aw_throughput_0cav_1flit = 0.8873996416959724
+aw_throughput_1cav_1flit = 0.5001347569192495
+aw_throughput_2cav_1flit = 0.34300631374453616
+
+[full_exposer_4checkers_1per]
+dut = "mkCombinedIOCapExposerV6_blockinvalid_4pool_1percycle_KeyManager2V1_Tb"
+timestamp = "2025-11-20_15:45:43+00:00"
+aw_mean_latency_0cav_4flit = 165.077015103933
+aw_mean_latency_1cav_4flit = 289.99502570054716
+aw_mean_latency_2cav_4flit = 427.4867256637168
+aw_throughput_0cav_1flit = 0.8873996416959724
+aw_throughput_1cav_1flit = 0.6667403681388536
+aw_throughput_2cav_1flit = 0.45722146917801293
+
+[full_exposer_4checkers_2per]
+dut = "mkCombinedIOCapExposerV6_blockinvalid_4pool_2percycle_KeyManager2V1_Tb"
+timestamp = "2025-11-20_15:46:20+00:00"
+aw_mean_latency_0cav_4flit = 115.07701510393301
+aw_mean_latency_1cav_4flit = 175.01741004808488
+aw_mean_latency_2cav_4flit = 240
+aw_throughput_0cav_1flit = 0.8873996416959724
+aw_throughput_1cav_1flit = 0.8885778481712033
+aw_throughput_2cav_1flit = 0.8000283195865341

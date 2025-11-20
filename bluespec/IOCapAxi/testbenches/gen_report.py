@@ -34,14 +34,16 @@ def file_line_one_regex_match(f: TextIO, r: re.Pattern) -> re.Match:
     return m
 
 @dataclass
-class SynthStats:
+class LatencyStats:
     dut: str
-    fit_timestamp: str
-    sta_timestamp: str
+    timestamp: str
 
-    fmax: str # XXX.XX MHz
-    luts: int
-    luts_device_max: int
+    aw_mean_latency_0cav_4flit: int
+    aw_mean_latency_1cav_4flit: int
+    aw_mean_latency_2cav_4flit: int
+    aw_throughput_0cav_1flit: int
+    aw_throughput_1cav_1flit: int
+    aw_throughput_2cav_1flit: int
 
 # group 1 = project name
 PROJECT_NAME_PATTERN = re.compile(r'^project_name := "(\w+)"')
@@ -54,46 +56,39 @@ FMAX_PATTERN = re.compile(r'; (\d+\.\d\d) MHz\s+; (\d+\.\d\d) MHz\s+;\s+CLK_FAST
 # group 2 = total ALMs on device
 LUTS_PATTERN = re.compile(r'^; Logic utilization \(ALMs needed / total ALMs on device\)\s+; ([\d,]+)\s+/\s+([\d,]+)')
 
-def project_stats(project_dir: str) -> SynthStats:
-    justfile = os.path.join("projects", project_dir, "Justfile")
+def project_stats(dut: str) -> LatencyStats:
+    results_toml = os.path.join("results", f"{dut}.toml")
+    results_timestamp = file_timestamp(results_toml)
 
-    with open(justfile, "r", encoding="utf-8") as f:
-        dut = file_line_one_regex_match(f, DUT_PATTERN).group(1)
-        f.seek(0, os.SEEK_SET)
-        project_name = file_line_one_regex_match(f, PROJECT_NAME_PATTERN).group(1)
+    with open(results_toml, "rb") as f:
+        results = tomllib.load(f)
+    
+    aw_mean_latency_4flit = {}
+    aw_throughput_1flit = {}
 
-    timing_file = os.path.join("projects", project_dir, "output_files", f"{project_name}.sta.rpt")
-    placing_file = os.path.join("projects", project_dir, "output_files", f"{project_name}.fit.place.rpt")
+    for cavs in range(3):
+        aw_mean_latency_4flit[cavs] = results["tests"][f"Stream of 10000 librust random valid Cap2024_11 {cavs}-caveat 4-flit transactions"]["aw_aw_latency_mean"]
+        aw_throughput_1flit[cavs] = results["tests"][f"Stream of 10000 librust random valid Cap2024_11 {cavs}-caveat 1-flit transactions"]["aw_throughput"]
 
-    timing_timestamp = file_timestamp(timing_file)
-    placing_timestamp = file_timestamp(placing_file)
-
-    with open(timing_file, "r", encoding="utf-8") as f:
-        m = file_line_one_regex_match(f, FMAX_PATTERN)
-        assert m.group(1) == m.group(2)
-        fmax = m.group(1)
-    with open(placing_file, "r", encoding="utf-8") as f:
-        m = file_line_one_regex_match(f, LUTS_PATTERN)
-        luts = int(m.group(1).replace(",", ""))
-        luts_device_max = int(m.group(2).replace(",", ""))
-        assert luts_device_max > luts
-
-    return SynthStats(
+    return LatencyStats(
         dut=dut,
-        sta_timestamp=timing_timestamp,
-        fit_timestamp=placing_timestamp,
-        fmax=fmax,
-        luts=luts,
-        luts_device_max=luts_device_max
+        timestamp=results_timestamp,
+
+        aw_mean_latency_0cav_4flit = aw_mean_latency_4flit[0],
+        aw_mean_latency_1cav_4flit = aw_mean_latency_4flit[1],
+        aw_mean_latency_2cav_4flit = aw_mean_latency_4flit[2],
+        aw_throughput_0cav_1flit = aw_throughput_1flit[0],
+        aw_throughput_1cav_1flit = aw_throughput_1flit[1],
+        aw_throughput_2cav_1flit = aw_throughput_1flit[2],
     )
 
 RELEVANT_PROJECTS = {
-    "single_checker_1per": "mkSingleChecker3_1percycle_SingleChecker3_design_300MHz",
-    "single_checker_2per": "mkSingleChecker3_2percycle_SingleChecker3_design_300MHz",
-    "full_exposer_0checkers_1per": "mkCombinedIOCapExposerV6_0pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz"
+    # "single_checker_1per": "mkSingleChecker3_1percycle",
+    # "single_checker_2per": "mkSingleChecker3_2percycle",
+    "full_exposer_0checkers_1per": "mkCombinedIOCapExposerV6_0pool_1percycle_KeyManager2V1_Tb"
 }
 RELEVANT_PROJECTS.update({
-    f"full_exposer_{n}checkers_{p}per": f"mkCombinedIOCapExposerV6_blockinvalid_{n}pool_{p}percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz"
+    f"full_exposer_{n}checkers_{p}per": f"mkCombinedIOCapExposerV6_blockinvalid_{n}pool_{p}percycle_KeyManager2V1_Tb"
     for (n, p) in (
         (1, 1),
         (2, 1),
@@ -117,10 +112,10 @@ if __name__ == '__main__':
         "generated_by": "gen_report.py",
         "git_hash": git_hash(),
     }
-    for (project_shortname, project_name) in RELEVANT_PROJECTS.items():
-        toml[project_shortname] = asdict(project_stats(project_name))
+    for (project_shortname, dut) in RELEVANT_PROJECTS.items():
+        toml[project_shortname] = asdict(project_stats(dut))
     
-    with open(os.path.join(args.results_dir, f"hardware_synths_{cur_timestamp}.toml"), "wb") as f:
+    with open(os.path.join(args.results_dir, f"hardware_latency_{cur_timestamp}.toml"), "wb") as f:
         tomli_w.dump(toml, f)
     with open(args.results_file, "wb") as f:
         tomli_w.dump(toml, f)
