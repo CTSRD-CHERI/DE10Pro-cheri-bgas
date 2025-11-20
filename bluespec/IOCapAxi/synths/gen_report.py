@@ -87,21 +87,19 @@ def project_stats(project_dir: str) -> SynthStats:
         luts_device_max=luts_device_max
     )
 
-# TODO bump single_checker_1cycle to 300MHz, check others as well
-
 RELEVANT_PROJECTS = {
-    "single_checker_1per": "mkSingleChecker3_1percycle_SingleChecker3_design_200MHz",
-    "single_checker_2per": "mkSingleChecker3_2percycle_SingleChecker3_design_200MHz",
+    "single_checker_1per": "mkSingleChecker3_1percycle_SingleChecker3_design_300MHz",
+    "single_checker_2per": "mkSingleChecker3_2percycle_SingleChecker3_design_300MHz",
+    "full_exposer_0checkers_1per": "mkCombinedIOCapExposerV6_0pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz"
 }
 RELEVANT_PROJECTS.update({
     f"full_exposer_{n}checkers_{p}per": f"mkCombinedIOCapExposerV6_blockinvalid_{n}pool_{p}percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz"
     for (n, p) in (
-        (0, 1),
         (1, 1),
         (2, 1),
         (3, 1),
         (4, 1),
-        # (4, 2), # TODO
+        (4, 2),
     )
 })
 
