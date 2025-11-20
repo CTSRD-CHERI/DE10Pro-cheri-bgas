@@ -489,23 +489,40 @@ module mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Read#(KonataMode kMode)(I
     interface checker = m;
 endmodule
 
+// For whatever reason the pool/frontend/something fails unless this takes a few cycles.
+// That's a bug, but we can ignore it for now because this is just for synthesis purposes really.
 module mkNullIOCapAxiChecker3V1#(KonataMode kMode)(IOCapAxiChecker3#(no_iocap_flit)) provisos (
     Bits#(AuthenticatedFlit#(no_iocap_flit, Cap2024_11), a__),
     Bits#(FlitState#(no_iocap_flit), b__),
     AxiCtrlFlit64#(no_iocap_flit),
     FShow#(no_iocap_flit)
 );
-    FIFOF#(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool)) fifo <- mkFIFOF;
-    Sink#(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool)) fifoSink = toSink(fifo);
+    Vector#(4, FIFOF#(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool))) fifo <- replicateM(mkFIFOF);
+    Sink#(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool)) fifoSink = toSink(fifo[0]);
+
+    rule move1;
+        fifo[1].enq(fifo[0].first());
+        fifo[0].deq();
+    endrule
+
+    rule move2;
+        fifo[2].enq(fifo[1].first());
+        fifo[1].deq();
+    endrule
+
+    rule move3;
+        fifo[3].enq(fifo[2].first());
+        fifo[2].deq();
+    endrule
 
     interface in = interface Sink;
         method Bool canPut = fifoSink.canPut;
-        method Action put(x);
+        method Action put(Tuple4#(AuthenticatedFlit#(no_iocap_flit, Cap2024_11), KFlitId, KeyId, Maybe#(Key)) x);
             match { .authFlit, .flitId, .keyId, .key } = x;
             fifoSink.put(tuple4(authFlit.flit, flitId, keyId, True));
         endmethod
     endinterface;
-    interface checkResponse = toSource(fifo);
+    interface checkResponse = toSource(fifo[3]);
     interface keyToKill = interface WriteOnly;
         method Action _write(Maybe#(KeyId) val) = noAction;
     endinterface;

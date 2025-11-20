@@ -7,12 +7,12 @@ import IOCapAxi_Konata :: *;
 
 // HACK: implement a zero-sized pool (to see the fmax and size for only the surrounding HW) by implementing the Checkers as null variants
 (* synthesize *)
-module mkCombinedIOCapExposerV6_blockinvalid_0pool_1percycle_KeyManager2V1_Tb(UnifiedSingleExposerKeyMngrTb);
+module mkCombinedIOCapExposerV6_0pool_1percycle_KeyManager2V1_Tb(UnifiedSingleExposerKeyMngrTb);
     NumProxy#(1) exposerPoolSize = ?;
 
     let keyMgr32Impl <- mkIOCapAxi_KeyManager2_V1;
     let exposerImpl <- mkSimpleIOCapExposerV6(
-        KONATA_OFF, keyMgr32Impl.exposerPorts[0], True,
+        KONATA_FLIT, keyMgr32Impl.exposerPorts[0], True,
         exposerPoolSize,
         mkNullIOCapAxiChecker3V1_Read,
         mkNullIOCapAxiChecker3V1_Write
