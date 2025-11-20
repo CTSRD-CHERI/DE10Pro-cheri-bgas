@@ -1,0 +1,59 @@
+timestamp = "2025-11-20T14:26:40+00:00"
+generated_by = "gen_report.py"
+git_hash = "a2e7308\n"
+
+[single_checker_1per]
+dut = "mkSingleChecker3_1percycle"
+fit_timestamp = "2025-11-19T23:10:32+00:00"
+sta_timestamp = "2025-11-19T23:13:21+00:00"
+fmax = "230.79"
+luts = 3094
+luts_device_max = 933120
+
+[single_checker_2per]
+dut = "mkSingleChecker3_2percycle"
+fit_timestamp = "2025-11-19T23:17:38+00:00"
+sta_timestamp = "2025-11-19T23:21:24+00:00"
+fmax = "190.91"
+luts = 4447
+luts_device_max = 933120
+
+[full_exposer_0checkers_1per]
+dut = "mkCombinedIOCapExposerV6_blockinvalid_0pool_1percycle_KeyManager2V1_Tb"
+fit_timestamp = "2025-11-19T23:27:06+00:00"
+sta_timestamp = "2025-11-19T23:31:15+00:00"
+fmax = "181.92"
+luts = 22502
+luts_device_max = 933120
+
+[full_exposer_1checkers_1per]
+dut = "mkCombinedIOCapExposerV6_blockinvalid_1pool_1percycle_KeyManager2V1_Tb"
+fit_timestamp = "2025-11-19T23:41:39+00:00"
+sta_timestamp = "2025-11-19T23:48:07+00:00"
+fmax = "196.58"
+luts = 59389
+luts_device_max = 933120
+
+[full_exposer_2checkers_1per]
+dut = "mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb"
+fit_timestamp = "2025-11-19T23:59:05+00:00"
+sta_timestamp = "2025-11-20T00:06:04+00:00"
+fmax = "193.87"
+luts = 65153
+luts_device_max = 933120
+
+[full_exposer_3checkers_1per]
+dut = "mkCombinedIOCapExposerV6_blockinvalid_3pool_1percycle_KeyManager2V1_Tb"
+fit_timestamp = "2025-11-20T00:19:14+00:00"
+sta_timestamp = "2025-11-20T00:26:26+00:00"
+fmax = "194.21"
+luts = 69921
+luts_device_max = 933120
+
+[full_exposer_4checkers_1per]
+dut = "mkCombinedIOCapExposerV6_blockinvalid_4pool_1percycle_KeyManager2V1_Tb"
+fit_timestamp = "2025-11-20T00:38:51+00:00"
+sta_timestamp = "2025-11-20T00:45:49+00:00"
+fmax = "180.93"
+luts = 74655
+luts_device_max = 933120

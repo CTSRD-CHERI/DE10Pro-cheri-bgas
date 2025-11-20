@@ -3,7 +3,7 @@ default:
 
 gen-bitfields:
     #!/bin/bash
-    python3 ./testbenches/generate_bitfield.py > ./testbenches/include/tb_bitfields.h
+    uv run python3 ./testbenches/generate_bitfield.py > ./testbenches/include/tb_bitfields.h
 
 sim-b name:
     make ./build/{{name}}.bsim

@@ -5,7 +5,7 @@ gen ifc blu_design mhz:
     # Make the verilog, which ensures all the relevant files exist for the project generator
     (cd ../ && make ./build/verilog/{{blu_design}}.v)
     # Make the working directory for quartus
-    python3 gen_design.py {{ifc}} {{blu_design}} {{mhz}}
+    uv run python3 gen_design.py {{ifc}} {{blu_design}} {{mhz}}
 
 gen-all: \
     (gen "SimpleIOCapExposerKeyMngrV2Tb.txt" "mkSimpleIOCapExposerV6_blockinvalid_1percycle_Tb" "500") \
@@ -30,12 +30,5 @@ resynth-paper-reports:
     just projects/mkCombinedIOCapExposerV6_blockinvalid_3pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/synth
     just projects/mkCombinedIOCapExposerV6_blockinvalid_4pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/synth
 
-recheck-paper-reports:
-    # TODO actually combine these into some sort of toml
-    just projects/mkSingleChecker3_1percycle_SingleChecker3_design_200MHz/reports
-    just projects/mkSingleChecker3_2percycle_SingleChecker3_design_200MHz/reports
-    just projects/mkCombinedIOCapExposerV6_blockinvalid_0pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/reports
-    just projects/mkCombinedIOCapExposerV6_blockinvalid_1pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/reports
-    just projects/mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/reports
-    just projects/mkCombinedIOCapExposerV6_blockinvalid_3pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/reports
-    just projects/mkCombinedIOCapExposerV6_blockinvalid_4pool_1percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz/reports
+regen-paper-reports:
+    uv run python3 gen_report.py ./results/ ./hardware_synths.toml
