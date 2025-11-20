@@ -1,0 +1,11 @@
+--- a/configs/socfpga_de10_pro_defconfig
++++ b/configs/socfpga_de10_pro_defconfig
+@@ -26,6 +26,8 @@
+ CONFIG_DMA330_DMA=y
+ CONFIG_SPL_DM=y
+ CONFIG_SPL_DM_SEQ_ALIAS=y
++CONFIG_SPL_RAM_SUPPORT=y
++CONFIG_RAM_DEVICE=y
+ CONFIG_DM_MMC=y
+ CONFIG_ENV_IS_IN_MMC=y
+ CONFIG_DFU_MMC=y

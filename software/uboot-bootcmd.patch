@@ -1,0 +1,12 @@
+--- a/include/configs/socfpga_de10_pro.h
++++ b/include/configs/socfpga_de10_pro.h
+@@ -117,8 +117,7 @@ unsigned int cm_get_qspi_controller_clk_hz(void);
+  * Do note the value will overide also the chosen node in FDT blob.
+  */
+ #define CONFIG_BOOTARGS "earlycon"
+-#define CONFIG_BOOTCOMMAND "run fatscript; run mmcload;run linux_qspi_enable;" \
+-			   "rsu dtb; run mmcboot"
++#define CONFIG_BOOTCOMMAND "source ${scriptaddr}"
+ 
+ #define CONFIG_EXTRA_ENV_SETTINGS \
+ 	"loadaddr=" __stringify(CONFIG_SYS_LOAD_ADDR) "\0" \
