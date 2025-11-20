@@ -11,7 +11,7 @@ module mkCombinedIOCapExposerV6_blockinvalid_4pool_2percycle_KeyManager2V1_Tb(Un
 
     let keyMgr32Impl <- mkIOCapAxi_KeyManager2_V1;
     let exposerImpl <- mkSimpleIOCapExposerV6(
-        KONATA_OFF, keyMgr32Impl.exposerPorts[0], True,
+        KONATA_FLIT, keyMgr32Impl.exposerPorts[0], True,
         exposerPoolSize,
         mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Read,
         mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Write
