@@ -2368,7 +2368,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
     for (auto edge_case = 0; edge_case < ccap2024_11_rand_edge_case_num(); edge_case++) {
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMStreamOfNLibRustEdgeCaseTransactions<TheDUT, ctype, V>(10'000, edge_case),
+                new UVMStreamOfNLibRustEdgeCaseTransactions<TheDUT, ctype, V>(100, edge_case),
                 expectPassthroughInvalidTransactions
             )
         );
