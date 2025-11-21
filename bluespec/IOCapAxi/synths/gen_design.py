@@ -165,6 +165,17 @@ endmodule
     print(suffix, file=file)
     
 def qpf(project_name, file):
+# Old non-quartus ones
+# set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM2Load.v"
+# set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM2BELoad.v"
+# set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM2BE.v"
+# set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM2.v"
+# set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM1Load.v"
+# set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM1BELoad.v"
+# set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM1BE.v"
+# set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM1.v"
+
+
     contents=f"""
 # -------------------------------------------------------------------------- #
 #
@@ -206,14 +217,14 @@ set_global_assignment -name TOP_LEVEL_ENTITY {project_name}
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 23.2.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:50:32  OCTOBER 16, 2025"
 set_global_assignment -name LAST_QUARTUS_VERSION "23.2.0 Pro Edition"
-set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM2Load.v"
-set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM2BELoad.v"
-set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM2BE.v"
-set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM2.v"
-set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM1Load.v"
-set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM1BELoad.v"
-set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM1BE.v"
-set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM1.v"
+set_global_assignment -name VERILOG_FILE "../../verilog/Verilog.Quartus/BRAM2Load.v"
+set_global_assignment -name VERILOG_FILE "../../verilog/Verilog.Quartus/BRAM2BELoad.v"
+set_global_assignment -name VERILOG_FILE "../../verilog/Verilog.Quartus/BRAM2BE.v"
+set_global_assignment -name VERILOG_FILE "../../verilog/Verilog.Quartus/BRAM2.v"
+set_global_assignment -name VERILOG_FILE "../../verilog/Verilog.Quartus/BRAM1Load.v"
+set_global_assignment -name VERILOG_FILE "../../verilog/Verilog.Quartus/BRAM1BELoad.v"
+set_global_assignment -name VERILOG_FILE "../../verilog/Verilog.Quartus/BRAM1BE.v"
+set_global_assignment -name VERILOG_FILE "../../verilog/Verilog.Quartus/BRAM1.v"
 set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/UngatedClockSelect.v"
 set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/UngatedClockMux.v"
 set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/TriState.v"
