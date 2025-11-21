@@ -46,14 +46,27 @@ test-keymgr2-keydata-dualportsingle *args: (sim-v "mkIOCapAxi_KeyManager2_KeyDat
 test-keymgr2-refcount-twovalve *args: (sim-v "mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve_Tb" args)
 
 test-combined-v6-2v1 *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_1percycle_KeyManager2V1_Tb" args)
-test-combined-v6-1per-0pool *args: (sim-v "mkCombinedIOCapExposerV6_0pool_1percycle_KeyManager2V1_Tb" args)
+test-combined-v6-1per-0pool *args: (sim-v "mkCombinedIOCapExposerV6_0pool_KeyManager2V1_Tb" args)
 test-combined-v6-1per-1pool *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_1pool_1percycle_KeyManager2V1_Tb" args)
 test-combined-v6-1per-2pool *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb" args)
 test-combined-v6-1per-3pool *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_3pool_1percycle_KeyManager2V1_Tb" args)
 test-combined-v6-1per-4pool *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_4pool_1percycle_KeyManager2V1_Tb" args)
+test-combined-v6-2per-1pool *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_1pool_2percycle_KeyManager2V1_Tb" args)
+test-combined-v6-2per-2pool *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_2pool_2percycle_KeyManager2V1_Tb" args)
+test-combined-v6-2per-3pool *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_3pool_2percycle_KeyManager2V1_Tb" args)
 test-combined-v6-2per-4pool *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_4pool_2percycle_KeyManager2V1_Tb" args)
+test-combined-v6-2per-5pool *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_5pool_2percycle_KeyManager2V1_Tb" args)
 
-test-combined-v6-allpool: (test-combined-v6-1per-0pool) (test-combined-v6-1per-1pool) (test-combined-v6-1per-2pool) (test-combined-v6-1per-3pool) (test-combined-v6-1per-4pool) (test-combined-v6-2per-4pool)
+test-combined-v6-allpool: (test-combined-v6-1per-0pool) \
+    (test-combined-v6-1per-1pool) \
+    (test-combined-v6-1per-2pool) \
+    (test-combined-v6-1per-3pool) \
+    (test-combined-v6-1per-4pool) \
+    (test-combined-v6-2per-1pool) \
+    (test-combined-v6-2per-2pool) \
+    (test-combined-v6-2per-3pool) \
+    (test-combined-v6-2per-4pool) \
+    (test-combined-v6-2per-5pool)
 
 test-single-checker3-1per *args: (sim-v "mkSingleChecker3_1percycle" args)
 test-single-checker3-2per *args: (sim-v "mkSingleChecker3_2percycle" args)

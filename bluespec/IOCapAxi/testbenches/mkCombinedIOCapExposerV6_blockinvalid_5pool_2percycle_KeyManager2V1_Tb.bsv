@@ -5,17 +5,16 @@ import BlueBasics :: *;
 import Tests :: *;
 import IOCapAxi_Konata :: *;
 
-// HACK: implement a zero-sized pool (to see the fmax and size for only the surrounding HW) by implementing the Checkers as null variants
 (* synthesize *)
-module mkCombinedIOCapExposerV6_0pool_1percycle_KeyManager2V1_Tb(UnifiedSingleExposerKeyMngrTb);
-    NumProxy#(1) exposerPoolSize = ?;
+module mkCombinedIOCapExposerV6_blockinvalid_5pool_2percycle_KeyManager2V1_Tb(UnifiedSingleExposerKeyMngrTb);
+    NumProxy#(5) exposerPoolSize = ?;
 
     let keyMgr32Impl <- mkIOCapAxi_KeyManager2_V1;
     let exposerImpl <- mkSimpleIOCapExposerV6(
-        KONATA_FLIT, keyMgr32Impl.exposerPorts[0], True,
+        KONATA_OFF, keyMgr32Impl.exposerPorts[0], True,
         exposerPoolSize,
-        mkNullIOCapAxiChecker3V1_Read,
-        mkNullIOCapAxiChecker3V1_Write
+        mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Read,
+        mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Write
     );
 
     interface keyStore = keyMgr32Impl.hostFacingSlave;

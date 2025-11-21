@@ -85,7 +85,7 @@ def project_stats(dut: str) -> LatencyStats:
 RELEVANT_PROJECTS = {
     # "single_checker_1per": "mkSingleChecker3_1percycle",
     # "single_checker_2per": "mkSingleChecker3_2percycle",
-    "full_exposer_0checkers_1per": "mkCombinedIOCapExposerV6_0pool_1percycle_KeyManager2V1_Tb"
+    "full_exposer_0checkers": "mkCombinedIOCapExposerV6_0pool_KeyManager2V1_Tb"
 }
 RELEVANT_PROJECTS.update({
     f"full_exposer_{n}checkers_{p}per": f"mkCombinedIOCapExposerV6_blockinvalid_{n}pool_{p}percycle_KeyManager2V1_Tb"
@@ -94,7 +94,11 @@ RELEVANT_PROJECTS.update({
         (2, 1),
         (3, 1),
         (4, 1),
+        (1, 2),
+        (2, 2),
+        (3, 2),
         (4, 2),
+        (5, 2),
     )
 })
 
