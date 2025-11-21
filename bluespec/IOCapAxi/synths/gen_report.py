@@ -49,7 +49,7 @@ PROJECT_NAME_PATTERN = re.compile(r'^project_name := "(\w+)"')
 DUT_PATTERN = re.compile(r'^dut := "(\w+)"')
 # group 1 = Fmax
 # group 2 = Restricted Fmax
-FMAX_PATTERN = re.compile(r'; (\d+\.\d\d) MHz\s+; (\d+\.\d\d) MHz\s+;\s+CLK_FAST\s+;\s+;\s+.+ Model\s+;')
+FMAX_PATTERN = re.compile(r'; (\d+\.\d+) MHz\s+; (\d+\.\d+) MHz\s+;\s+CLK_FAST\s+;\s+;\s+.+ Model\s+;')
 # group 1 = ALMs needed
 # group 2 = total ALMs on device
 LUTS_PATTERN = re.compile(r'^; Logic utilization \(ALMs needed / total ALMs on device\)\s+; ([\d,]+)\s+/\s+([\d,]+)')
@@ -87,6 +87,10 @@ def project_stats(project_dir: str) -> SynthStats:
         luts_device_max=luts_device_max
     )
 
+def all_equal(xs: List) -> bool:
+    assert len(xs) > 0
+    return all(x == xs[0] for x in xs)
+
 RELEVANT_PROJECTS = {
     "single_checker_1per": "mkSingleChecker3_1percycle_SingleChecker3_design_300MHz",
     "single_checker_2per": "mkSingleChecker3_2percycle_SingleChecker3_design_300MHz",
@@ -119,6 +123,11 @@ if __name__ == '__main__':
     }
     for (project_shortname, project_name) in RELEVANT_PROJECTS.items():
         toml[project_shortname] = asdict(project_stats(project_name))
+
+    assert all_equal([
+        toml[project_shortname]["luts_device_max"]
+        for project_shortname in RELEVANT_PROJECTS.keys()
+    ])
     
     with open(os.path.join(args.results_dir, f"hardware_synths_{cur_timestamp}.toml"), "wb") as f:
         tomli_w.dump(toml, f)

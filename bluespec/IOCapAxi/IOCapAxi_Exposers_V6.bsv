@@ -197,6 +197,7 @@ endmodule
 // - Use Checker3, reverting to the style where the Exposer handles finding keys before dispatching to the pool.
 // - See Revocation notes 2025-10-10
 // - forces t_id = 4 to allow for nicer synthesis
+// - move to 16-depth FIFO for w flits because it's more appropriate for area consideration
 module mkSimpleIOCapExposerV6#(
     KonataMode kMode,
     IOCapAxi_KeyManager2_ExposerIfc keyStore,
@@ -288,7 +289,7 @@ module mkSimpleIOCapExposerV6#(
     // W flits are passed through or dropped depending on the AW transactions they map to - if the AW transaction is valid, its w flits go through.
     // If the AW transaction is invalid, the w flits are dropped.
     // This is managed by a credit system in wValve.
-    FIFOF#(AXI4_WFlit#(t_data, 0)) wIn <- mkSizedFIFOF(50); // TODO figure out the correct size
+    FIFOF#(AXI4_WFlit#(t_data, 0)) wIn <- mkSizedFIFOF(16); // Assume this is fine for now.
     CreditValve#(AXI4_WFlit#(t_data, 0), 32) wValve <- mkSimpleCreditValve(kMode, toSource(wIn));
     TxnKeyIdScoreboard#(t_id, Tuple2#(KFlitId, KeyId)) wScoreboard <- mkSimpleTxnKeyIdScoreboard(kMode);
 

@@ -43,7 +43,16 @@ module BRAM2(CLKA,
    wire                           WENA = ENA & WEA;
    wire                           RENB = ENB & !WEB;
    wire                           WENB = ENB & WEB;
-      
+  
+   // MODIFIED: replace CLOCK1 with CLOCK0 everywhere, my use case only uses a single clock.
+   // MODIFIED: replace .read_during_write_mode_port_{a,b} OLD_DATA with NEW_DATA_NO_NBE_READ.
+   // There are three choices:
+   // - NEW_DATA_NO_NBE_READ, where reads concurrent with byte-enabled writes get X on data that was masked out
+   // - NEW_DATA_WITH_NBE_READ, where reads concurrent with byte-enabled writes get old data in masked out writes
+   // - DONT_CARE
+   // (see https://cdrdv2-public.intel.com/654378/ug_ram.pdf)
+   // I believe I don't need old-data-on-masked-out, so NO_NBE_READ is the choice.
+
    altsyncram
      #(
        .width_a                            (DATA_WIDTH),
@@ -60,14 +69,14 @@ module BRAM2(CLKA,
        .width_b                            (DATA_WIDTH),
        .widthad_b                          (ADDR_WIDTH),
        .numwords_b                         (MEMSIZE),
-       .rdcontrol_reg_b                    ("CLOCK1"),//
-       .address_reg_b                      ("CLOCK1"),//
-       .outdata_reg_b                      ((PIPELINED) ? "CLOCK1" : "UNREGISTERED"),
+       .rdcontrol_reg_b                    ("CLOCK0"),//
+       .address_reg_b                      ("CLOCK0"),//
+       .outdata_reg_b                      ((PIPELINED) ? "CLOCK0" : "UNREGISTERED"),
        .outdata_aclr_b                     ("NONE"),//
        .rdcontrol_aclr_b                   ("NONE"),//
-       .indata_reg_b                       ("CLOCK1"),//
-       .wrcontrol_wraddress_reg_b          ("CLOCK1"),//
-       .byteena_reg_b                      ("CLOCK1"),//
+       .indata_reg_b                       ("CLOCK0"),//
+       .wrcontrol_wraddress_reg_b          ("CLOCK0"),//
+       .byteena_reg_b                      ("CLOCK0"),//
        .indata_aclr_b                      ("NONE"),//
        .wrcontrol_aclr_b                   ("NONE"),//
        .address_aclr_b                     ("NONE"),//
@@ -81,8 +90,8 @@ module BRAM2(CLKA,
 
        .clock_enable_core_a                ("USE_INPUT_CLKEN"),//
        .clock_enable_core_b                ("USE_INPUT_CLKEN"),//
-       .read_during_write_mode_port_a      ("OLD_DATA"),
-       .read_during_write_mode_port_b      ("OLD_DATA"),
+       .read_during_write_mode_port_a      ("NEW_DATA_NO_NBE_READ"),
+       .read_during_write_mode_port_b      ("NEW_DATA_NO_NBE_READ"),
 
        .enable_ecc                         ("FALSE"),//
        .width_eccstatus                    (3),//
@@ -119,7 +128,7 @@ module BRAM2(CLKA,
       .rden_b                              (RENB),
       .data_b                              (DIB),
       .address_b                           (ADDRB),
-      .clock1                              (CLKB),
+      //.clock1                              (CLKB), // should be unused
       .clocken2                            (1'b1),
       .clocken3                            (1'b1),
       .aclr1                               (1'b0),
