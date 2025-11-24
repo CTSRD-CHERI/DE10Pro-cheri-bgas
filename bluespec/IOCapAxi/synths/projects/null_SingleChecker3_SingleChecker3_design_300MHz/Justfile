@@ -1,0 +1,23 @@
+project_name := "null_SingleChecker3_SingleChecker3_design"
+dut := "null_SingleChecker3"
+
+default:
+    @just --list
+
+synth:
+    make ./output_files/{{project_name}}.sta.rpt
+
+force-synth:
+    quartus_sh --flow compile {{project_name}}
+
+reports:
+    grep -B 1 -A 6 "; Fmax Summary" output_files/{{project_name}}.sta.rpt
+    grep -B 1 -A 90 "; Fitter Resource Usage Summary" output_files/{{project_name}}.fit.place.rpt
+
+gui:
+    quartus {{project_name}}.qpf &
+
+clean:
+    rm -rf ./output_files/
+    rm -rf ./qdb/
+

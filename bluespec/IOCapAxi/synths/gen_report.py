@@ -94,7 +94,9 @@ def all_equal(xs: List) -> bool:
 RELEVANT_PROJECTS = {
     "single_checker_1per": "mkSingleChecker3_1percycle_SingleChecker3_design_300MHz",
     "single_checker_2per": "mkSingleChecker3_2percycle_SingleChecker3_design_300MHz",
-    "full_exposer_0checkers": "mkCombinedIOCapExposerV6_0pool_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz"
+    "full_exposer_0checkers": "mkCombinedIOCapExposerV6_0pool_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz",
+    "single_checker_harness": "null_SingleChecker3",
+    "full_exposer_harness": "null_UnifiedSingleExposerKeyMngrTb",
 }
 RELEVANT_PROJECTS.update({
     f"full_exposer_{n}checkers_{p}per": f"mkCombinedIOCapExposerV6_blockinvalid_{n}pool_{p}percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz"

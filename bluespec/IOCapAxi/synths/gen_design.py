@@ -214,7 +214,7 @@ PROJECT_REVISION = "{project_name}"
 """
     print(contents, file=file)
 
-def qsf(project_name, file):
+def qsf_from_bluespec(project_name, file):
     prefix = f"""
 set_global_assignment -name TOP_LEVEL_ENTITY {project_name}
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 23.2.0
@@ -360,6 +360,37 @@ set_instance_assignment -name PARTITION_COLOUR 4286709717 -to {project_name} -en
 """
     print(suffix, file=file)
 
+def qsf_from_null(project_name, dut, file):
+    contents = f"""
+set_global_assignment -name TOP_LEVEL_ENTITY {project_name}
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 23.2.0
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:50:32  OCTOBER 16, 2025"
+set_global_assignment -name LAST_QUARTUS_VERSION "23.2.0 Pro Edition"
+set_global_assignment -name VERILOG_FILE ../../verilog/input_harness.v
+set_global_assignment -name VERILOG_FILE ../../verilog/output_harness.v
+set_global_assignment -name VERILOG_FILE ../../verilog/{dut}.v
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 100
+set_global_assignment -name DEVICE 1SX280HU2F50E1VG
+set_global_assignment -name FAMILY "Stratix 10"
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 256
+set_location_assignment PIN_BF21 -to CLK_FAST -comment IOBANK_3C
+set_instance_assignment -name IO_STANDARD "1.8 V" -to CLK_FAST -entity {project_name}
+set_location_assignment PIN_BD19 -to CLK_SLOW -comment IOBANK_3C
+set_instance_assignment -name IO_STANDARD "1.8 V" -to CLK_SLOW -entity {project_name}
+set_instance_assignment -name IO_STANDARD "1.8 V" -to pin_out -entity {project_name}
+set_instance_assignment -name IO_STANDARD "1.8 V" -to pin_in -entity {project_name}
+set_instance_assignment -name IO_STANDARD "1.8 V" -to RST_N -entity {project_name}
+set_location_assignment PIN_BJ19 -to pin_in -comment IOBANK_3C
+set_location_assignment PIN_BH18 -to pin_out -comment IOBANK_3C
+set_location_assignment PIN_BH20 -to RST_N -comment IOBANK_3C
+set_global_assignment -name POWER_APPLY_THERMAL_MARGIN ADDITIONAL
+set_instance_assignment -name PARTITION_COLOUR 4286709717 -to {project_name} -entity {project_name}
+"""
+    print(contents, file=file)
+
+
 def sdc(target_mhz: int, file):
     # target_mhz = target_hz / 10^6
     # target_hz = target_mhz * 10^6
@@ -482,7 +513,7 @@ set_false_path -from [get_clocks {{CLK_SLOW}}] -to [get_clocks {{CLK_FAST}}]
 """
     print(contents, file=file)
 
-def justfile(project_name, dut, file):
+def justfile_from_bluespec(project_name, dut, file):
     contents = f"""project_name := "{project_name}"
 dut := "{dut}"
 
@@ -510,7 +541,33 @@ clean:
 """
     print(contents, file=file)
 
-def makefile(project_name, dut, file):
+def justfile_from_null(project_name, dut, file):
+    contents = f"""project_name := "{project_name}"
+dut := "{dut}"
+
+default:
+    @just --list
+
+synth:
+    make ./output_files/{{{{project_name}}}}.sta.rpt
+
+force-synth:
+    quartus_sh --flow compile {{{{project_name}}}}
+
+reports:
+    grep -B 1 -A 6 "; Fmax Summary" output_files/{{{{project_name}}}}.sta.rpt
+    grep -B 1 -A 90 "; Fitter Resource Usage Summary" output_files/{{{{project_name}}}}.fit.place.rpt
+
+gui:
+    quartus {{{{project_name}}}}.qpf &
+
+clean:
+    rm -rf ./output_files/
+    rm -rf ./qdb/
+"""
+    print(contents, file=file)
+
+def makefile_from_bluespec(project_name, dut, file):
     contents = f"""
 # GNU flavored Makefile
 
@@ -524,6 +581,21 @@ quartus_verilog_deps = $(wildcard ../../verilog/Verilog.Quartus/*.v)
 .PRECIOUS: ./output_files/$(project_name).sta.rpt
 
 ./output_files/$(project_name).sta.rpt: $(basic_verilog_deps) $(bluespec_generated_verilog_deps) $(bsc_verilog_deps) $(quartus_verilog_deps)
+	quartus_sh --flow compile $(project_name)
+"""
+    print(contents, file=file)
+
+def makefile_from_null(project_name, dut, file):
+    contents = f"""
+# GNU flavored Makefile
+
+project_name = {project_name}
+
+basic_verilog_deps = ../../verilog/input_harness.v ../../verilog/output_harness.v ../../verilog/{dut}.v $(project_name).qpf $(project_name).qsf $(project_name).sdc
+
+.PRECIOUS: ./output_files/$(project_name).sta.rpt
+
+./output_files/$(project_name).sta.rpt: $(basic_verilog_deps)
 	quartus_sh --flow compile $(project_name)
 """
     print(contents, file=file)
@@ -547,6 +619,7 @@ if __name__ == '__main__':
     parser.add_argument("ifc", help=".txt file with the inputs/outputs of the interface")
     parser.add_argument("dut", help="the name of the design under test, should match a BSV file in ../testbenches/")
     parser.add_argument("target_mhz", type=int, help="target mhz value")
+    parser.add_argument("--null-tb", action="store_true", help="If set, uses a null DUT named {dut} stored in ./verilog/ instead of a BSV file in ../testbenches")
 
     args = parser.parse_args()
 
@@ -567,9 +640,16 @@ if __name__ == '__main__':
 
     os.makedirs(PROJECT_FOLDER, exist_ok=True)
 
+    # These are the same no matter if null_tb
     overwrite_if_different(DUT_VERILOG_FILE, lambda f: toplevel_verilog(ifc, dut, f))
     overwrite_if_different(DUT_QPF_FILE, lambda f: qpf(PROJECT_NAME, f))
-    overwrite_if_different(DUT_QSF_FILE, lambda f: qsf(PROJECT_NAME, f))
     overwrite_if_different(DUT_SDC_FILE, lambda f: sdc(target_mhz, f))
-    overwrite_if_different(JUSTFILE, lambda f: justfile(PROJECT_NAME, dut, f))
-    overwrite_if_different(MAKEFILE, lambda f: makefile(PROJECT_NAME, dut, f))
+
+    if args.null_tb:
+        overwrite_if_different(DUT_QSF_FILE, lambda f: qsf_from_null(PROJECT_NAME, dut, f))
+        overwrite_if_different(MAKEFILE, lambda f: makefile_from_null(PROJECT_NAME, dut, f))
+        overwrite_if_different(JUSTFILE, lambda f: justfile_from_null(PROJECT_NAME, dut, f))
+    else:
+        overwrite_if_different(DUT_QSF_FILE, lambda f: qsf_from_bluespec(PROJECT_NAME, f))
+        overwrite_if_different(MAKEFILE, lambda f: makefile_from_bluespec(PROJECT_NAME, dut, f))
+        overwrite_if_different(JUSTFILE, lambda f: justfile_from_bluespec(PROJECT_NAME, dut, f))
