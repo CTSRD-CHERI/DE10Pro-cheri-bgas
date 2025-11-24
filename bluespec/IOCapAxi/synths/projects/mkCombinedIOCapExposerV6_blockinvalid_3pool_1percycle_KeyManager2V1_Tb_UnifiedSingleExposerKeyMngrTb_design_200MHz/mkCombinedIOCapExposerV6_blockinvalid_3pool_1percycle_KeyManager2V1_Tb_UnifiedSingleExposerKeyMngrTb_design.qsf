@@ -142,6 +142,7 @@ set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCombinedIOCapE
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCombinedIOCapExposerV6_blockinvalid_1pool_1percycle_KeyManager2V1_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapExposerV4_blockinvalid_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkSimpleIOCapExposerV6_blockinvalid_Tb.v
+set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCombinedIOCapExposerV6_blockinvalid_5pool_2percycle_KeyManager2V1_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCap2024_11_Decode_Comb_Tb.v
 set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkIOCapAxi_KeyManager2_RefCountPipe_TwoValve_Tb.v
 

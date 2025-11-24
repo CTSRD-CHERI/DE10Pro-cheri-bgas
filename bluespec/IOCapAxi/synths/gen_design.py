@@ -1,12 +1,13 @@
 import argparse
 from dataclasses import dataclass
 import glob
+from io import StringIO
 import math
 import os
 from pathlib import Path
 import re
 import sys
-from typing import List, Tuple
+from typing import Callable, List, TextIO, Tuple
 
 SPECIAL_INPUTS = ["CLK", "RST_N"]
 
@@ -56,6 +57,8 @@ class InterfaceSpec:
                 if output_m:
                     signal_name = output_m.group(3)
                     width = (int(output_m.group(2)) + 1) if output_m.group(2) is not None else 1
+                    # TODO this doesn't capture signals that have debug in the middle, i.e. RDY_debugBadRead__read
+                    # In practice I don't think this matters, because these signals are (should?) all held high - they are debug read-only, they are always ready - so it doesn't keep any logic around
                     if signal_name.startswith("debug"):
                         ifc_dbg_outputs.append((signal_name, width))
                     else:
@@ -487,7 +490,11 @@ default:
     @just --list
 
 synth:
-    cd ../../../ && make ./build/verilog/{{{{dut}}}}.v 
+    cd ../../../ && make ./build/verilog/{{{{dut}}}}.v
+    make ./output_files/{{{{project_name}}}}.sta.rpt
+
+force-synth:
+    cd ../../../ && make ./build/verilog/{{{{dut}}}}.v
     quartus_sh --flow compile {{{{project_name}}}}
 
 reports:
@@ -496,8 +503,44 @@ reports:
 
 gui:
     quartus {{{{project_name}}}}.qpf &
+
+clean:
+    rm -rf ./output_files/
+    rm -rf ./qdb/
 """
     print(contents, file=file)
+
+def makefile(project_name, dut, file):
+    contents = f"""
+# GNU flavored Makefile
+
+project_name = {project_name}
+
+basic_verilog_deps = ../../verilog/input_harness.v ../../verilog/output_harness.v $(project_name).v $(project_name).qpf $(project_name).qsf $(project_name).sdc
+bluespec_generated_verilog_deps = $(wildcard ../build/verilog/*.v)
+bsc_verilog_deps = $(wildcard $(BLUESPECDIR)/Verilog/*.v)
+quartus_verilog_deps = $(wildcard ../../verilog/Verilog.Quartus/*.v)
+
+.PRECIOUS: ./output_files/$(project_name).sta.rpt
+
+./output_files/$(project_name).sta.rpt: $(basic_verilog_deps) $(bluespec_generated_verilog_deps) $(bsc_verilog_deps) $(quartus_verilog_deps)
+	quartus_sh --flow compile $(project_name)
+"""
+    print(contents, file=file)
+
+def overwrite_if_different(filename: Path, gen_contents: Callable[[TextIO], None]) -> None:
+    contents = StringIO()
+    gen_contents(contents)
+    contents_str = contents.getvalue()
+
+    if filename.is_file():
+        with open(filename, "r", encoding="ascii") as f:
+            if f.read() == contents_str:
+                print(f"Not updating {filename}, it has the same contents")
+                return
+    
+    with open(filename, "w", encoding="ascii") as f:
+        f.write(contents_str)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -520,20 +563,13 @@ if __name__ == '__main__':
     DUT_QSF_FILE = PROJECT_FOLDER / f"{PROJECT_NAME}.qsf"
     DUT_SDC_FILE = PROJECT_FOLDER / f"{PROJECT_NAME}.sdc"
     JUSTFILE = PROJECT_FOLDER / "Justfile"
+    MAKEFILE = PROJECT_FOLDER / "Makefile"
 
     os.makedirs(PROJECT_FOLDER, exist_ok=True)
 
-    with open(DUT_VERILOG_FILE, "w", encoding="ascii") as f:
-        toplevel_verilog(ifc, dut, f)
-
-    with open(DUT_QPF_FILE, "w", encoding="ascii") as f:
-        qpf(PROJECT_NAME, f)
-
-    with open(DUT_QSF_FILE, "w", encoding="ascii") as f:
-        qsf(PROJECT_NAME, f)
-
-    with open(DUT_SDC_FILE, "w", encoding="ascii") as f:
-        sdc(target_mhz, f)
-    
-    with open(JUSTFILE, "w", encoding="ascii") as f:
-        justfile(PROJECT_NAME, dut, f)
+    overwrite_if_different(DUT_VERILOG_FILE, lambda f: toplevel_verilog(ifc, dut, f))
+    overwrite_if_different(DUT_QPF_FILE, lambda f: qpf(PROJECT_NAME, f))
+    overwrite_if_different(DUT_QSF_FILE, lambda f: qsf(PROJECT_NAME, f))
+    overwrite_if_different(DUT_SDC_FILE, lambda f: sdc(target_mhz, f))
+    overwrite_if_different(JUSTFILE, lambda f: justfile(PROJECT_NAME, dut, f))
+    overwrite_if_different(MAKEFILE, lambda f: makefile(PROJECT_NAME, dut, f))

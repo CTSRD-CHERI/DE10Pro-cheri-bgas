@@ -5,7 +5,11 @@ default:
     @just --list
 
 synth:
-    cd ../../../ && make ./build/verilog/{{dut}}.v 
+    cd ../../../ && make ./build/verilog/{{dut}}.v
+    make ./output_files/{{project_name}}.sta.rpt
+
+force-synth:
+    cd ../../../ && make ./build/verilog/{{dut}}.v
     quartus_sh --flow compile {{project_name}}
 
 reports:
@@ -14,4 +18,8 @@ reports:
 
 gui:
     quartus {{project_name}}.qpf &
+
+clean:
+    rm -rf ./output_files/
+    rm -rf ./qdb/
 
