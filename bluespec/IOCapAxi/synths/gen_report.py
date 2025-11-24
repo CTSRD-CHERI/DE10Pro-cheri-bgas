@@ -49,7 +49,7 @@ PROJECT_NAME_PATTERN = re.compile(r'^project_name := "(\w+)"')
 DUT_PATTERN = re.compile(r'^dut := "(\w+)"')
 # group 1 = Fmax
 # group 2 = Restricted Fmax
-FMAX_PATTERN = re.compile(r'; (\d+\.\d+) MHz\s+; (\d+\.\d+) MHz\s+;\s+CLK_FAST\s+;\s+;\s+.+ Model\s+;')
+FMAX_PATTERN = re.compile(r'; (\d+\.\d+) MHz\s+; (\d+\.\d+) MHz\s+;\s+CLK_FAST\s+;\s+[^;]+\s+;\s+.+ Model\s+;')
 # group 1 = ALMs needed
 # group 2 = total ALMs on device
 LUTS_PATTERN = re.compile(r'^; Logic utilization \(ALMs needed / total ALMs on device\)\s+; ([\d,]+)\s+/\s+([\d,]+)')
@@ -70,8 +70,8 @@ def project_stats(project_dir: str) -> SynthStats:
 
     with open(timing_file, "r", encoding="utf-8") as f:
         m = file_line_one_regex_match(f, FMAX_PATTERN)
-        assert m.group(1) == m.group(2)
-        fmax = m.group(1)
+        assert float(m.group(1)) >= float(m.group(2))
+        fmax = m.group(2)
     with open(placing_file, "r", encoding="utf-8") as f:
         m = file_line_one_regex_match(f, LUTS_PATTERN)
         luts = int(m.group(1).replace(",", ""))
@@ -92,11 +92,11 @@ def all_equal(xs: List) -> bool:
     return all(x == xs[0] for x in xs)
 
 RELEVANT_PROJECTS = {
+    "single_checker_harness": "null_SingleChecker3_SingleChecker3_design_300MHz",
     "single_checker_1per": "mkSingleChecker3_1percycle_SingleChecker3_design_300MHz",
     "single_checker_2per": "mkSingleChecker3_2percycle_SingleChecker3_design_300MHz",
     "full_exposer_0checkers": "mkCombinedIOCapExposerV6_0pool_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz",
-    "single_checker_harness": "null_SingleChecker3",
-    "full_exposer_harness": "null_UnifiedSingleExposerKeyMngrTb",
+    "full_exposer_harness": "null_UnifiedSingleExposerKeyMngrTb_UnifiedSingleExposerKeyMngrTb_design_200MHz",
 }
 RELEVANT_PROJECTS.update({
     f"full_exposer_{n}checkers_{p}per": f"mkCombinedIOCapExposerV6_blockinvalid_{n}pool_{p}percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_200MHz"
