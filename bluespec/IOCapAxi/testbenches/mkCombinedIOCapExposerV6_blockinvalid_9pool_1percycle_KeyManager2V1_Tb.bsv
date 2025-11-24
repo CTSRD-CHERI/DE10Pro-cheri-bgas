@@ -6,7 +6,7 @@ import Tests :: *;
 import IOCapAxi_Konata :: *;
 
 (* synthesize *)
-module mkCombinedIOCapExposerV6_blockinvalid_1percycle_KeyManager2V1_Tb(UnifiedSingleExposerKeyMngrTb);
+module mkCombinedIOCapExposerV6_blockinvalid_9pool_1percycle_KeyManager2V1_Tb(UnifiedSingleExposerKeyMngrTb);
     NumProxy#(9) exposerPoolSize = ?;
 
     let keyMgr32Impl <- mkIOCapAxi_KeyManager2_V1;
