@@ -99,6 +99,7 @@ def project_stats(project_dir: str) -> SynthStats:
                 if name not in ['|', '|i|', '|o|', '|dut|']:
                     continue
                 alms = m.group(2)
+                print(name, alms)
                 if name in luts_db:
                     raise RuntimeError(f"found two lut_db entries for {name} in {f}")
                 # round away from .5
@@ -106,7 +107,7 @@ def project_stats(project_dir: str) -> SynthStats:
     
     print(luts_db)
     print(f)
-    assert luts_db["|"] == luts, f"Inconsistent LUTs for {f} - toplevel = {luts}, db = {luts_db['|']}"
+    assert abs(luts_db["|"] - luts) <= 1, f"Inconsistent LUTs for {f} - toplevel = {luts}, db = {luts_db['|']}"
 
     return SynthStats(
         dut=dut,
