@@ -134,7 +134,7 @@ struct MaybeValidCapWithRange {
  */
 
 // Helper macros for generating stimulus
-#define CANPUT_INPUT(name) ((dut.RDY_## name ##_put != 0) && (dut. name ##_canPut != 0))
+#define CANPUT_INPUT(name) ((dut.RDY_## name ##_put != 0) && (dut. name ##_canPut != 0) && (dut.EN_ ## name ## _put == 0))
 #define PUT_INPUT(name, value) do { \
     dut.EN_## name ##_put = 1;      \
     dut. name ##_put_val = (value); \
@@ -312,11 +312,28 @@ public:
 };
 
 template<class DUT>
-class BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT>: public KeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT> {
-    std::deque<std::pair<axi::AxiLite::AWFlit_addr13_user0, axi::AxiLite::WFlit_data32_user0>> pendingWrites;
-    uint64_t pendingResponses;
+class BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO32>: public KeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO32> {
+    // For the setup state: a queue of the 
+    std::deque<std::pair<axi::AxiLite::AWFlit_addr13_user0, axi::AxiLite::WFlit_data32_user0>> setupWrites;
+    uint64_t pendingSetupResponses;
+
+    // For in-situ state, the queue of previously initiated reads and writes
+    std::deque<LatencyTracked<axi::AxiLite::ARFlit_addr13_user0>> readsInProgress;
+    std::deque<LatencyTracked<axi::AxiLite::AWFlit_addr13_user0>> writesInProgress;
+
 public:
-    BasicKeyManagerShimStimulus() : KeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT>() {}
+    // publically growable, the list of pending writes and pending reads
+    std::deque<std::pair<axi::AxiLite::AWFlit_addr13_user0, axi::AxiLite::WFlit_data32_user0>> pendingWrites;
+    std::deque<axi::AxiLite::ARFlit_addr13_user0> pendingReads;
+    
+    // publically readable, the results of previously-pending reads
+    std::deque<std::pair<axi::AxiLite::ARFlit_addr13_user0, axi::AxiLite::RFlit_data32_user0>> reads;
+
+    // publically readable - the cycle latencies of each write and read
+    std::vector<uint64_t> aw_b_latency;
+    std::vector<uint64_t> ar_r_latency;
+
+    BasicKeyManagerShimStimulus() : KeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO32>() {}
     virtual void setup() override {
         // Memory map:
 // [0x0, 0x10, 0x20, 0x30, 0x40... 0x1000) = read/write key status
@@ -331,7 +348,7 @@ public:
             const uint16_t KEY_STATUS_ADDR = 0 + (key_id * 16);
             const uint16_t KEY_DATA_ADDR = 0x1000 + (key_id * 16);
             // four writes of key data
-            pendingWrites.push_back(std::make_pair(
+            setupWrites.push_back(std::make_pair(
                 axi::AxiLite::AWFlit_addr13_user0 {
                     .awprot=0,
                     .awaddr=uint16_t(KEY_DATA_ADDR + 0)
@@ -341,7 +358,7 @@ public:
                     .wdata=key_data[0],
                 }
             ));
-            pendingWrites.push_back(std::make_pair(
+            setupWrites.push_back(std::make_pair(
                 axi::AxiLite::AWFlit_addr13_user0 {
                     .awprot=0,
                     .awaddr=uint16_t(KEY_DATA_ADDR + 4)
@@ -351,7 +368,7 @@ public:
                     .wdata=key_data[1],
                 }
             ));
-            pendingWrites.push_back(std::make_pair(
+            setupWrites.push_back(std::make_pair(
                 axi::AxiLite::AWFlit_addr13_user0 {
                     .awprot=0,
                     .awaddr=uint16_t(KEY_DATA_ADDR + 8)
@@ -361,7 +378,7 @@ public:
                     .wdata=key_data[2],
                 }
             ));
-            pendingWrites.push_back(std::make_pair(
+            setupWrites.push_back(std::make_pair(
                 axi::AxiLite::AWFlit_addr13_user0 {
                     .awprot=0,
                     .awaddr=uint16_t(KEY_DATA_ADDR + 12)
@@ -372,7 +389,7 @@ public:
                 }
             ));
             // one write of key status
-            pendingWrites.push_back(std::make_pair(
+            setupWrites.push_back(std::make_pair(
                 axi::AxiLite::AWFlit_addr13_user0 {
                     .awprot=0,
                     .awaddr=KEY_STATUS_ADDR,
@@ -383,36 +400,119 @@ public:
                 }
             ));
         }
-        pendingResponses = pendingWrites.size();
+        pendingSetupResponses = setupWrites.size();
     }
     virtual bool isReady() override {
-        return pendingResponses == 0;
+        return pendingSetupResponses == 0;
     }
     virtual void driveInputsForKeyMgr(DUT& dut, uint64_t tick) override {
-        if (!pendingWrites.empty() && CANPUT_INPUT(keyStore_aw) && CANPUT_INPUT(keyStore_w)) {
-            auto [awFlit, wFlit] = pendingWrites.front();
+        if (pendingSetupResponses) {
+            if (!setupWrites.empty() && CANPUT_INPUT(keyStore_aw) && CANPUT_INPUT(keyStore_w)) {
+                auto [awFlit, wFlit] = setupWrites.front();
 
-            PUT_INPUT(keyStore_aw, awFlit.pack());
-            PUT_INPUT(keyStore_w, wFlit.pack());
-            
-            pendingWrites.pop_front();
-        } else {
-            NOPUT_INPUT(keyStore_aw);
-            NOPUT_INPUT(keyStore_w);
-        }
+                PUT_INPUT(keyStore_aw, awFlit.pack());
+                PUT_INPUT(keyStore_w, wFlit.pack());
+                
+                setupWrites.pop_front();
+            } else {
+                NOPUT_INPUT(keyStore_aw);
+                NOPUT_INPUT(keyStore_w);
+            }
 
-        if (CANPEEK_OUTPUT(keyStore_b)) {
-            char bFlitPacked;
-            POP_OUTPUT(keyStore_b, bFlitPacked);
-            auto bFlit = axi::AxiLite::BFlit_user0::unpack(bFlitPacked);
-            pendingResponses--;
-            if (bFlit.bresp != 0) {
-                throw test_failure("KeyStore Write returned error");
+            if (CANPEEK_OUTPUT(keyStore_b)) {
+                char bFlitPacked;
+                POP_OUTPUT(keyStore_b, bFlitPacked);
+                auto bFlit = axi::AxiLite::BFlit_user0::unpack(bFlitPacked);
+                pendingSetupResponses--;
+                if (bFlit.bresp != 0) {
+                    throw test_failure("KeyStore Write returned error");
+                }
+            } else {
+                NOPOP_OUTPUT(keyStore_b);
             }
         } else {
-            NOPOP_OUTPUT(keyStore_b);
+            // Move from pendingWrites -> writesInProgress if AW&W are free
+            if (!pendingWrites.empty() && CANPUT_INPUT(keyStore_aw) && CANPUT_INPUT(keyStore_w)) {
+                auto [awFlit, wFlit] = pendingWrites.front();
+
+                PUT_INPUT(keyStore_aw, awFlit.pack());
+                PUT_INPUT(keyStore_w, wFlit.pack());
+                
+                writesInProgress.push_back(LatencyTracked {
+                    .tick_initiated = tick,
+                    .value = awFlit
+                });
+                pendingWrites.pop_front();
+            } else {
+                NOPUT_INPUT(keyStore_aw);
+                NOPUT_INPUT(keyStore_w);
+            }
+
+            // Move from writesInProgress -> aw_b_latency if a write was completed
+            if (CANPEEK_OUTPUT(keyStore_b)) {
+                char bFlitPacked;
+                POP_OUTPUT(keyStore_b, bFlitPacked);
+                auto bFlit = axi::AxiLite::BFlit_user0::unpack(bFlitPacked);
+                if (bFlit.bresp != 0) {
+                    throw test_failure("KeyStore Write returned error");
+                }
+                if (writesInProgress.size() == 0) {
+                    throw test_failure("KeyStore sent write response when none in progress");
+                }
+
+                auto& latencyTrackedAw = writesInProgress.front();
+                aw_b_latency.push_back(tick - latencyTrackedAw.tick_initiated);
+                writesInProgress.pop_front();
+            } else {
+                NOPOP_OUTPUT(keyStore_b);
+            }
+
+            // Move from pendingReads -> readsInProgress if AR is free
+            if (!pendingReads.empty() && CANPUT_INPUT(keyStore_ar)) {
+                auto arFlit = pendingReads.front();
+
+                PUT_INPUT(keyStore_ar, arFlit.pack());
+                
+                readsInProgress.push_back(LatencyTracked {
+                    .tick_initiated = tick,
+                    .value = arFlit
+                });
+                pendingReads.pop_front();
+            } else {
+                NOPUT_INPUT(keyStore_ar);
+            }
+
+            // Move from readsInProgress -> ar_r_latency, reads if a read was completed
+            if (CANPEEK_OUTPUT(keyStore_r)) {
+                uint64_t rFlitPacked;
+                POP_OUTPUT(keyStore_r, rFlitPacked);
+                auto rFlit = axi::AxiLite::RFlit_data32_user0::unpack(rFlitPacked);
+                if (rFlit.rresp != 0) {
+                    throw test_failure("KeyStore read returned error");
+                }
+                if (readsInProgress.size() == 0) {
+                    throw test_failure("KeyStore sent read response when none in progress");
+                }
+
+                auto& latencyTrackedAr = readsInProgress.front();
+                ar_r_latency.push_back(tick - latencyTrackedAr.tick_initiated);
+                reads.emplace_back(latencyTrackedAr.value, rFlit);
+                readsInProgress.pop_front();
+            } else {
+                NOPOP_OUTPUT(keyStore_r);
+            }
         }
     }
+    #define STRINGIFY(x) STRINGIFY2(x)
+    #define STRINGIFY2(x) #x
+    #define DUMP_MEAN_OF(name, x) fmt::println(stats, STRINGIFY(name) "_mean = {}", mean_of(x));
+    virtual void dump_toml_stats(FILE* stats) override {
+        DUMP_MEAN_OF(keymngr_aw_b_latency, aw_b_latency);
+        DUMP_MEAN_OF(keymngr_ar_r_latency, ar_r_latency);
+    }
+    #undef DUMP_MEAN_OF
+    #undef STRINGIFY2
+    #undef STRINGIFY
 };
 
 /**
@@ -534,7 +634,7 @@ public:
 template<class DUT, CapType ctype, KeyMngrVersion V>
 class ExposerStimulus : public StimulusGenerator<DUT> {
 public:
-    std::unique_ptr<KeyManagerShimStimulus<DUT, V>> keyMgr;
+    std::unique_ptr<BasicKeyManagerShimStimulus<DUT, V>> keyMgr;
     // Make different stimuli set their ticks relative to the first tick where the test could actually start
     // Initially a number that's far too big, but not near the 64-bit limit, so that it can be used as a proxy while the key manager is still being inited.
     // Even while the key manager is being inited, firstTickWhereKeyMgrReady + x will always be a long way in the future, but will never overflow uint64_t
@@ -608,7 +708,7 @@ protected:
     }
 
 public:
-    ExposerStimulus(KeyManagerShimStimulus<DUT, V>* keyMgr, SanitizedMemStimulus<DUT>* sanitizedMem) :
+    ExposerStimulus(BasicKeyManagerShimStimulus<DUT, V>* keyMgr, SanitizedMemStimulus<DUT>* sanitizedMem) :
         keyMgr(keyMgr), sanitizedMem(sanitizedMem), awInputs(), wInputs(), arInputs() {}
 
     virtual ~ExposerStimulus() = default;
@@ -1002,7 +1102,7 @@ public:
                 aw_aw_latency.push_back(tick - expected.tick_initiated);
             });
         } catch (test_failure& e) {
-            throw test_failure(fmt::format("{}\ngot: {}\n", e.what(), awFlit));
+            throw test_failure(fmt::format("{}\ntick: ?\ngot: {}\n", e.what(), awFlit));
         }
         
         expectedOutgoingDataFlitTarget.push_back({
@@ -1030,7 +1130,7 @@ public:
                 expectedOutgoingDataFlitTarget.pop_front();
             }
         } catch (test_failure& e) {
-            throw test_failure(fmt::format("{}\ngot: {}\ntxns: {}\n", e.what(), wFlit, txnIdBoards));
+            throw test_failure(fmt::format("{}\ntick: {}\ngot: {}\ntxns: {}\n", e.what(), tick, wFlit, txnIdBoards));
         }
 
     }
@@ -1038,7 +1138,7 @@ public:
         try{
             txnIdBoards[bFlit.bid].checkCompletionFlitFromDownstream(/* isRead */ false);
         } catch (test_failure& e) {
-            throw test_failure(fmt::format("{}\ngot: {}\ntxns: {}\n", e.what(), bFlit, txnIdBoards));
+            throw test_failure(fmt::format("{}\ntick: {}\ngot: {}\ntxns: {}\n", e.what(), tick, bFlit, txnIdBoards));
         }
         expectedBFromDownstream[bFlit.bid].push_back({
             tick, 
@@ -1072,7 +1172,7 @@ public:
                 }
             }, /* isRead */ false);
         } catch (test_failure& e) {
-            throw test_failure(fmt::format("{}\ngot: {}\ntxns: {}\n", e.what(), bFlit, txnIdBoards));
+            throw test_failure(fmt::format("{}\ntick: {}\ngot: {}\ntxns: {}\n", e.what(), tick, bFlit, txnIdBoards));
         }
     }
     void invalidateFromKey(key_manager::KeyId keyId) {
@@ -1128,7 +1228,7 @@ public:
                 ar_ar_latency.push_back(tick - expected.tick_initiated);
             });
         } catch (test_failure& e) {
-            throw test_failure(fmt::format("{}\ngot: {}\ntxns: {}\n", e.what(), arFlit, txnIdBoards));
+            throw test_failure(fmt::format("{}\ntick: {}\ngot: {}\ntxns: {}\n", e.what(), tick, arFlit, txnIdBoards));
         }
     }
     void recvRFlitFromDownstream(uint64_t tick, axi::SanitizedAxi::RFlit_id4_data32& rFlit) {
@@ -1146,7 +1246,7 @@ public:
                 txnIdBoards[rFlit.rid].checkCompletionFlitFromDownstream(/* isRead */ true);
             }
         } catch (test_failure& e) {
-            throw test_failure(fmt::format("{}\ngot: {}\ntxns: {}\n", e.what(), rFlit, txnIdBoards));
+            throw test_failure(fmt::format("{}\ntick: {}\ngot: {}\ntxns: {}\n", e.what(), tick, rFlit, txnIdBoards));
         }
     }
     void checkAndFwdRFlit(uint64_t tick, DataFlit& rFlit) {
@@ -1178,7 +1278,7 @@ public:
                 txnIdBoards[rFlit.rid].checkCompletionFlitSentUpstream([&](auto& expectedTxn) {}, /* isRead */ true);
             }
         } catch (test_failure& e) {
-            throw test_failure(fmt::format("{}\ngot: {}\ntxns: {}\n", e.what(), rFlit, txnIdBoards));
+            throw test_failure(fmt::format("{}\ntick: {}\ngot: {}\ntxns: {}\n", e.what(), tick, rFlit, txnIdBoards));
         }
     }
     void invalidateFromKey(key_manager::KeyId keyId) {
@@ -1628,6 +1728,7 @@ public:
                 "good read {}/{}\n"
                 "bad read {}/{}\n"
                 ,
+                expectedEpochCompletions,
                 this->wTxns, this->rTxns,
                 this->confirmedWriteTxns, this->signalledGoodWrite,
                 this->totalWriteTxns - this->confirmedWriteTxns, this->signalledBadWrite,
@@ -1715,22 +1816,169 @@ public:
     virtual ~ExposerScoreboard() override = default;
 };
 
+struct MMIORevokeLatencyStats {
+    // The tick that the revocation MMIO write is observed
+    uint64_t revoke_mmio_sent_tick;
+    // // The tick that the revocation MMIO write response is observed
+    // uint64_t revoke_mmio_response_tick = 0;
+
+    // The tick that the killKeyMessage is sent
+    uint64_t kill_key_observed_tick;
+
+    // The tick that debugState is observed to change to invalid-not-revoked
+    uint64_t debug_state_invalidnotrevoked_tick = 0;
+    // // The tick that debugState is observed to change to invalid, which should always be after invalid-not-revoked
+    // uint64_t debug_state_invalid_tick = 0;
+};
+
+template <> class fmt::formatter<MMIORevokeLatencyStats> {
+    public:
+    constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (MMIORevokeLatencyStats const& x, Context& ctx) const {
+        return format_to(ctx.out(), "MMIORevokeLatencyStats {{ .revoke_mmio_sent_tick = {}, .debug_state_invalidnotrevoked_tick = {} }}", x.revoke_mmio_sent_tick, x.debug_state_invalidnotrevoked_tick);
+    }
+};
+
 template<class DUT, CapType ctype>
-class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT> : public BaseExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT> {
+class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> {
+    
+    std::unordered_map<key_manager::KeyId, MMIORevokeLatencyStats> revokes;
+    // std::vector<uint64_t> revoke_mmio_response_latency;
+    // ^ track that using the key manager stats
+    std::vector<uint64_t> revoke_mmio_debug_state_invalidnotrevoked_latency;
+    std::vector<uint64_t> revoke_mmio_debug_state_invalid_latency;
+
+    std::unordered_map<uint64_t, key_manager::KeyId> revoke_on_tick;
+    
     virtual void monitorAndScoreKeyManager(
         DUT& dut, uint64_t tick,
-        KeyMngrShimInput<KeyMngrV2_AsDUT>& inputKeyManager, KeyMngrShimOutput<KeyMngrV2_AsDUT>& outputKeyManager
+        KeyMngrShimInput<KeyMngrV2_AsDUT_MMIO32>& inputKeyManager, KeyMngrShimOutput<KeyMngrV2_AsDUT_MMIO32>& outputKeyManager
     ) override {
         this->signalledGoodWrite = outputKeyManager.debugGoodWrite;
         this->signalledBadWrite = outputKeyManager.debugBadWrite;
         this->signalledGoodRead = outputKeyManager.debugGoodRead;
         this->signalledBadRead = outputKeyManager.debugBadRead;
+
+        // track revocation latencies
+        if (inputKeyManager.aw && inputKeyManager.w
+            && inputKeyManager.aw.value().awaddr < 16*256 && inputKeyManager.w.value().wdata == 0
+        ) {
+            // Now revoking key 
+            key_manager::KeyId revoking_key = inputKeyManager.aw.value().awaddr / 16;
+            if (revokes.contains(revoking_key)) {
+                throw std::runtime_error(fmt::format("Tried to revoke {} while it was already in progress", (int)revoking_key));
+            }
+            revokes[revoking_key] = MMIORevokeLatencyStats {
+                .revoke_mmio_sent_tick = tick
+            };
+            
+            // revoke_on_tick[tick + 50] = revoking_key;
+        }
+
+        if (outputKeyManager.debugKillKey.keyIdValid) {
+            // TODO add this to revoke stats
+            // fmt::println(stderr, "KILL KEY OBSERVED {}", tick);
+            revokes[outputKeyManager.debugKillKey.keyId].kill_key_observed_tick = tick;
+            revoke_on_tick[tick + 0] = outputKeyManager.debugKillKey.keyId;
+            this->secrets.erase(outputKeyManager.debugKillKey.keyId);
+        }
+
+        if (revoke_on_tick.contains(tick)) {
+            key_manager::KeyId revoking_key = revoke_on_tick[tick];
+            this->wTxns.invalidateFromKey(revoking_key);
+            this->rTxns.invalidateFromKey(revoking_key);
+            revoke_on_tick.erase(tick);
+        }
+
+        // for all revokes in progress, track their state
+        for (auto it = revokes.begin(); it != revokes.end();) {
+            auto& [revoking_key, revoke_stats] = *it;
+            if (revoke_stats.debug_state_invalidnotrevoked_tick == 0 &&
+                outputKeyManager.debugKeyStatuses.keyStatuses[revoking_key] == 2
+            ) {
+                revoke_stats.debug_state_invalidnotrevoked_tick = tick;
+            } else if (
+                outputKeyManager.debugKeyStatuses.keyStatuses[revoking_key] == 0
+            ) {
+                if (revoke_stats.debug_state_invalidnotrevoked_tick == 0) {
+                    throw std::runtime_error(fmt::format("State for key {} didn't transition through invalid-not-revoked", (int)revoking_key));
+                }
+                revoke_mmio_debug_state_invalidnotrevoked_latency.push_back(
+                    revoke_stats.debug_state_invalidnotrevoked_tick - revoke_stats.revoke_mmio_sent_tick
+                );
+                revoke_mmio_debug_state_invalid_latency.push_back(
+                    tick - revoke_stats.revoke_mmio_sent_tick
+                );
+                it = revokes.erase(it);
+                continue;
+            }
+            
+            it++;
+        }
     }
 public:
     ExposerScoreboard(std::unordered_map<key_manager::KeyId, U128>& secrets, bool expectPassthroughInvalidTransactions = false) :
-        BaseExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT>(secrets, expectPassthroughInvalidTransactions)
+        BaseExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>(secrets, expectPassthroughInvalidTransactions)
         {}
     virtual ~ExposerScoreboard() override = default;
+    // Should raise a test_failure on failure
+    virtual void endTest() override {
+        // TODO log inputs and outputs
+        if (
+            !revokes.empty() ||
+            !this->wTxns.empty() ||
+            !this->rTxns.empty() ||
+            (this->confirmedWriteTxns != this->signalledGoodWrite) ||
+            (this->totalWriteTxns - this->confirmedWriteTxns != this->signalledBadWrite) ||
+            (this->confirmedReadTxns != this->signalledGoodRead) ||
+            (this->totalReadTxns - this->confirmedReadTxns != this->signalledBadRead)
+        ) {
+            throw test_failure(fmt::format(
+                "BaseExposerScoreboard unexpected outcome:\n"
+                "revocations: {}\n"
+                "wTxns: {}\n"
+                "rTxns: {}\n"
+                "perf counters exp/act:\n"
+                "good write {}/{}\n"
+                "bad write {}/{}\n"
+                "good read {}/{}\n"
+                "bad read {}/{}\n"
+                ,
+                this->revokes,
+                this->wTxns, this->rTxns,
+                this->confirmedWriteTxns, this->signalledGoodWrite,
+                this->totalWriteTxns - this->confirmedWriteTxns, this->signalledBadWrite,
+                this->confirmedReadTxns, this->signalledGoodRead,
+                this->totalReadTxns - this->confirmedReadTxns, this->signalledBadRead
+            ));
+        }
+    }
+    #define STRINGIFY(x) STRINGIFY2(x)
+    #define STRINGIFY2(x) #x
+    #define DUMP_MEAN_OF(name, x) fmt::println(stats, STRINGIFY(name) "_mean = {}", mean_of(x));
+    virtual void dump_toml_stats(FILE* stats) override {
+        BaseExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>::dump_toml_stats(stats);
+        DUMP_MEAN_OF(revoke_mmio_debug_state_invalidnotrevoked_latency, revoke_mmio_debug_state_invalidnotrevoked_latency);
+        DUMP_MEAN_OF(revoke_mmio_debug_state_invalid_latency, revoke_mmio_debug_state_invalid_latency);
+        // DUMP_MEAN_OF(this->key, wTxns.w_w_latency);
+        // DUMP_MEAN_OF(b_b_latency, wTxns.b_b_latency);
+        // DUMP_MEAN_OF(r_r_latency, rTxns.r_r_latency);
+        // fmt::println(stats, "total_write = {}", totalWriteTxns);
+        // fmt::println(stats, "confirmed_write = {}", confirmedWriteTxns);
+        // fmt::println(stats, "exp_invalid_write = {}", totalWriteTxns - confirmedWriteTxns);
+        // fmt::println(stats, "perf_valid_write = {}", signalledGoodWrite);
+        // fmt::println(stats, "perf_invalid_write = {}", signalledBadWrite);
+        // fmt::println(stats, "total_read = {}", totalReadTxns);
+        // fmt::println(stats, "confirmed_read = {}", confirmedReadTxns);
+        // fmt::println(stats, "exp_invalid_read = {}", totalReadTxns - confirmedReadTxns);
+        // fmt::println(stats, "perf_valid_read = {}", signalledGoodRead);
+        // fmt::println(stats, "perf_invalid_read = {}", signalledBadRead);
+        // fmt::println(stats, "valid_txn_ratio = {}", (double(confirmedWriteTxns + confirmedReadTxns))/(double(totalWriteTxns + totalReadTxns)));
+    }
+    #undef DUMP_MEAN_OF
+    #undef STRINGIFY2
+    #undef STRINGIFY
 };
 
 template<class DUT, CapType ctype = CapType::Cap2024_02, KeyMngrVersion V = KeyMngrV1>
@@ -2212,7 +2460,82 @@ public:
     }
 };
 
+template<class DUT, CapType ctype>
+class UVMRevokeOverMMIOBenchmark : public ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> {
+    key_manager::KeyId dma_key_id;
+    key_manager::KeyId revoke_key_id;
 
+    uint64_t n_transactions;
+    uint8_t txn_data_flits;
+    int txn_cavs;
+
+    uint64_t final_tick = 0;
+    bool started_revoke = false;
+
+public:
+    virtual ~UVMRevokeOverMMIOBenchmark() = default;
+    virtual std::string name() override {
+        return fmt::format("UVMRevokeOverMMIOBenchmark (Stream of {} {}-flit {}-cav txns, DMA {} Revoke {})", n_transactions, (int)txn_data_flits, txn_cavs, (int)dma_key_id, (int)revoke_key_id);
+    }
+    UVMRevokeOverMMIOBenchmark(key_manager::KeyId dma_key_id, key_manager::KeyId revoke_key_id, uint64_t n_transactions, uint8_t txn_data_flits, int txn_cavs) : ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>(
+        new BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO32>(),
+        new BasicSanitizedMemStimulus<DUT>()
+    ), dma_key_id(dma_key_id), revoke_key_id(revoke_key_id), n_transactions(n_transactions), txn_data_flits(txn_data_flits), txn_cavs(txn_cavs) {}
+    virtual void setup(std::mt19937& rng) override {
+        const U128 dma_key = U128::random(rng);
+        this->keyMgr->secrets[dma_key_id] = dma_key;
+        
+        if (revoke_key_id != dma_key_id) {
+            const U128 revoke_key = U128::random(rng);
+            this->keyMgr->secrets[revoke_key_id] = revoke_key;
+        }
+
+        for (uint64_t i = 0; i < n_transactions; i++) {
+            uint8_t axi_id = i & 0xF;
+            auto cap_data = this->test_librust_random_valid_cap(rng, dma_key_id, txn_cavs);
+            auto axi_params = cap_data.valid_transfer_params(32, txn_data_flits);
+            if (cap_data.perms & CCapPerms_Read) {
+                this->enqueueReadBurst(cap_data.cap, axi_params, axi_id);
+            }
+            if (cap_data.perms & CCapPerms_Write) {
+                this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
+            }
+        }
+        
+        ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>::setup(rng);
+    }
+    virtual void driveInputsForTick(std::mt19937& rng, DUT& dut, uint64_t tick) {
+        // Once half of the DMAs have started
+        if (!started_revoke && (this->awInputs.size() <= (n_transactions * 4 / 2))) {
+            // Sent a revocation request
+            const uint16_t KEY_STATUS_ADDR = 0 + (revoke_key_id * 16);
+            this->keyMgr->pendingWrites.push_back(std::make_pair(
+                axi::AxiLite::AWFlit_addr13_user0 {
+                    .awprot=0,
+                    .awaddr=KEY_STATUS_ADDR,
+                },
+                axi::AxiLite::WFlit_data32_user0 {
+                    .wstrb=0b1111,
+                    .wdata=0, // key invalid
+                }
+            ));
+            started_revoke = true;
+        }
+
+        ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>::driveInputsForTick(rng, dut, tick);
+    }
+    virtual bool shouldFinish(uint64_t tick) override {
+        if (final_tick == 0) {
+            if (this->awInputs.empty() && this->wInputs.empty() && this->arInputs.empty()) {
+                // Give 1000 cycles of buffer
+                final_tick = tick + 10000;
+            }
+            return false;
+        } else {
+            return tick >= final_tick;
+        }
+    }
+};
 
 #undef NOWRITE_INPUT
 #undef WRITE_INPUT
@@ -2360,6 +2683,101 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         tests.push_back(
             new ExposerUVMishTest(
                 new UVMSimpleRevokeWhileChecking_KeyMngrV2<TheDUT, ctype>(2),
+                expectPassthroughInvalidTransactions
+            )
+        );
+    } else if constexpr (V == KeyMngrV2_AsDUT_MMIO32) {
+        // dma_key != revoke_key
+        tests.push_back(
+            new ExposerUVMishTest(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                    /* dma_key */ 0, /* revoke_key */ 1, /* n_transactions */ 100, /* txn_data_flits */ 1, /* txn_cavs */ 0
+                ),
+                expectPassthroughInvalidTransactions
+            )
+        );
+        tests.push_back(
+            new ExposerUVMishTest(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                    /* dma_key */ 0, /* revoke_key */ 1, /* n_transactions */ 100, /* txn_data_flits */ 16, /* txn_cavs */ 0
+                ),
+                expectPassthroughInvalidTransactions
+            )
+        );
+        tests.push_back(
+            new ExposerUVMishTest(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                    /* dma_key */ 0, /* revoke_key */ 1, /* n_transactions */ 100, /* txn_data_flits */ 16, /* txn_cavs */ 1
+                ),
+                expectPassthroughInvalidTransactions
+            )
+        );
+        tests.push_back(
+            new ExposerUVMishTest(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                    /* dma_key */ 0, /* revoke_key */ 1, /* n_transactions */ 100, /* txn_data_flits */ 16, /* txn_cavs */ 2
+                ),
+                expectPassthroughInvalidTransactions
+            )
+        );
+
+        // dma_key == revoke_key
+        // where txn_cavs increases...
+        tests.push_back(
+            new ExposerUVMishTest(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                    /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 4, /* txn_cavs */ 0
+                ),
+                expectPassthroughInvalidTransactions
+            )
+        );
+        tests.push_back(
+            new ExposerUVMishTest(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                    /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 4, /* txn_cavs */ 1
+                ),
+                expectPassthroughInvalidTransactions
+            )
+        );
+        tests.push_back(
+            new ExposerUVMishTest(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                    /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 4, /* txn_cavs */ 2
+                ),
+                expectPassthroughInvalidTransactions
+            )
+        );
+
+        // and where txn_data_flits increases...
+        tests.push_back(
+            new ExposerUVMishTest(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                    /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 8, /* txn_cavs */ 0
+                ),
+                expectPassthroughInvalidTransactions
+            )
+        );
+        tests.push_back(
+            new ExposerUVMishTest(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                    /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 12, /* txn_cavs */ 0
+                ),
+                expectPassthroughInvalidTransactions
+            )
+        );
+        tests.push_back(
+            new ExposerUVMishTest(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                    /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 16, /* txn_cavs */ 0
+                ),
+                expectPassthroughInvalidTransactions
+            )
+        );
+        tests.push_back(
+            new ExposerUVMishTest(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                    /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 20, /* txn_cavs */ 0
+                ),
                 expectPassthroughInvalidTransactions
             )
         );

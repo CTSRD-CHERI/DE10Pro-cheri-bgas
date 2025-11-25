@@ -11,6 +11,7 @@ import IOCapAxi_Types :: *;
 import IOCapAxi_KeyManager2_Types :: *;
 import IOCapAxi_KeyManager2_KeyStatePipe :: *;
 import IOCapAxi_KeyManager2_KeyDataPipe :: *;
+import SamUtil :: *;
 
 interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc;
     (* always_enabled *)
@@ -40,6 +41,7 @@ interface IOCapAxi_KeyManager2_MMIO#(type t_data, numeric type n_checkers);
     // TODO make ReadOnly
     interface Vector#(n_checkers, RWire#(KeyId)) checkerKillKeyMessages;
 
+    interface ReadOnly#(Maybe#(KeyId)) debugKillKey;
     interface ReadOnly#(UInt#(64)) debugGoodWrite;
     interface ReadOnly#(UInt#(64)) debugBadWrite;
     interface ReadOnly#(UInt#(64)) debugGoodRead;
@@ -71,6 +73,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
     Reg#(UInt#(64)) badRead <- mkReg(0);
 
     RWire#(KeyId) killKey <- mkRWire;
+    let killKeyReadOnly <- mkRwireToReadOnlyDirect(killKey);
 
     function UInt#(64) nPulsedWires(Vector#(n_checkers, PulseWire) wires);
         UInt#(64) n = 0;
@@ -201,6 +204,9 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
                 // We're either trying to write 0 (invalid) or 1 (valid)
                 if (w.wdata[0] == 0) begin
                     validWrite <- keyData.tryRevokeAndClearKey(k);
+                    if (validWrite) begin
+                        killKey.wset(k);
+                    end
                     // TODO error for this if it fails
                 end else begin
                     validWrite <- keyState.tryEnableKey(k);
@@ -287,6 +293,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
     endinterface;
 
     interface checkerKillKeyMessages = replicate(killKey);
+    interface debugKillKey = killKeyReadOnly;
     interface debugGoodWrite = regToReadOnly(goodWrite);
     interface debugBadWrite = regToReadOnly(badWrite);
     interface debugGoodRead = regToReadOnly(goodRead);

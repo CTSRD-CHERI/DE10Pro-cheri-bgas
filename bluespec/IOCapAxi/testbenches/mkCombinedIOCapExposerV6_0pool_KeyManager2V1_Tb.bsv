@@ -19,6 +19,7 @@ module mkCombinedIOCapExposerV6_0pool_KeyManager2V1_Tb(UnifiedSingleExposerKeyMn
     );
 
     interface keyStore = keyMgr32Impl.hostFacingSlave;
+    interface debugKillKey = keyMgr32Impl.debugKillKey;
     interface debugKeyState = keyMgr32Impl.debugKeyState;
     interface debugGoodWrite = keyMgr32Impl.debugGoodWrite;
     interface debugBadWrite = keyMgr32Impl.debugBadWrite;

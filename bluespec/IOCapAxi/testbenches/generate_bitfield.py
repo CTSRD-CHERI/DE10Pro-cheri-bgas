@@ -561,6 +561,15 @@ BLUESPEC_AXI4LITE_STRUCTS = [
         ]),
     ),
     Struct(
+        "WFlit_data64_user0",
+        BackingArray.LSB(U32, 3),
+        revlist([
+            Field("wdata", 64),
+            Field("wstrb", 8),
+            # Field("wlast", 1),
+        ]),
+    ),
+    Struct(
         "BFlit_user0",
         U8,
         revlist([
@@ -590,6 +599,16 @@ BLUESPEC_AXI4LITE_STRUCTS = [
         revlist([
             # Field("rid", 4),
             Field("rdata", 32),
+            Field("rresp", 2),
+            # Field("rlast", 1),
+        ]),
+    ),
+    Struct(
+        "RFlit_data64_user0",
+        BackingArray.LSB(U32, 3),
+        revlist([
+            # Field("rid", 4),
+            Field("rdata", 64),
             Field("rresp", 2),
             # Field("rlast", 1),
         ]),

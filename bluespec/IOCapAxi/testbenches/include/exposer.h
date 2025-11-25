@@ -68,7 +68,7 @@ template <> class fmt::formatter<exposer::ExposerOutput> {
 enum KeyMngrVersion {
     KeyMngrV1,
     KeyMngrV2,
-    KeyMngrV2_AsDUT,
+    KeyMngrV2_AsDUT_MMIO32,
 };
 
 template<KeyMngrVersion V>
@@ -114,23 +114,23 @@ template <> class fmt::formatter<KeyMngrShimInput<KeyMngrV2>> {
 
 // When the KeyMngr is an actual DUT, we only shim the AXI inputs
 template<>
-struct KeyMngrShimInput<KeyMngrV2_AsDUT> {
-    std::optional<axi::AxiLite::AWFlit_addr13_user0> ar;
-    std::optional<axi::AxiLite::ARFlit_addr13_user0> aw;
+struct KeyMngrShimInput<KeyMngrV2_AsDUT_MMIO32> {
+    std::optional<axi::AxiLite::ARFlit_addr13_user0> ar;
+    std::optional<axi::AxiLite::AWFlit_addr13_user0> aw;
     std::optional<axi::AxiLite::WFlit_data32_user0> w;
 
-    bool operator==(const KeyMngrShimInput<KeyMngrV2_AsDUT>&) const = default;
+    bool operator==(const KeyMngrShimInput<KeyMngrV2_AsDUT_MMIO32>&) const = default;
     bool is_notable() const {
         return (ar.has_value()) || (aw.has_value()) || (w.has_value());
 
     }
 };
-template <> class fmt::formatter<KeyMngrShimInput<KeyMngrV2_AsDUT>> {
+template <> class fmt::formatter<KeyMngrShimInput<KeyMngrV2_AsDUT_MMIO32>> {
     public:
     constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
     template <typename Context>
-    constexpr auto format (KeyMngrShimInput<KeyMngrV2_AsDUT> const& x, Context& ctx) const {
-        return format_to(ctx.out(), "KeyMngrShimInput<KeyMngrV2_AsDUT> {{ .ar = {}, .aw = {}, .w = {} }}", x.ar, x.aw, x.w);
+    constexpr auto format (KeyMngrShimInput<KeyMngrV2_AsDUT_MMIO32> const& x, Context& ctx) const {
+        return format_to(ctx.out(), "KeyMngrShimInput<KeyMngrV2_AsDUT_MMIO32> {{ .ar = {}, .aw = {}, .w = {} }}", x.ar, x.aw, x.w);
     }
 };
 
@@ -217,7 +217,7 @@ template <> class fmt::formatter<KeyMngrShimOutput<KeyMngrV2>> {
 
 // When the KeyMngr is an actual DUT, we can still inspect the innards?
 template<>
-struct KeyMngrShimOutput<KeyMngrV2_AsDUT> {
+struct KeyMngrShimOutput<KeyMngrV2_AsDUT_MMIO32> {
     std::optional<axi::AxiLite::RFlit_data32_user0> r;
     std::optional<axi::AxiLite::BFlit_user0> b;
 
@@ -234,12 +234,13 @@ struct KeyMngrShimOutput<KeyMngrV2_AsDUT> {
     // std::optional<key_manager::KeyId> wValve_Decrement;
 
     key_manager2::KeyStatuses debugKeyStatuses;
+    key_manager2::refcountpipe::MaybeKeyId debugKillKey;
     uint64_t debugGoodWrite;
     uint64_t debugBadWrite;
     uint64_t debugGoodRead;
     uint64_t debugBadRead;
 
-    bool operator==(const KeyMngrShimOutput<KeyMngrV2_AsDUT>&) const = default;
+    bool operator==(const KeyMngrShimOutput<KeyMngrV2_AsDUT_MMIO32>&) const = default;
     bool is_notable() {
         return (b.has_value()) || (r.has_value());
         // return (bumpPerfCounterGoodWrite) || (bumpPerfCounterBadWrite) ||
@@ -249,12 +250,12 @@ struct KeyMngrShimOutput<KeyMngrV2_AsDUT> {
         //         (wValve_Increment) || (wValve_Decrement);
     }
 };
-template <> class fmt::formatter<KeyMngrShimOutput<KeyMngrV2_AsDUT>> {
+template <> class fmt::formatter<KeyMngrShimOutput<KeyMngrV2_AsDUT_MMIO32>> {
     public:
     constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
     template <typename Context>
-    constexpr auto format (KeyMngrShimOutput<KeyMngrV2_AsDUT> const& x, Context& ctx) const {
-        return format_to(ctx.out(), "KeyMngrShimOutput<KeyMngrV2_AsDUT> {{ .r = {}, .b = {} }}", x.r, x.b);
+    constexpr auto format (KeyMngrShimOutput<KeyMngrV2_AsDUT_MMIO32> const& x, Context& ctx) const {
+        return format_to(ctx.out(), "KeyMngrShimOutput<KeyMngrV2_AsDUT_MMIO32> {{ .r = {}, .b = {} }}", x.r, x.b);
     }
 };
 
@@ -446,6 +447,37 @@ void observe_input(DUT& dut, KeyMngrShimInput<KeyMngrV2>& input) {
 
 template<class DUT>
 void observe_input(DUT& dut, ShimmedExposerInput<KeyMngrV2>& input) {
+    observe_input(dut, (exposer::ExposerInput&)input);
+    observe_input(dut, input.keyManager);
+}
+
+template<class DUT>
+void observe_input(DUT& dut, KeyMngrShimInput<KeyMngrV2_AsDUT_MMIO32>& input) {
+    #define CANPEEK(from) (dut.EN_## from ##_put)
+    #define PEEK(from) dut. from ##_put_val
+    #define CANPEEK_WRITE(name) (dut.EN_## name ##___05Fwrite)
+    #define PEEK_WRITE(name) (dut.name ##___05Fwrite_x)
+
+    if (CANPEEK(keyStore_aw)) {
+        input.aw = axi::AxiLite::AWFlit_addr13_user0::unpack(PEEK(keyStore_aw));
+    }
+
+    if (CANPEEK(keyStore_w)) {
+        input.w = axi::AxiLite::WFlit_data32_user0::unpack(PEEK(keyStore_w));
+    }
+
+    if (CANPEEK(keyStore_ar)) {
+        input.ar = axi::AxiLite::ARFlit_addr13_user0::unpack(PEEK(keyStore_ar));
+    }
+
+    #undef PEEK_WRITE
+    #undef CANPEEK_WRITE
+    #undef PEEK
+    #undef CANPEEK
+}
+
+template<class DUT>
+void observe_input(DUT& dut, ShimmedExposerInput<KeyMngrV2_AsDUT_MMIO32>& input) {
     observe_input(dut, (exposer::ExposerInput&)input);
     observe_input(dut, input.keyManager);
 }
@@ -656,7 +688,7 @@ void pull_output(DUT& dut, ShimmedExposerOutput<KeyMngrV2>& output) {
 
 
 template<class DUT>
-void pull_output(DUT& dut, KeyMngrShimOutput<KeyMngrV2_AsDUT>& output) {
+void pull_output(DUT& dut, KeyMngrShimOutput<KeyMngrV2_AsDUT_MMIO32>& output) {
     #define CANPEEK(from) (dut.RDY_## from ##_peek)
     #define POP(from, into) \
         assert(dut. from ##_canPeek); \
@@ -683,6 +715,7 @@ void pull_output(DUT& dut, KeyMngrShimOutput<KeyMngrV2_AsDUT>& output) {
     }
 
     output.debugKeyStatuses = key_manager2::KeyStatuses::unpack(stdify_array(dut.debugKeyState___05Fread));
+    output.debugKillKey = key_manager2::refcountpipe::MaybeKeyId::unpack(dut.debugKillKey___05Fread);
     output.debugGoodWrite = dut.debugGoodWrite___05Fread;
     output.debugBadWrite = dut.debugBadWrite___05Fread;
     output.debugGoodRead = dut.debugGoodRead___05Fread;
@@ -694,7 +727,7 @@ void pull_output(DUT& dut, KeyMngrShimOutput<KeyMngrV2_AsDUT>& output) {
 }
 
 template<class DUT>
-void pull_output(DUT& dut, ShimmedExposerOutput<KeyMngrV2_AsDUT>& output) {
+void pull_output(DUT& dut, ShimmedExposerOutput<KeyMngrV2_AsDUT_MMIO32>& output) {
     pull_output(dut, (exposer::ExposerOutput&)output);
     pull_output(dut, output.keyManager);
 }
