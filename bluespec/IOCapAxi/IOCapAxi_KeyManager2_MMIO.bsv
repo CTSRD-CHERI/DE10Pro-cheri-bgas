@@ -72,8 +72,13 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
     Reg#(UInt#(64)) goodRead <- mkReg(0);
     Reg#(UInt#(64)) badRead <- mkReg(0);
 
-    RWire#(KeyId) killKey <- mkRWire;
-    let killKeyReadOnly <- mkRwireToReadOnlyDirect(killKey);
+    // killKey RWire is on a long path.
+    // break up that path with a single-cycle delay between the internal kill-key signal
+    // and the external one, via a Reg
+    RWire#(KeyId) killKeyInternal <- mkRWire;
+    Reg#(Maybe#(KeyId)) killKeyNextCycle <- mkReg(tagged Invalid);
+    RWire#(KeyId) killKeyExternal <- mkRWire;
+    let killKeyReadOnly <- mkRwireToReadOnlyDirect(killKeyExternal);
 
     function UInt#(64) nPulsedWires(Vector#(n_checkers, PulseWire) wires);
         UInt#(64) n = 0;
@@ -205,7 +210,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
                 if (w.wdata[0] == 0) begin
                     validWrite <- keyData.tryRevokeAndClearKey(k);
                     if (validWrite) begin
-                        killKey.wset(k);
+                        killKeyInternal.wset(k);
                     end
                     // TODO error for this if it fails
                 end else begin
@@ -274,6 +279,13 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
         axiShim.master.b.put(flit);
     endrule
 
+    rule send_kill_key;
+        if (killKeyNextCycle matches tagged Valid .key) begin
+            killKeyExternal.wset(key);
+        end
+        killKeyNextCycle <= killKeyInternal.wget();
+    endrule
+
     // Helper functions for generating IOCapAxi_KeyManager2_MMIO_PerfCounterIfc for different permutations of (read/write, index)
     function IOCapAxi_KeyManager2_MMIO_PerfCounterIfc makeReadPerfCounter(Integer idx) = interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc;
         method Action bumpPerfCounterGood() = reqGoodRead[idx].send();
@@ -292,7 +304,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
         interface write = genWith(makeWritePerfCounter);
     endinterface;
 
-    interface checkerKillKeyMessages = replicate(killKey);
+    interface checkerKillKeyMessages = replicate(killKeyExternal);
     interface debugKillKey = killKeyReadOnly;
     interface debugGoodWrite = regToReadOnly(goodWrite);
     interface debugBadWrite = regToReadOnly(badWrite);
