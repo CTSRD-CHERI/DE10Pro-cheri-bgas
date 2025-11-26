@@ -41,6 +41,7 @@ interface IOCapAxi_KeyManager2_MMIO#(type t_data, numeric type n_checkers);
     // TODO make ReadOnly
     interface Vector#(n_checkers, RWire#(KeyId)) checkerKillKeyMessages;
 
+    interface ReadOnly#(Maybe#(KeyId)) debugEnableKey;
     interface ReadOnly#(Maybe#(KeyId)) debugKillKey;
     interface ReadOnly#(UInt#(64)) debugGoodWrite;
     interface ReadOnly#(UInt#(64)) debugBadWrite;
@@ -79,6 +80,10 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
     Reg#(Maybe#(KeyId)) killKeyNextCycle <- mkReg(tagged Invalid);
     RWire#(KeyId) killKeyExternal <- mkRWire;
     let killKeyReadOnly <- mkRwireToReadOnlyDirect(killKeyExternal);
+
+    // Just used for debug
+    RWire#(KeyId) enableKeyInternal <- mkRWire;
+    let enableKeyReadOnly <- mkRwireToReadOnlyDirect(enableKeyInternal);
 
     function UInt#(64) nPulsedWires(Vector#(n_checkers, PulseWire) wires);
         UInt#(64) n = 0;
@@ -185,7 +190,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
         axiShim.master.r.put(flit);
     endrule
 
-    rule handle_write;
+    rule handle_write if (keyData.ready);
         let aw <- get (axiShim.master.aw);
         let w <- get (axiShim.master.w);
 
@@ -215,6 +220,9 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
                     // TODO error for this if it fails
                 end else begin
                     validWrite <- keyState.tryEnableKey(k);
+                    if (validWrite) begin
+                        enableKeyInternal.wset(k);
+                    end
                     // TODO error for this if it fails
                 end
             end else begin
@@ -305,6 +313,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
     endinterface;
 
     interface checkerKillKeyMessages = replicate(killKeyExternal);
+    interface debugEnableKey = enableKeyReadOnly;
     interface debugKillKey = killKeyReadOnly;
     interface debugGoodWrite = regToReadOnly(goodWrite);
     interface debugBadWrite = regToReadOnly(badWrite);

@@ -234,6 +234,7 @@ struct KeyMngrShimOutput<KeyMngrV2_AsDUT_MMIO32> {
     // std::optional<key_manager::KeyId> wValve_Decrement;
 
     key_manager2::KeyStatuses debugKeyStatuses;
+    key_manager2::refcountpipe::MaybeKeyId debugEnableKey;
     key_manager2::refcountpipe::MaybeKeyId debugKillKey;
     uint64_t debugGoodWrite;
     uint64_t debugBadWrite;
@@ -715,6 +716,7 @@ void pull_output(DUT& dut, KeyMngrShimOutput<KeyMngrV2_AsDUT_MMIO32>& output) {
     }
 
     output.debugKeyStatuses = key_manager2::KeyStatuses::unpack(stdify_array(dut.debugKeyState___05Fread));
+    output.debugEnableKey = key_manager2::refcountpipe::MaybeKeyId::unpack(dut.debugEnableKey___05Fread);
     output.debugKillKey = key_manager2::refcountpipe::MaybeKeyId::unpack(dut.debugKillKey___05Fread);
     output.debugGoodWrite = dut.debugGoodWrite___05Fread;
     output.debugBadWrite = dut.debugBadWrite___05Fread;

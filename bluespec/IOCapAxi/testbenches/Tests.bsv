@@ -190,13 +190,12 @@ endinterface
 interface UnifiedSingleExposerKeyMngrTb;
     interface AXI4Lite_Slave#(TLog#('h2000), 32 /* data bits */, 0, 0, 0, 0, 0) keyStore;
     interface ReadOnly#(Vector#(256, KeyStatus)) debugKeyState;
+    interface ReadOnly#(Maybe#(KeyId)) debugEnableKey;
     interface ReadOnly#(Maybe#(KeyId)) debugKillKey;
     interface ReadOnly#(UInt#(64)) debugGoodWrite;
     interface ReadOnly#(UInt#(64)) debugBadWrite;
     interface ReadOnly#(UInt#(64)) debugGoodRead;
     interface ReadOnly#(UInt#(64)) debugBadRead;
-
-    // TODO expose KeyStore2Shim_ReadOnly
 
     interface IOCapSingleExposer#(4 /* ID bits */, 32 /* data bits */) exposer4x32;
 endinterface

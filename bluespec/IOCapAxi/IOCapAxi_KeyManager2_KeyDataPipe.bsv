@@ -19,6 +19,7 @@ interface IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc;
     // They are mutually exclusive - you can call exactly one per cycle, and because they're from MMIO this makes sense - need 1 cycle per MMIO req.
     method ActionValue#(Bool) tryWriteKey(KeyId id, Bit#(128) data, Bit#(16) byteEnable);
     method ActionValue#(Bool) tryRevokeAndClearKey(KeyId id);
+    interface ReadOnly#(Bool) ready;
 endinterface
 
 interface IOCapAxi_KeyManager2_KeyDataPipe#(numeric type n_lanes);
@@ -199,6 +200,8 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort#(IOCapAxi_Ke
                 return False;
             end
         endmethod
+        
+        interface ready = regToReadOnly(hasClearedBram);
     endinterface;
 
     interface checkerKeyRequest = cons(keyReqSink, nil);
