@@ -57,9 +57,7 @@ class InterfaceSpec:
                 if output_m:
                     signal_name = output_m.group(3)
                     width = (int(output_m.group(2)) + 1) if output_m.group(2) is not None else 1
-                    # TODO this doesn't capture signals that have debug in the middle, i.e. RDY_debugBadRead__read
-                    # In practice I don't think this matters, because these signals are (should?) all held high - they are debug read-only, they are always ready - so it doesn't keep any logic around
-                    if signal_name.startswith("debug"):
+                    if "debug" in signal_name:
                         ifc_dbg_outputs.append((signal_name, width))
                     else:
                         ifc_outputs.append((signal_name, width))
