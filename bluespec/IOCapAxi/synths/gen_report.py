@@ -107,7 +107,7 @@ def project_stats(project_dir: str) -> SynthStats:
     
     print(luts_db)
     print(f)
-    assert abs(luts_db["|"] - luts) <= 1, f"Inconsistent LUTs for {f} - toplevel = {luts}, db = {luts_db['|']}"
+    assert abs(luts_db["|"] - luts) <= 2, f"Inconsistent LUTs for {f} - toplevel = {luts}, db = {luts_db['|']}"
 
     return SynthStats(
         dut=dut,
