@@ -1013,6 +1013,15 @@ public:
         }
         cleanupTxns(isRead); // TODO maybe this won't ever do anything...
     }
+    uint64_t pendingDataFlitsForKey(key_manager::KeyId keyId) const {
+        uint64_t flits = 0;
+        for (const auto& txn : txns) {
+            if (txn.keyId == keyId && txn.valid && txn.addrForwardedDownstream) {
+                flits += txn.nDataFlits - txn.nDataFlitsForwarded;
+            } 
+        }
+        return flits;
+    }
     bool empty() const {
         return txns.empty() && dataFlitsPendingTxn.empty();
     }
@@ -1180,6 +1189,13 @@ public:
             board.invalidateFromKey(keyId, /* isRead */ false);
         }
     }
+    uint64_t pendingDataFlitsForKey(key_manager::KeyId keyId) const {
+        uint64_t flits = 0;
+        for (const auto& board : txnIdBoards) {
+            flits += board.pendingDataFlitsForKey(keyId);
+        }
+        return flits;
+    }
     bool empty() const {
         if (std::any_of(this->txnIdBoards.begin(), this->txnIdBoards.end(), [](auto& board) { return !board.empty(); })) {
             return false;
@@ -1285,6 +1301,13 @@ public:
         for (auto& board : txnIdBoards) {
             board.invalidateFromKey(keyId, /* isRead */ true);
         }
+    }
+    uint64_t pendingDataFlitsForKey(key_manager::KeyId keyId) const {
+        uint64_t flits = 0;
+        for (const auto& board : txnIdBoards) {
+            flits += board.pendingDataFlitsForKey(keyId);
+        }
+        return flits;
     }
     bool empty() const {
         if (std::any_of(this->txnIdBoards.begin(), this->txnIdBoards.end(), [](auto& board) { return !board.empty(); })) {
@@ -1829,6 +1852,12 @@ struct MMIORevokeLatencyStats {
     uint64_t debug_state_invalidnotrevoked_tick = 0;
     // // The tick that debugState is observed to change to invalid, which should always be after invalid-not-revoked
     // uint64_t debug_state_invalid_tick = 0;
+    
+    uint64_t r_data_flits_at_mmio;
+    uint64_t w_data_flits_at_mmio;
+
+    uint64_t r_data_flits_at_killkey;
+    uint64_t w_data_flits_at_killkey;
 };
 
 template <> class fmt::formatter<MMIORevokeLatencyStats> {
@@ -1836,6 +1865,7 @@ template <> class fmt::formatter<MMIORevokeLatencyStats> {
     constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
     template <typename Context>
     constexpr auto format (MMIORevokeLatencyStats const& x, Context& ctx) const {
+        // TODO outdated
         return format_to(ctx.out(), "MMIORevokeLatencyStats {{ .revoke_mmio_sent_tick = {}, .debug_state_invalidnotrevoked_tick = {} }}", x.revoke_mmio_sent_tick, x.debug_state_invalidnotrevoked_tick);
     }
 };
@@ -1846,8 +1876,14 @@ class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseExposer
     std::unordered_map<key_manager::KeyId, MMIORevokeLatencyStats> revokes;
     // std::vector<uint64_t> revoke_mmio_response_latency;
     // ^ track that using the key manager stats
+    std::vector<uint64_t> revoke_mmio_debug_killkey_latency;
     std::vector<uint64_t> revoke_mmio_debug_state_invalidnotrevoked_latency;
     std::vector<uint64_t> revoke_mmio_debug_state_invalid_latency;
+    std::vector<uint64_t> revoke_r_data_flits_at_mmio;
+    std::vector<uint64_t> revoke_w_data_flits_at_mmio;
+    std::vector<uint64_t> revoke_r_data_flits_at_killkey;
+    std::vector<uint64_t> revoke_w_data_flits_at_killkey;
+    bool had_revoke = false;
 
     std::unordered_map<uint64_t, key_manager::KeyId> revoke_on_tick;
     
@@ -1869,19 +1905,27 @@ class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseExposer
             if (revokes.contains(revoking_key)) {
                 throw std::runtime_error(fmt::format("Tried to revoke {} while it was already in progress", (int)revoking_key));
             }
+
+            uint64_t r_data_flits_at_mmio = this->rTxns.pendingDataFlitsForKey(revoking_key);
+            uint64_t w_data_flits_at_mmio = this->wTxns.pendingDataFlitsForKey(revoking_key);
+
             revokes[revoking_key] = MMIORevokeLatencyStats {
-                .revoke_mmio_sent_tick = tick
+                .revoke_mmio_sent_tick = tick,
+                .r_data_flits_at_mmio = r_data_flits_at_mmio,
+                .w_data_flits_at_mmio = w_data_flits_at_mmio,
             };
-            
-            // revoke_on_tick[tick + 50] = revoking_key;
+
+            had_revoke = true;
         }
 
         if (outputKeyManager.debugKillKey.keyIdValid) {
-            // TODO add this to revoke stats
-            // fmt::println(stderr, "KILL KEY OBSERVED {}", tick);
-            revokes[outputKeyManager.debugKillKey.keyId].kill_key_observed_tick = tick;
-            revoke_on_tick[tick + 0] = outputKeyManager.debugKillKey.keyId;
-            this->secrets.erase(outputKeyManager.debugKillKey.keyId);
+            key_manager::KeyId revoking_key = outputKeyManager.debugKillKey.keyId;
+            revokes[revoking_key].kill_key_observed_tick = tick;
+            revokes[revoking_key].r_data_flits_at_killkey = this->rTxns.pendingDataFlitsForKey(revoking_key);
+            revokes[revoking_key].w_data_flits_at_killkey = this->wTxns.pendingDataFlitsForKey(revoking_key);
+
+            this->secrets.erase(revoking_key);
+            revoke_on_tick[tick + 0] = revoking_key;
         }
 
         if (revoke_on_tick.contains(tick)) {
@@ -1904,11 +1948,29 @@ class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseExposer
                 if (revoke_stats.debug_state_invalidnotrevoked_tick == 0) {
                     throw std::runtime_error(fmt::format("State for key {} didn't transition through invalid-not-revoked", (int)revoking_key));
                 }
+                if (revoke_stats.kill_key_observed_tick == 0) {
+                    throw std::runtime_error(fmt::format("State for key {} didn't transition via a kill-key signal", (int)revoking_key));
+                }
+                revoke_mmio_debug_killkey_latency.push_back(
+                    revoke_stats.kill_key_observed_tick - revoke_stats.revoke_mmio_sent_tick
+                );
                 revoke_mmio_debug_state_invalidnotrevoked_latency.push_back(
                     revoke_stats.debug_state_invalidnotrevoked_tick - revoke_stats.revoke_mmio_sent_tick
                 );
                 revoke_mmio_debug_state_invalid_latency.push_back(
                     tick - revoke_stats.revoke_mmio_sent_tick
+                );
+                revoke_r_data_flits_at_mmio.push_back(
+                    revoke_stats.r_data_flits_at_mmio
+                );
+                revoke_w_data_flits_at_mmio.push_back(
+                    revoke_stats.w_data_flits_at_mmio
+                );
+                revoke_r_data_flits_at_killkey.push_back(
+                    revoke_stats.r_data_flits_at_killkey
+                );
+                revoke_w_data_flits_at_killkey.push_back(
+                    revoke_stats.w_data_flits_at_killkey
                 );
                 it = revokes.erase(it);
                 continue;
@@ -1959,8 +2021,15 @@ public:
     #define DUMP_MEAN_OF(name, x) fmt::println(stats, STRINGIFY(name) "_mean = {}", mean_of(x));
     virtual void dump_toml_stats(FILE* stats) override {
         BaseExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>::dump_toml_stats(stats);
-        DUMP_MEAN_OF(revoke_mmio_debug_state_invalidnotrevoked_latency, revoke_mmio_debug_state_invalidnotrevoked_latency);
-        DUMP_MEAN_OF(revoke_mmio_debug_state_invalid_latency, revoke_mmio_debug_state_invalid_latency);
+        if (had_revoke) {
+            DUMP_MEAN_OF(revoke_mmio_debug_killkey_latency, revoke_mmio_debug_killkey_latency);
+            DUMP_MEAN_OF(revoke_mmio_debug_state_invalidnotrevoked_latency, revoke_mmio_debug_state_invalidnotrevoked_latency);
+            DUMP_MEAN_OF(revoke_mmio_debug_state_invalid_latency, revoke_mmio_debug_state_invalid_latency);
+            DUMP_MEAN_OF(revoke_r_data_flits_at_mmio, revoke_r_data_flits_at_mmio);
+            DUMP_MEAN_OF(revoke_w_data_flits_at_mmio, revoke_w_data_flits_at_mmio);
+            DUMP_MEAN_OF(revoke_r_data_flits_at_killkey, revoke_r_data_flits_at_killkey);
+            DUMP_MEAN_OF(revoke_w_data_flits_at_killkey, revoke_w_data_flits_at_killkey);
+        }
         // DUMP_MEAN_OF(this->key, wTxns.w_w_latency);
         // DUMP_MEAN_OF(b_b_latency, wTxns.b_b_latency);
         // DUMP_MEAN_OF(r_r_latency, rTxns.r_r_latency);
@@ -2468,19 +2537,21 @@ class UVMRevokeOverMMIOBenchmark : public ExposerStimulus<DUT, ctype, KeyMngrV2_
     uint64_t n_transactions;
     uint8_t txn_data_flits;
     int txn_cavs;
+    uint64_t revoke_delay;
 
+    uint64_t tick_to_revoke_on = 0;
     uint64_t final_tick = 0;
     bool started_revoke = false;
 
 public:
     virtual ~UVMRevokeOverMMIOBenchmark() = default;
     virtual std::string name() override {
-        return fmt::format("UVMRevokeOverMMIOBenchmark (Stream of {} {}-flit {}-cav txns, DMA {} Revoke {})", n_transactions, (int)txn_data_flits, txn_cavs, (int)dma_key_id, (int)revoke_key_id);
+        return fmt::format("UVMRevokeOverMMIOBenchmark (Stream of {} {}-flit {}-cav txns, DMA {} Revoke {}, delay {})", n_transactions, (int)txn_data_flits, txn_cavs, (int)dma_key_id, (int)revoke_key_id, revoke_delay);
     }
-    UVMRevokeOverMMIOBenchmark(key_manager::KeyId dma_key_id, key_manager::KeyId revoke_key_id, uint64_t n_transactions, uint8_t txn_data_flits, int txn_cavs) : ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>(
+    UVMRevokeOverMMIOBenchmark(key_manager::KeyId dma_key_id, key_manager::KeyId revoke_key_id, uint64_t n_transactions, uint8_t txn_data_flits, int txn_cavs, uint64_t revoke_delay=0) : ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>(
         new BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO32>(),
         new BasicSanitizedMemStimulus<DUT>()
-    ), dma_key_id(dma_key_id), revoke_key_id(revoke_key_id), n_transactions(n_transactions), txn_data_flits(txn_data_flits), txn_cavs(txn_cavs) {}
+    ), dma_key_id(dma_key_id), revoke_key_id(revoke_key_id), n_transactions(n_transactions), txn_data_flits(txn_data_flits), txn_cavs(txn_cavs), revoke_delay(revoke_delay) {}
     virtual void setup(std::mt19937& rng) override {
         const U128 dma_key = U128::random(rng);
         this->keyMgr->secrets[dma_key_id] = dma_key;
@@ -2506,7 +2577,11 @@ public:
     }
     virtual void driveInputsForTick(std::mt19937& rng, DUT& dut, uint64_t tick) {
         // Once half of the DMAs have started
-        if (!started_revoke && (this->awInputs.size() <= (n_transactions * 4 / 2))) {
+        if (!started_revoke && (this->awInputs.size() <= (n_transactions * 4 / 2)) && tick_to_revoke_on == 0) {
+            tick_to_revoke_on = tick + revoke_delay;
+        }
+
+        if (tick == tick_to_revoke_on && tick_to_revoke_on != 0) {
             // Sent a revocation request
             const uint16_t KEY_STATUS_ADDR = 0 + (revoke_key_id * 16);
             this->keyMgr->pendingWrites.push_back(std::make_pair(
@@ -2749,38 +2824,22 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         );
 
         // and where txn_data_flits increases...
-        tests.push_back(
-            new ExposerUVMishTest(
-                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
-                    /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 8, /* txn_cavs */ 0
-                ),
-                expectPassthroughInvalidTransactions
-            )
-        );
-        tests.push_back(
-            new ExposerUVMishTest(
-                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
-                    /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 12, /* txn_cavs */ 0
-                ),
-                expectPassthroughInvalidTransactions
-            )
-        );
-        tests.push_back(
-            new ExposerUVMishTest(
-                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
-                    /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 16, /* txn_cavs */ 0
-                ),
-                expectPassthroughInvalidTransactions
-            )
-        );
-        tests.push_back(
-            new ExposerUVMishTest(
-                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
-                    /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 20, /* txn_cavs */ 0
-                ),
-                expectPassthroughInvalidTransactions
-            )
-        );
+        for (uint8_t txn_data_flits = 4; txn_data_flits <= 24; txn_data_flits += 4) {
+            for (uint64_t revoke_delay = 0; revoke_delay <= 50; revoke_delay += 10) {
+                if (txn_data_flits == 4 && revoke_delay == 0) {
+                    continue; // This has already been done
+                }
+                tests.push_back(
+                    new ExposerUVMishTest(
+                        new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                            /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, txn_data_flits, /* txn_cavs */ 0,
+                            revoke_delay
+                        ),
+                        expectPassthroughInvalidTransactions
+                    )
+                );
+            }
+        }
     }
 
     for (auto edge_case = 0; edge_case < ccap2024_11_rand_edge_case_num(); edge_case++) {

@@ -24,8 +24,6 @@ exp_invalid_read = 0
 perf_valid_read = 1
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Valid-Key Valid-Cap Valid-CCapPerms::Write"]
 success = true
@@ -53,8 +51,6 @@ exp_invalid_read = 0
 perf_valid_read = 0
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Valid-Key Valid-Cap Valid-CCapPerms::ReadWrite"]
 success = true
@@ -82,8 +78,6 @@ exp_invalid_read = 0
 perf_valid_read = 1
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Valid-Key Valid-Cap OOB-CCapPerms::Read"]
 success = true
@@ -111,8 +105,6 @@ exp_invalid_read = 1
 perf_valid_read = 0
 perf_invalid_read = 1
 valid_txn_ratio = 0
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Valid-Key Valid-Cap OOB-CCapPerms::Write"]
 success = true
@@ -140,8 +132,6 @@ exp_invalid_read = 0
 perf_valid_read = 0
 perf_invalid_read = 0
 valid_txn_ratio = 0
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Valid-Key Valid-Cap BadPerms"]
 success = true
@@ -169,8 +159,6 @@ exp_invalid_read = 1
 perf_valid_read = 0
 perf_invalid_read = 1
 valid_txn_ratio = 0
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Valid-Key BadSig-Cap"]
 success = true
@@ -198,8 +186,6 @@ exp_invalid_read = 1
 perf_valid_read = 0
 perf_invalid_read = 1
 valid_txn_ratio = 0
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Invalid-Key CCapPerms::ReadWrite"]
 success = true
@@ -227,8 +213,6 @@ exp_invalid_read = 1
 perf_valid_read = 0
 perf_invalid_read = 1
 valid_txn_ratio = 0
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 100 CCapPerms::ReadWrite 1-flit transactions"]
 success = true
@@ -256,8 +240,6 @@ exp_invalid_read = 0
 perf_valid_read = 100
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 100 CCapPerms::ReadWrite 4-flit transactions"]
 success = true
@@ -285,8 +267,6 @@ exp_invalid_read = 0
 perf_valid_read = 100
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 100 CCapPerms::ReadWrite 8-flit transactions"]
 success = true
@@ -314,8 +294,6 @@ exp_invalid_read = 0
 perf_valid_read = 100
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 100 CCapPerms::ReadWrite 16-flit transactions"]
 success = true
@@ -343,8 +321,6 @@ exp_invalid_read = 0
 perf_valid_read = 100
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 100 CCapPerms::ReadWrite 32-flit transactions"]
 success = true
@@ -372,8 +348,6 @@ exp_invalid_read = 0
 perf_valid_read = 100
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 10000 librust random valid Cap2024_11 4-flit transactions"]
 success = true
@@ -401,8 +375,6 @@ exp_invalid_read = 0
 perf_valid_read = 5988
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 10000 librust random valid Cap2024_11 0-caveat 4-flit transactions"]
 success = true
@@ -430,8 +402,6 @@ exp_invalid_read = 0
 perf_valid_read = 6583
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 10000 librust random valid Cap2024_11 1-caveat 4-flit transactions"]
 success = true
@@ -459,8 +429,6 @@ exp_invalid_read = 0
 perf_valid_read = 6010
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 10000 librust random valid Cap2024_11 2-caveat 4-flit transactions"]
 success = true
@@ -488,8 +456,6 @@ exp_invalid_read = 0
 perf_valid_read = 5833
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 10000 librust random valid Cap2024_11 0-caveat 1-flit transactions"]
 success = true
@@ -517,8 +483,6 @@ exp_invalid_read = 0
 perf_valid_read = 6583
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 10000 librust random valid Cap2024_11 1-caveat 1-flit transactions"]
 success = true
@@ -546,8 +510,6 @@ exp_invalid_read = 0
 perf_valid_read = 6010
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 10000 librust random valid Cap2024_11 2-caveat 1-flit transactions"]
 success = true
@@ -575,10 +537,8 @@ exp_invalid_read = 0
 perf_valid_read = 5833
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
-[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 1-flit 0-cav txns, DMA 0 Revoke 1)"]
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 1-flit 0-cav txns, DMA 0 Revoke 1, delay 0)"]
 success = true
 ending_tick = 14381
 aw_throughput = 1
@@ -604,10 +564,15 @@ exp_invalid_read = 0
 perf_valid_read = 73
 perf_invalid_read = 0
 valid_txn_ratio = 1
+revoke_mmio_debug_killkey_latency_mean = 20
 revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
 revoke_mmio_debug_state_invalid_latency_mean = 60
+revoke_r_data_flits_at_mmio_mean = 0
+revoke_w_data_flits_at_mmio_mean = 0
+revoke_r_data_flits_at_killkey_mean = 0
+revoke_w_data_flits_at_killkey_mean = 0
 
-[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 1)"]
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 1, delay 0)"]
 success = true
 ending_tick = 21901
 aw_throughput = 0.9219858156028369
@@ -633,10 +598,15 @@ exp_invalid_read = 0
 perf_valid_read = 73
 perf_invalid_read = 0
 valid_txn_ratio = 1
+revoke_mmio_debug_killkey_latency_mean = 20
 revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
 revoke_mmio_debug_state_invalid_latency_mean = 50
+revoke_r_data_flits_at_mmio_mean = 0
+revoke_w_data_flits_at_mmio_mean = 0
+revoke_r_data_flits_at_killkey_mean = 0
+revoke_w_data_flits_at_killkey_mean = 0
 
-[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 1-cav txns, DMA 0 Revoke 1)"]
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 1-cav txns, DMA 0 Revoke 1, delay 0)"]
 success = true
 ending_tick = 19661
 aw_throughput = 1
@@ -662,10 +632,15 @@ exp_invalid_read = 0
 perf_valid_read = 60
 perf_invalid_read = 0
 valid_txn_ratio = 1
+revoke_mmio_debug_killkey_latency_mean = 20
 revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
 revoke_mmio_debug_state_invalid_latency_mean = 70
+revoke_r_data_flits_at_mmio_mean = 0
+revoke_w_data_flits_at_mmio_mean = 0
+revoke_r_data_flits_at_killkey_mean = 0
+revoke_w_data_flits_at_killkey_mean = 0
 
-[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 2-cav txns, DMA 0 Revoke 1)"]
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 2-cav txns, DMA 0 Revoke 1, delay 0)"]
 success = true
 ending_tick = 20961
 aw_throughput = 0.8719723183391004
@@ -691,10 +666,15 @@ exp_invalid_read = 0
 perf_valid_read = 55
 perf_invalid_read = 0
 valid_txn_ratio = 1
+revoke_mmio_debug_killkey_latency_mean = 20
 revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
 revoke_mmio_debug_state_invalid_latency_mean = 60
+revoke_r_data_flits_at_mmio_mean = 0
+revoke_w_data_flits_at_mmio_mean = 0
+revoke_r_data_flits_at_killkey_mean = 0
+revoke_w_data_flits_at_killkey_mean = 0
 
-[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0)"]
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
 ending_tick = 14321
 aw_throughput = 1
@@ -720,10 +700,15 @@ exp_invalid_read = 64
 perf_valid_read = 10
 perf_invalid_read = 64
 valid_txn_ratio = 0.14492753623188406
+revoke_mmio_debug_killkey_latency_mean = 20
 revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
 revoke_mmio_debug_state_invalid_latency_mean = 130
+revoke_r_data_flits_at_mmio_mean = 5
+revoke_w_data_flits_at_mmio_mean = 2
+revoke_r_data_flits_at_killkey_mean = 3
+revoke_w_data_flits_at_killkey_mean = 0
 
-[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 1-cav txns, DMA 0 Revoke 0)"]
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 1-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
 ending_tick = 13801
 aw_throughput = 1
@@ -749,10 +734,15 @@ exp_invalid_read = 54
 perf_valid_read = 5
 perf_invalid_read = 54
 valid_txn_ratio = 0.08333333333333333
+revoke_mmio_debug_killkey_latency_mean = 20
 revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
 revoke_mmio_debug_state_invalid_latency_mean = 160
+revoke_r_data_flits_at_mmio_mean = 4
+revoke_w_data_flits_at_mmio_mean = 1
+revoke_r_data_flits_at_killkey_mean = 6
+revoke_w_data_flits_at_killkey_mean = 3
 
-[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 2-cav txns, DMA 0 Revoke 0)"]
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 2-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
 ending_tick = 14031
 aw_throughput = 1
@@ -778,10 +768,185 @@ exp_invalid_read = 50
 perf_valid_read = 4
 perf_invalid_read = 50
 valid_txn_ratio = 0.06837606837606838
+revoke_mmio_debug_killkey_latency_mean = 20
 revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
 revoke_mmio_debug_state_invalid_latency_mean = 150
+revoke_r_data_flits_at_mmio_mean = 3
+revoke_w_data_flits_at_mmio_mean = 0
+revoke_r_data_flits_at_killkey_mean = 5
+revoke_w_data_flits_at_killkey_mean = 2
 
-[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0)"]
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
+success = true
+ending_tick = 14321
+aw_throughput = 1
+w_throughput = 0.9808429118773946
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 1
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 164.54545454545453
+b_b_latency_mean = 20.90909090909091
+r_r_latency_mean = 20.454545454545453
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 160
+revoke_r_data_flits_at_mmio_mean = 4
+revoke_w_data_flits_at_mmio_mean = 1
+revoke_r_data_flits_at_killkey_mean = 6
+revoke_w_data_flits_at_killkey_mean = 3
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
+success = true
+ending_tick = 14321
+aw_throughput = 1
+w_throughput = 0.9808429118773946
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 1
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 164.54545454545453
+b_b_latency_mean = 20.90909090909091
+r_r_latency_mean = 20.454545454545453
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 150
+revoke_r_data_flits_at_mmio_mean = 3
+revoke_w_data_flits_at_mmio_mean = 0
+revoke_r_data_flits_at_killkey_mean = 5
+revoke_w_data_flits_at_killkey_mean = 2
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
+success = true
+ending_tick = 14321
+aw_throughput = 1
+w_throughput = 0.9808429118773946
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 1
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 164.54545454545453
+b_b_latency_mean = 20.90909090909091
+r_r_latency_mean = 20.454545454545453
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 140
+revoke_r_data_flits_at_mmio_mean = 6
+revoke_w_data_flits_at_mmio_mean = 3
+revoke_r_data_flits_at_killkey_mean = 4
+revoke_w_data_flits_at_killkey_mean = 1
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
+success = true
+ending_tick = 14321
+aw_throughput = 1
+w_throughput = 0.9808429118773946
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 1
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 164.54545454545453
+b_b_latency_mean = 20.90909090909091
+r_r_latency_mean = 20.454545454545453
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 130
+revoke_r_data_flits_at_mmio_mean = 5
+revoke_w_data_flits_at_mmio_mean = 2
+revoke_r_data_flits_at_killkey_mean = 3
+revoke_w_data_flits_at_killkey_mean = 0
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
+success = true
+ending_tick = 14321
+aw_throughput = 1
+w_throughput = 0.9808429118773946
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 1
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 163.33333333333334
+b_b_latency_mean = 20.833333333333332
+r_r_latency_mean = 20.416666666666668
+total_write = 64
+confirmed_write = 12
+exp_invalid_write = 52
+perf_valid_write = 12
+perf_invalid_write = 52
+total_read = 74
+confirmed_read = 12
+exp_invalid_read = 62
+perf_valid_read = 12
+perf_invalid_read = 62
+valid_txn_ratio = 0.17391304347826086
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 160
+revoke_r_data_flits_at_mmio_mean = 4
+revoke_w_data_flits_at_mmio_mean = 1
+revoke_r_data_flits_at_killkey_mean = 6
+revoke_w_data_flits_at_killkey_mean = 3
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
 ending_tick = 16531
 aw_throughput = 1
@@ -807,10 +972,185 @@ exp_invalid_read = 64
 perf_valid_read = 10
 perf_invalid_read = 64
 valid_txn_ratio = 0.14492753623188406
+revoke_mmio_debug_killkey_latency_mean = 20
 revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
 revoke_mmio_debug_state_invalid_latency_mean = 680
+revoke_r_data_flits_at_mmio_mean = 45
+revoke_w_data_flits_at_mmio_mean = 42
+revoke_r_data_flits_at_killkey_mean = 43
+revoke_w_data_flits_at_killkey_mean = 40
 
-[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0)"]
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
+success = true
+ending_tick = 16531
+aw_throughput = 1
+w_throughput = 0.9903288201160542
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 0.8380952380952381
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 157.27272727272728
+b_b_latency_mean = 36.36363636363637
+r_r_latency_mean = 24.09090909090909
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 770
+revoke_r_data_flits_at_mmio_mean = 44
+revoke_w_data_flits_at_mmio_mean = 41
+revoke_r_data_flits_at_killkey_mean = 50
+revoke_w_data_flits_at_killkey_mean = 47
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
+success = true
+ending_tick = 16531
+aw_throughput = 1
+w_throughput = 0.9903288201160542
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 0.8380952380952381
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 157.27272727272728
+b_b_latency_mean = 36.36363636363637
+r_r_latency_mean = 24.09090909090909
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 760
+revoke_r_data_flits_at_mmio_mean = 43
+revoke_w_data_flits_at_mmio_mean = 40
+revoke_r_data_flits_at_killkey_mean = 49
+revoke_w_data_flits_at_killkey_mean = 46
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
+success = true
+ending_tick = 16531
+aw_throughput = 1
+w_throughput = 0.9903288201160542
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 0.8380952380952381
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 157.27272727272728
+b_b_latency_mean = 36.36363636363637
+r_r_latency_mean = 24.09090909090909
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 750
+revoke_r_data_flits_at_mmio_mean = 50
+revoke_w_data_flits_at_mmio_mean = 47
+revoke_r_data_flits_at_killkey_mean = 48
+revoke_w_data_flits_at_killkey_mean = 45
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
+success = true
+ending_tick = 16531
+aw_throughput = 1
+w_throughput = 0.9903288201160542
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 0.8380952380952381
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 157.27272727272728
+b_b_latency_mean = 36.36363636363637
+r_r_latency_mean = 24.09090909090909
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 740
+revoke_r_data_flits_at_mmio_mean = 49
+revoke_w_data_flits_at_mmio_mean = 46
+revoke_r_data_flits_at_killkey_mean = 47
+revoke_w_data_flits_at_killkey_mean = 44
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
+success = true
+ending_tick = 16531
+aw_throughput = 1
+w_throughput = 0.9903288201160542
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 0.9142857142857143
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 156.66666666666666
+b_b_latency_mean = 29.166666666666668
+r_r_latency_mean = 21.875
+total_write = 64
+confirmed_write = 12
+exp_invalid_write = 52
+perf_valid_write = 12
+perf_invalid_write = 52
+total_read = 74
+confirmed_read = 12
+exp_invalid_read = 62
+perf_valid_read = 12
+perf_invalid_read = 62
+valid_txn_ratio = 0.17391304347826086
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 730
+revoke_r_data_flits_at_mmio_mean = 48
+revoke_w_data_flits_at_mmio_mean = 45
+revoke_r_data_flits_at_killkey_mean = 54
+revoke_w_data_flits_at_killkey_mean = 51
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
 ending_tick = 19091
 aw_throughput = 1
@@ -836,10 +1176,185 @@ exp_invalid_read = 64
 perf_valid_read = 10
 perf_invalid_read = 64
 valid_txn_ratio = 0.14492753623188406
+revoke_mmio_debug_killkey_latency_mean = 20
 revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
 revoke_mmio_debug_state_invalid_latency_mean = 1210
+revoke_r_data_flits_at_mmio_mean = 85
+revoke_w_data_flits_at_mmio_mean = 82
+revoke_r_data_flits_at_killkey_mean = 83
+revoke_w_data_flits_at_killkey_mean = 80
 
-[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0)"]
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
+success = true
+ending_tick = 19091
+aw_throughput = 1
+w_throughput = 0.9935316946959897
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 0.8048780487804879
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 154.84848484848484
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 24.924242424242426
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 1350
+revoke_r_data_flits_at_mmio_mean = 84
+revoke_w_data_flits_at_mmio_mean = 81
+revoke_r_data_flits_at_killkey_mean = 94
+revoke_w_data_flits_at_killkey_mean = 91
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
+success = true
+ending_tick = 19091
+aw_throughput = 1
+w_throughput = 0.9935316946959897
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 0.8048780487804879
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 154.84848484848484
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 24.924242424242426
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 1340
+revoke_r_data_flits_at_mmio_mean = 83
+revoke_w_data_flits_at_mmio_mean = 80
+revoke_r_data_flits_at_killkey_mean = 93
+revoke_w_data_flits_at_killkey_mean = 90
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
+success = true
+ending_tick = 19091
+aw_throughput = 1
+w_throughput = 0.9935316946959897
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 0.8048780487804879
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 154.84848484848484
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 24.924242424242426
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 1330
+revoke_r_data_flits_at_mmio_mean = 94
+revoke_w_data_flits_at_mmio_mean = 91
+revoke_r_data_flits_at_killkey_mean = 92
+revoke_w_data_flits_at_killkey_mean = 89
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
+success = true
+ending_tick = 19091
+aw_throughput = 1
+w_throughput = 0.9935316946959897
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 0.8048780487804879
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 154.84848484848484
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 24.924242424242426
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 1320
+revoke_r_data_flits_at_mmio_mean = 93
+revoke_w_data_flits_at_mmio_mean = 90
+revoke_r_data_flits_at_killkey_mean = 91
+revoke_w_data_flits_at_killkey_mean = 88
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
+success = true
+ending_tick = 19091
+aw_throughput = 1
+w_throughput = 0.9935316946959897
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 0.9411764705882353
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 154.44444444444446
+b_b_latency_mean = 29.166666666666668
+r_r_latency_mean = 21.25
+total_write = 64
+confirmed_write = 12
+exp_invalid_write = 52
+perf_valid_write = 12
+perf_invalid_write = 52
+total_read = 74
+confirmed_read = 12
+exp_invalid_read = 62
+perf_valid_read = 12
+perf_invalid_read = 62
+valid_txn_ratio = 0.17391304347826086
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 1210
+revoke_r_data_flits_at_mmio_mean = 92
+revoke_w_data_flits_at_mmio_mean = 89
+revoke_r_data_flits_at_killkey_mean = 102
+revoke_w_data_flits_at_killkey_mean = 99
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
 ending_tick = 21651
 aw_throughput = 1
@@ -865,10 +1380,185 @@ exp_invalid_read = 64
 perf_valid_read = 10
 perf_invalid_read = 64
 valid_txn_ratio = 0.14492753623188406
+revoke_mmio_debug_killkey_latency_mean = 20
 revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
 revoke_mmio_debug_state_invalid_latency_mean = 1630
+revoke_r_data_flits_at_mmio_mean = 125
+revoke_w_data_flits_at_mmio_mean = 122
+revoke_r_data_flits_at_killkey_mean = 123
+revoke_w_data_flits_at_killkey_mean = 120
 
-[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0)"]
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
+success = true
+ending_tick = 21651
+aw_throughput = 0.9846153846153847
+w_throughput = 0.9951409135082604
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 0.7963800904977375
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 153.63636363636363
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 25.113636363636363
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 1910
+revoke_r_data_flits_at_mmio_mean = 124
+revoke_w_data_flits_at_mmio_mean = 121
+revoke_r_data_flits_at_killkey_mean = 138
+revoke_w_data_flits_at_killkey_mean = 135
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
+success = true
+ending_tick = 21651
+aw_throughput = 0.9846153846153847
+w_throughput = 0.9951409135082604
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 0.7963800904977375
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 153.63636363636363
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 25.113636363636363
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 1900
+revoke_r_data_flits_at_mmio_mean = 123
+revoke_w_data_flits_at_mmio_mean = 120
+revoke_r_data_flits_at_killkey_mean = 137
+revoke_w_data_flits_at_killkey_mean = 134
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
+success = true
+ending_tick = 21651
+aw_throughput = 0.9846153846153847
+w_throughput = 0.9951409135082604
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 0.7963800904977375
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 153.63636363636363
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 25.113636363636363
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 1890
+revoke_r_data_flits_at_mmio_mean = 138
+revoke_w_data_flits_at_mmio_mean = 135
+revoke_r_data_flits_at_killkey_mean = 136
+revoke_w_data_flits_at_killkey_mean = 133
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
+success = true
+ending_tick = 21651
+aw_throughput = 0.9846153846153847
+w_throughput = 0.9951409135082604
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 0.7963800904977375
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 153.63636363636363
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 25.113636363636363
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 1880
+revoke_r_data_flits_at_mmio_mean = 137
+revoke_w_data_flits_at_mmio_mean = 134
+revoke_r_data_flits_at_killkey_mean = 135
+revoke_w_data_flits_at_killkey_mean = 132
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
+success = true
+ending_tick = 21651
+aw_throughput = 0.9411764705882353
+w_throughput = 0.9951409135082604
+ar_throughput = 1
+b_throughput = 1
+r_throughput = 0.9552238805970149
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 153.33333333333334
+b_b_latency_mean = 29.166666666666668
+r_r_latency_mean = 20.9375
+total_write = 64
+confirmed_write = 12
+exp_invalid_write = 52
+perf_valid_write = 12
+perf_invalid_write = 52
+total_read = 74
+confirmed_read = 12
+exp_invalid_read = 62
+perf_valid_read = 12
+perf_invalid_read = 62
+valid_txn_ratio = 0.17391304347826086
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 1690
+revoke_r_data_flits_at_mmio_mean = 136
+revoke_w_data_flits_at_mmio_mean = 133
+revoke_r_data_flits_at_killkey_mean = 150
+revoke_w_data_flits_at_killkey_mean = 147
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
 ending_tick = 24211
 aw_throughput = 0.8888888888888888
@@ -894,8 +1584,387 @@ exp_invalid_read = 64
 perf_valid_read = 10
 perf_invalid_read = 64
 valid_txn_ratio = 0.14492753623188406
+revoke_mmio_debug_killkey_latency_mean = 20
 revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
 revoke_mmio_debug_state_invalid_latency_mean = 2030
+revoke_r_data_flits_at_mmio_mean = 165
+revoke_w_data_flits_at_mmio_mean = 162
+revoke_r_data_flits_at_killkey_mean = 163
+revoke_w_data_flits_at_killkey_mean = 160
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
+success = true
+ending_tick = 24211
+aw_throughput = 0.8421052631578947
+w_throughput = 0.9961089494163424
+ar_throughput = 0.9899665551839465
+b_throughput = 1
+r_throughput = 0.8301886792452831
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 152.9090909090909
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 24.09090909090909
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 2350
+revoke_r_data_flits_at_mmio_mean = 164
+revoke_w_data_flits_at_mmio_mean = 161
+revoke_r_data_flits_at_killkey_mean = 182
+revoke_w_data_flits_at_killkey_mean = 179
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
+success = true
+ending_tick = 24211
+aw_throughput = 0.8421052631578947
+w_throughput = 0.9961089494163424
+ar_throughput = 0.9899665551839465
+b_throughput = 1
+r_throughput = 0.8301886792452831
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 152.9090909090909
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 24.09090909090909
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 2340
+revoke_r_data_flits_at_mmio_mean = 163
+revoke_w_data_flits_at_mmio_mean = 160
+revoke_r_data_flits_at_killkey_mean = 181
+revoke_w_data_flits_at_killkey_mean = 178
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
+success = true
+ending_tick = 24211
+aw_throughput = 0.8421052631578947
+w_throughput = 0.9961089494163424
+ar_throughput = 0.9899665551839465
+b_throughput = 1
+r_throughput = 0.8301886792452831
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 152.9090909090909
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 24.09090909090909
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 2330
+revoke_r_data_flits_at_mmio_mean = 182
+revoke_w_data_flits_at_mmio_mean = 179
+revoke_r_data_flits_at_killkey_mean = 180
+revoke_w_data_flits_at_killkey_mean = 177
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
+success = true
+ending_tick = 24211
+aw_throughput = 0.8421052631578947
+w_throughput = 0.9961089494163424
+ar_throughput = 0.9899665551839465
+b_throughput = 1
+r_throughput = 0.8301886792452831
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 152.9090909090909
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 24.09090909090909
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 2320
+revoke_r_data_flits_at_mmio_mean = 181
+revoke_w_data_flits_at_mmio_mean = 178
+revoke_r_data_flits_at_killkey_mean = 179
+revoke_w_data_flits_at_killkey_mean = 176
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
+success = true
+ending_tick = 24211
+aw_throughput = 0.8
+w_throughput = 0.9961089494163424
+ar_throughput = 0.8835820895522388
+b_throughput = 1
+r_throughput = 0.963855421686747
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 152.66666666666666
+b_b_latency_mean = 29.166666666666668
+r_r_latency_mean = 20.75
+total_write = 64
+confirmed_write = 12
+exp_invalid_write = 52
+perf_valid_write = 12
+perf_invalid_write = 52
+total_read = 74
+confirmed_read = 12
+exp_invalid_read = 62
+perf_valid_read = 12
+perf_invalid_read = 62
+valid_txn_ratio = 0.17391304347826086
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 2170
+revoke_r_data_flits_at_mmio_mean = 180
+revoke_w_data_flits_at_mmio_mean = 177
+revoke_r_data_flits_at_killkey_mean = 198
+revoke_w_data_flits_at_killkey_mean = 195
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
+success = true
+ending_tick = 26771
+aw_throughput = 0.7804878048780488
+w_throughput = 0.9967553536664504
+ar_throughput = 0.8705882352941177
+b_throughput = 1
+r_throughput = 0.96
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 152.66666666666666
+b_b_latency_mean = 52
+r_r_latency_mean = 20.833333333333332
+total_write = 64
+confirmed_write = 10
+exp_invalid_write = 54
+perf_valid_write = 10
+perf_invalid_write = 54
+total_read = 74
+confirmed_read = 10
+exp_invalid_read = 64
+perf_valid_read = 10
+perf_invalid_read = 64
+valid_txn_ratio = 0.14492753623188406
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 2430
+revoke_r_data_flits_at_mmio_mean = 205
+revoke_w_data_flits_at_mmio_mean = 202
+revoke_r_data_flits_at_killkey_mean = 203
+revoke_w_data_flits_at_killkey_mean = 200
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
+success = true
+ending_tick = 26771
+aw_throughput = 0.735632183908046
+w_throughput = 0.9967553536664504
+ar_throughput = 0.8731563421828908
+b_throughput = 1
+r_throughput = 0.8543689320388349
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 152.42424242424244
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 23.40909090909091
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 2790
+revoke_r_data_flits_at_mmio_mean = 204
+revoke_w_data_flits_at_mmio_mean = 201
+revoke_r_data_flits_at_killkey_mean = 226
+revoke_w_data_flits_at_killkey_mean = 223
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
+success = true
+ending_tick = 26771
+aw_throughput = 0.735632183908046
+w_throughput = 0.9967553536664504
+ar_throughput = 0.8731563421828908
+b_throughput = 1
+r_throughput = 0.8543689320388349
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 152.42424242424244
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 23.40909090909091
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 2780
+revoke_r_data_flits_at_mmio_mean = 203
+revoke_w_data_flits_at_mmio_mean = 200
+revoke_r_data_flits_at_killkey_mean = 225
+revoke_w_data_flits_at_killkey_mean = 222
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
+success = true
+ending_tick = 26771
+aw_throughput = 0.735632183908046
+w_throughput = 0.9967553536664504
+ar_throughput = 0.8731563421828908
+b_throughput = 1
+r_throughput = 0.8543689320388349
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 152.42424242424244
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 23.40909090909091
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 2770
+revoke_r_data_flits_at_mmio_mean = 226
+revoke_w_data_flits_at_mmio_mean = 223
+revoke_r_data_flits_at_killkey_mean = 224
+revoke_w_data_flits_at_killkey_mean = 221
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
+success = true
+ending_tick = 26771
+aw_throughput = 0.735632183908046
+w_throughput = 0.9967553536664504
+ar_throughput = 0.8731563421828908
+b_throughput = 1
+r_throughput = 0.8543689320388349
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 152.42424242424244
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 23.40909090909091
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 11
+exp_invalid_read = 63
+perf_valid_read = 11
+perf_invalid_read = 63
+valid_txn_ratio = 0.15942028985507245
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 2760
+revoke_r_data_flits_at_mmio_mean = 225
+revoke_w_data_flits_at_mmio_mean = 222
+revoke_r_data_flits_at_killkey_mean = 223
+revoke_w_data_flits_at_killkey_mean = 220
+
+[tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
+success = true
+ending_tick = 26771
+aw_throughput = 0.735632183908046
+w_throughput = 0.9967553536664504
+ar_throughput = 0.7728459530026109
+b_throughput = 1
+r_throughput = 0.9696969696969697
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 160
+ar_ar_latency_mean = 160
+w_w_latency_mean = 152.42424242424244
+b_b_latency_mean = 49.09090909090909
+r_r_latency_mean = 20.625
+total_write = 64
+confirmed_write = 11
+exp_invalid_write = 53
+perf_valid_write = 11
+perf_invalid_write = 53
+total_read = 74
+confirmed_read = 12
+exp_invalid_read = 62
+perf_valid_read = 12
+perf_invalid_read = 62
+valid_txn_ratio = 0.16666666666666666
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 2630
+revoke_r_data_flits_at_mmio_mean = 224
+revoke_w_data_flits_at_mmio_mean = 221
+revoke_r_data_flits_at_killkey_mean = 246
+revoke_w_data_flits_at_killkey_mean = 219
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_NonZeroWhenUnused Cap2024_11 transactions"]
 success = true
@@ -923,8 +1992,6 @@ exp_invalid_read = 74
 perf_valid_read = 0
 perf_invalid_read = 74
 valid_txn_ratio = 0
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_TooBig_IndexNonZero_Invalid Cap2024_11 transactions"]
 success = true
@@ -952,8 +2019,6 @@ exp_invalid_read = 59
 perf_valid_read = 0
 perf_invalid_read = 59
 valid_txn_ratio = 0
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_TooBig_IndexZero_Valid Cap2024_11 transactions"]
 success = true
@@ -981,8 +2046,6 @@ exp_invalid_read = 0
 perf_valid_read = 59
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav2_NonZeroWhenUnused_Invalid Cap2024_11 transactions"]
 success = true
@@ -1010,8 +2073,6 @@ exp_invalid_read = 65
 perf_valid_read = 0
 perf_invalid_read = 65
 valid_txn_ratio = 0
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav2_YSmallerThanX_Invalid Cap2024_11 transactions"]
 success = true
@@ -1039,8 +2100,6 @@ exp_invalid_read = 54
 perf_valid_read = 0
 perf_invalid_read = 54
 valid_txn_ratio = 0
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_TooBig_IndexZero_Cav2_InBounds_Valid Cap2024_11 transactions"]
 success = true
@@ -1068,8 +2127,6 @@ exp_invalid_read = 0
 perf_valid_read = 54
 perf_invalid_read = 0
 valid_txn_ratio = 1
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_TooBig_IndexZero_Cav2_ExceedsIdentity_Invalid Cap2024_11 transactions"]
 success = true
@@ -1097,8 +2154,6 @@ exp_invalid_read = 54
 perf_valid_read = 0
 perf_invalid_read = 54
 valid_txn_ratio = 0
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav2_ShrinksToZero_Valid Cap2024_11 transactions"]
 success = true
@@ -1126,10 +2181,8 @@ exp_invalid_read = 54
 perf_valid_read = 0
 perf_invalid_read = 54
 valid_txn_ratio = 0
-revoke_mmio_debug_state_invalidnotrevoked_latency_mean = -nan
-revoke_mmio_debug_state_invalid_latency_mean = -nan
 
 [summary]
-completed = 39
-success = 39
+completed = 70
+success = 70
 fail = 0

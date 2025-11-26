@@ -45,6 +45,9 @@ class LatencyStats:
     aw_throughput_1cav_1flit: int
     aw_throughput_2cav_1flit: int
 
+    revoke_under_dma_0cav_state_invalid_latency: List[int]
+    revoke_under_dma_0cav_max_data_flits: List[int]
+
 # group 1 = project name
 PROJECT_NAME_PATTERN = re.compile(r'^project_name := "(\w+)"')
 # group 1 = DUT name
@@ -56,8 +59,7 @@ FMAX_PATTERN = re.compile(r'; (\d+\.\d\d) MHz\s+; (\d+\.\d\d) MHz\s+;\s+CLK_FAST
 # group 2 = total ALMs on device
 LUTS_PATTERN = re.compile(r'^; Logic utilization \(ALMs needed / total ALMs on device\)\s+; ([\d,]+)\s+/\s+([\d,]+)')
 
-def project_stats(dut: str) -> LatencyStats:
-    results_toml = os.path.join("results", f"{dut}.toml")
+def project_stats(results_toml: str, dut: str) -> LatencyStats:
     results_timestamp = file_timestamp(results_toml)
 
     with open(results_toml, "rb") as f:
@@ -70,6 +72,25 @@ def project_stats(dut: str) -> LatencyStats:
         aw_mean_latency_4flit[cavs] = results["tests"][f"Stream of 10000 librust random valid Cap2024_11 {cavs}-caveat 4-flit transactions"]["aw_aw_latency_mean"]
         aw_throughput_1flit[cavs] = results["tests"][f"Stream of 10000 librust random valid Cap2024_11 {cavs}-caveat 1-flit transactions"]["aw_throughput"]
 
+    revoke_under_dma_0cav_state_invalid_latency: List[int] = []
+    revoke_under_dma_0cav_max_data_flits: List[int] = []
+
+    for n_flits in range(4, 28, 4):
+        for delay in range(0, 60, 10):
+            revoke_under_dma_0cav_state_invalid_latency.append(
+                results["tests"]
+                    [f"UVMRevokeOverMMIOBenchmark (Stream of 100 {n_flits}-flit 0-cav txns, DMA 0 Revoke 0, delay {delay})"]
+                    ["revoke_mmio_debug_state_invalid_latency_mean"]
+            )
+            revoke_under_dma_0cav_max_data_flits.append(max(
+                results["tests"]
+                    [f"UVMRevokeOverMMIOBenchmark (Stream of 100 {n_flits}-flit 0-cav txns, DMA 0 Revoke 0, delay {delay})"]
+                    ["revoke_r_data_flits_at_killkey_mean"],
+                results["tests"]
+                    [f"UVMRevokeOverMMIOBenchmark (Stream of 100 {n_flits}-flit 0-cav txns, DMA 0 Revoke 0, delay {delay})"]
+                    ["revoke_w_data_flits_at_killkey_mean"]
+            ))
+
     return LatencyStats(
         dut=dut,
         timestamp=results_timestamp,
@@ -80,6 +101,9 @@ def project_stats(dut: str) -> LatencyStats:
         aw_throughput_0cav_1flit = aw_throughput_1flit[0],
         aw_throughput_1cav_1flit = aw_throughput_1flit[1],
         aw_throughput_2cav_1flit = aw_throughput_1flit[2],
+
+        revoke_under_dma_0cav_state_invalid_latency=revoke_under_dma_0cav_state_invalid_latency,
+        revoke_under_dma_0cav_max_data_flits=revoke_under_dma_0cav_max_data_flits,
     )
 
 RELEVANT_PROJECTS = {
@@ -107,6 +131,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("results_dir", type=str, help="Directory of historical result files, gets a new file added with the current timestamp on the name")
     parser.add_argument("results_file", type=str, help="Most up-to-date results file location outside of {results_dir}, gets overwritten with the same TOML")
+    parser.add_argument("--extract-from", type=str, default=None, help="create a dummy file without writing to results_dir using only the test file specified")
 
     args = parser.parse_args()
 
@@ -117,10 +142,15 @@ if __name__ == '__main__':
         "generated_by": "gen_report.py",
         "git_hash": git_hash(),
     }
-    for (project_shortname, dut) in RELEVANT_PROJECTS.items():
-        toml[project_shortname] = asdict(project_stats(dut))
-    
-    with open(os.path.join(args.results_dir, f"hardware_latency_{cur_timestamp}.toml"), "wb") as f:
-        tomli_w.dump(toml, f)
+
+    if args.extract_from:
+        toml["extract_from"] = asdict(project_stats(args.extract_from, "DUT"))
+    else:
+        for (project_shortname, dut) in RELEVANT_PROJECTS.items():
+            toml[project_shortname] = asdict(project_stats(os.path.join("results", f"{dut}.toml"), dut))
+        # Only write the file to the backup directory if it wasn't specific to one test
+        with open(os.path.join(args.results_dir, f"hardware_latency_{cur_timestamp}.toml"), "wb") as f:
+            tomli_w.dump(toml, f)
+
     with open(args.results_file, "wb") as f:
         tomli_w.dump(toml, f)
