@@ -357,8 +357,8 @@ set_location_assignment PIN_BH18 -to pin_out -comment IOBANK_3C
 set_location_assignment PIN_BH20 -to RST_N -comment IOBANK_3C
 set_global_assignment -name POWER_APPLY_THERMAL_MARGIN ADDITIONAL
 set_instance_assignment -name PARTITION_COLOUR 4286709717 -to {project_name} -entity {project_name}
-set_global_assignment -name ALLOW_REGISTER_RETIMING OFF
 """
+    #set_global_assignment -name ALLOW_REGISTER_RETIMING OFF
     print(suffix, file=file)
 
 def qsf_from_null(project_name, dut, file):
