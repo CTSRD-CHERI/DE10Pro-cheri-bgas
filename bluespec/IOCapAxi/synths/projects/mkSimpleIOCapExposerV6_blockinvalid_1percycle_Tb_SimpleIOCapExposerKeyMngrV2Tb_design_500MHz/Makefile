@@ -4,7 +4,7 @@
 project_name = mkSimpleIOCapExposerV6_blockinvalid_1percycle_Tb_SimpleIOCapExposerKeyMngrV2Tb_design
 
 basic_verilog_deps = ../../verilog/input_harness.v ../../verilog/output_harness.v $(project_name).v $(project_name).qpf $(project_name).qsf $(project_name).sdc
-bluespec_generated_verilog_deps = $(wildcard ../build/verilog/*.v)
+bluespec_generated_verilog_deps = $(wildcard ../../../build/verilog/*.v)
 bsc_verilog_deps = $(wildcard $(BLUESPECDIR)/Verilog/*.v)
 quartus_verilog_deps = $(wildcard ../../verilog/Verilog.Quartus/*.v)
 
