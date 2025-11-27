@@ -13,6 +13,7 @@ import IOCapAxi_KeyManager2_KeyStatePipe :: *;
 import IOCapAxi_KeyManager2_KeyDataPipe :: *;
 import IOCapAxi_Konata :: *;
 import SamUtil :: *;
+import MapFIFO :: *;
 
 interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc;
     (* always_enabled *)
@@ -50,6 +51,41 @@ interface IOCapAxi_KeyManager2_MMIO#(type t_data, numeric type n_checkers);
     interface ReadOnly#(UInt#(64)) debugBadRead;
 endinterface
 
+module mkAXI4LiteShimCustomFF (AXI4Lite_Shim#(a, b, c, d, e, f, g));
+  NumProxy#(4) n = ?;
+  let awff <- mkSizedIdMapFIFO(n);
+  let  wff <- mkSizedIdMapFIFO(n);
+  let  bff <- mkSizedIdMapFIFO(n);
+  let arff <- mkSizedIdMapFIFO(n);
+  let  rff <- mkSizedIdMapFIFO(n);
+
+//   rule disp;
+//     $display("shim aw ", fshow(awff.occupancy), " w ", fshow(wff.occupancy));
+//   endrule
+
+  method clear = action
+    awff.clear;
+    wff.clear;
+    bff.clear;
+    arff.clear;
+    rff.clear;
+  endaction;
+  interface master = interface AXI4Lite_Master;
+    interface aw = toSource(awff);
+    interface  w = toSource(wff);
+    interface  b = toSink(bff);
+    interface ar = toSource(arff);
+    interface  r = toSink(rff);
+  endinterface;
+  interface slave = interface AXI4Lite_Slave;
+    interface aw = toSink(awff);
+    interface  w = toSink(wff);
+    interface  b = toSource(bff);
+    interface ar = toSink(arff);
+    interface  r = toSource(rff);
+  endinterface;
+endmodule
+
 module mkIOCapAxi_KeyManager2_MMIO#(KonataMode kMode, IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc keyState, IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc keyData, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_MMIO#(t_data, n_checkers))  provisos (
     // t_data must be divisible by 8
     // i.e. (t_data/8) * 8 == t_data
@@ -64,6 +100,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(KonataMode kMode, IOCapAxi_KeyManager2_KeySt
     Add#(2, d__, t_data)
 );
     let axiShim <- mkAXI4LiteShimFF;
+    // mkAXI4LiteShimPipelineFF; // mkAXI4LiteShimSizedFIFOF4; // mkAXI4LiteShimBypassFIFOF; // mkAXI4LiteShimFF;
 
     Vector#(n_checkers, PulseWire) reqGoodWrite <- replicateM(mkPulseWire);
     Vector#(n_checkers, PulseWire) reqBadWrite <- replicateM(mkPulseWire);

@@ -8,22 +8,36 @@ import Assert :: *;
 interface MapFIFO#(type t);
     interface Sink#(t) enq;
     interface Source#(t) deq;
+    method Action clear;
 endinterface
+
+instance ToSink#(MapFIFO#(t), t);
+    function toSink(m) = m.enq;
+endinstance
+instance ToSource#(MapFIFO#(t), t);
+    function toSource(m) = m.deq;
+endinstance
 
 module mkSizedMapFIFO#(NumProxy#(depth) proxy, function t mapItem(t item))(MapFIFO#(t)) provisos (
     Bits#(t, __a)
 );
     Vector#(depth, Reg#(t)) regs <- replicateM(mkReg(?));
     // One-hot encoding of the first empty register. Bit #0 is set => regs[0] is empty.
-    // If the top bit is high, the FIFO is empty.
+    // If the bottom bit is high, the FIFO is empty.
+    // If the top bit is high, the FIFO is full.
     Reg#(Bit#(TAdd#(depth, 1))) oneHotEnqPtr <- mkReg(zeroExtend(1'b1));
 
     RWire#(t) enqWire <- mkRWire;
     PulseWire deqWire <- mkPulseWire;
+    PulseWire clearWire <- mkPulseWire;
 
     function t mapItemReg(Reg#(t) itemReg) = mapItem(itemReg._read());
 
-    rule tickFifo;
+    rule clearFifo(clearWire);
+        oneHotEnqPtr <= zeroExtend(1'b1);
+    endrule
+    
+    rule tickFifo(!clearWire);
         Vector#(depth, t) mappedItems = map(mapItemReg, regs);
         let deq = deqWire;
         let enq = enqWire.wget();
@@ -97,4 +111,14 @@ module mkSizedMapFIFO#(NumProxy#(depth) proxy, function t mapItem(t item))(MapFI
         method peek if (oneHotEnqPtr[0] == 1'b0) = mapItem(regs[0]);
         method drop if (oneHotEnqPtr[0] == 1'b0) = deqWire.send();
     endinterface;
+
+    method Action clear = clearWire.send();
+endmodule
+
+module mkSizedIdMapFIFO#(NumProxy#(depth) proxy)(MapFIFO#(t)) provisos (
+    Bits#(t, __a)
+);
+    function id(x) = x;
+    let m <- mkSizedMapFIFO(proxy, id);
+    return m;
 endmodule
