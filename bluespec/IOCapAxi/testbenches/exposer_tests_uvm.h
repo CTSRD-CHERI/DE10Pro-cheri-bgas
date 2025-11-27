@@ -1957,7 +1957,7 @@ class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseExposer
                     throw test_failure(fmt::format("Tried to revoke {} while it was already in progress", (int)revoking_key));
                 }
                 if (uploads.contains(revoking_key)) {
-                    throw test_failure(fmt::format("Tried to revoke {} while it was being uploaded", (int)revoking_key));
+                    throw test_failure(fmt::format("Tried to revoke {} while it was being uploaded: {} {}", (int)revoking_key, uploads[revoking_key], tick));
                 }
                 if (outputKeyManager.debugKeyStatuses.keyStatuses[revoking_key] != 1) {
                     throw test_failure(fmt::format("Tried to revoke {} while it was in state {}", (int)revoking_key, (int)outputKeyManager.debugKeyStatuses.keyStatuses[revoking_key]));
@@ -3398,6 +3398,8 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         );
 
         // Adding a DMA stream should affect revoke latency but not upload latency, except! it will prevent you from creating/reusing new keys
+        // Use short txns to ensure the thing is saturated.
+        // dma_txn_flits=4 breaks something?
         tests.push_back(
             new ExposerUVMishTest(
                 new UVMRollingUploadRevokeMMIOBenchmark<TheDUT, ctype>(
@@ -3406,19 +3408,19 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
                 expectPassthroughInvalidTransactions
             )
         );
+        // but the fewer keys you use, the longer you have to wait to reuse them
         tests.push_back(
             new ExposerUVMishTest(
                 new UVMRollingUploadRevokeMMIOBenchmark<TheDUT, ctype>(
-                    /* n_revokes_uploads */ 1000, /* revoke_after_n_uploads */ 20, /* key_mask */ 0b11111, /* dma_txn_flits */ 8, /* dma_stream_on */ 0
+                    /* n_revokes_uploads */ 1000, /* revoke_after_n_uploads */ 20, /* key_mask */ 0b11, /* dma_txn_flits */ 8, /* dma_stream_on */ 0
                 ),
                 expectPassthroughInvalidTransactions
             )
         );
-        // but when they get longer you have to wait to reuse keys
         tests.push_back(
             new ExposerUVMishTest(
                 new UVMRollingUploadRevokeMMIOBenchmark<TheDUT, ctype>(
-                    /* n_revokes_uploads */ 1000, /* revoke_after_n_uploads */ 20, /* key_mask */ 0xFF, /* dma_txn_flits */ 24, /* dma_stream_on */ 0
+                    /* n_revokes_uploads */ 1000, /* revoke_after_n_uploads */ 20, /* key_mask */ 0b11, /* dma_txn_flits */ 24, /* dma_stream_on */ 0
                 ),
                 expectPassthroughInvalidTransactions
             )
@@ -3438,3 +3440,250 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
 }
 
 #endif // EXPOSER_TESTS_UVM_H
+
+/*
+template<class DUT, CapType ctype>
+class UVMRollingUploadRevokeMMIOBenchmark : public ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> {
+    uint64_t n_revokes_uploads;
+    uint64_t revoke_after_n_uploads;
+    uint8_t key_mask;
+    int dma_stream_on;
+    uint8_t dma_txn_flits;
+
+    void enqueueKeyUploadWrites(key_manager::KeyId upload_key_id, U128 upload_key) {
+        auto key_data = upload_key.stdify();
+        const uint16_t KEY_STATUS_ADDR = 0 + (upload_key_id * 16);
+        const uint16_t KEY_DATA_ADDR = 0x1000 + (upload_key_id * 16);
+        // four writes of key data
+        this->keyMgr->pendingWrites.push_back(std::make_pair(
+            axi::AxiLite::AWFlit_addr13_user0 {
+                .awprot=0,
+                .awaddr=uint16_t(KEY_DATA_ADDR + 0)
+            },
+            axi::AxiLite::WFlit_data32_user0 {
+                .wstrb=0b1111,
+                .wdata=key_data[0],
+            }
+        ));
+        this->keyMgr->pendingWrites.push_back(std::make_pair(
+            axi::AxiLite::AWFlit_addr13_user0 {
+                .awprot=0,
+                .awaddr=uint16_t(KEY_DATA_ADDR + 4)
+            },
+            axi::AxiLite::WFlit_data32_user0 {
+                .wstrb=0b1111,
+                .wdata=key_data[1],
+            }
+        ));
+        this->keyMgr->pendingWrites.push_back(std::make_pair(
+            axi::AxiLite::AWFlit_addr13_user0 {
+                .awprot=0,
+                .awaddr=uint16_t(KEY_DATA_ADDR + 8)
+            },
+            axi::AxiLite::WFlit_data32_user0 {
+                .wstrb=0b1111,
+                .wdata=key_data[2],
+            }
+        ));
+        this->keyMgr->pendingWrites.push_back(std::make_pair(
+            axi::AxiLite::AWFlit_addr13_user0 {
+                .awprot=0,
+                .awaddr=uint16_t(KEY_DATA_ADDR + 12)
+            },
+            axi::AxiLite::WFlit_data32_user0 {
+                .wstrb=0b1111,
+                .wdata=key_data[3],
+            }
+        ));
+        // one write of key status
+        this->keyMgr->pendingWrites.push_back(std::make_pair(
+            axi::AxiLite::AWFlit_addr13_user0 {
+                .awprot=0,
+                .awaddr=KEY_STATUS_ADDR,
+            },
+            axi::AxiLite::WFlit_data32_user0 {
+                .wstrb=0b1111,
+                .wdata=1, // keyvalid
+            }
+        ));
+    }
+    void enqueueKeyRevokeWrite(key_manager::KeyId revoke_key_id) {
+        const uint16_t KEY_STATUS_ADDR = 0 + (revoke_key_id * 16);
+        this->keyMgr->pendingWrites.push_back(std::make_pair(
+            axi::AxiLite::AWFlit_addr13_user0 {
+                .awprot=0,
+                .awaddr=KEY_STATUS_ADDR,
+            },
+            axi::AxiLite::WFlit_data32_user0 {
+                .wstrb=0b1111,
+                .wdata=0, // key invalid
+            }
+        ));
+    }
+
+    uint8_t last_dma_axi_id = 0;
+    bool started_confirming_revokes = false;
+    bool can_start_confirming_revokes_next_time_zero_pending_writes = false;
+    bool waiting_for_revoke_to_start_before_confirming = false;
+    key_manager::KeyId confirming_revoke_for = 0;
+    uint64_t n_confirmed_revokes = 0;
+    uint64_t final_tick = 0;
+
+    uint64_t n_sent_uploads = 0;
+    key_manager::KeyId next_upload = 0;
+    uint64_t n_sent_revokes = 0;
+    key_manager::KeyId next_revoke = 0;
+    std::array<uint8_t, 256> keyMayBeValid = {0};
+
+public:
+    virtual ~UVMRollingUploadRevokeMMIOBenchmark() = default;
+    virtual std::string name() override {
+        return fmt::format("UVMRollingUploadRevokeMMIOBenchmark ({} revokes-and-uploads, revoke after {}, around mask 0x{:x}, {}-flit dma stream on key {})", n_revokes_uploads, revoke_after_n_uploads, key_mask, dma_txn_flits, dma_stream_on);
+    }
+    UVMRollingUploadRevokeMMIOBenchmark(uint64_t n_revokes_uploads, uint64_t revoke_after_n_uploads, uint8_t key_mask=0xFF, uint8_t dma_txn_flits=0, int dma_stream_on=-1) : ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>(
+        new BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO32>(),
+        new BasicSanitizedMemStimulus<DUT>()
+    ), n_revokes_uploads(n_revokes_uploads), revoke_after_n_uploads(revoke_after_n_uploads), key_mask(key_mask), dma_txn_flits(dma_txn_flits), dma_stream_on(dma_stream_on) {
+        if (revoke_after_n_uploads > n_revokes_uploads) {
+            throw std::runtime_error(fmt::format("Cannot create benchmark which does {} revokes and uploads but only starts revoking after {}", n_revokes_uploads, revoke_after_n_uploads));
+        }
+    }
+    virtual void setup(std::mt19937& rng) override {
+        // Setup saturated writes ahead of time
+
+        // uint64_t n_writes_before_first_revoke;
+
+        // // N uploads to start
+        // for (uint64_t i = 0; i < revoke_after_n_uploads; ++i) {
+        //     enqueueKeyUploadWrites((key_manager::KeyId)(i & key_mask), U128::random(rng));
+        // }
+        // // alternate a revoke with a write until all writes completed
+        // for (uint64_t i = revoke_after_n_uploads; i < n_revokes_uploads; ++i) {
+        //     enqueueKeyRevokeWrite((key_manager::KeyId)((i - revoke_after_n_uploads) & key_mask));
+        //     if (i == revoke_after_n_uploads) {
+        //         n_writes_before_first_revoke = this->keyMgr->pendingWrites.size();
+        //     }
+        //     enqueueKeyUploadWrites((key_manager::KeyId)(i & key_mask), U128::random(rng));
+        // }
+        // // do the final revokes
+        // for (uint64_t i = n_revokes_uploads; i < n_revokes_uploads + revoke_after_n_uploads; ++i) {
+        //     enqueueKeyRevokeWrite((key_manager::KeyId)((i - revoke_after_n_uploads) & key_mask));
+        // }
+        // start_confirming_revokes_once_n_pendingwrites = this->keyMgr->pendingWrites.size() - n_writes_before_first_revoke;
+
+        ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>::setup(rng);
+    }
+    virtual void driveInputsForTick(std::mt19937& rng, DUT& dut, uint64_t tick) {
+        // Do revocation reads as a state machine
+        if (started_confirming_revokes) {
+            if (n_confirmed_revokes < n_revokes_uploads && waiting_for_revoke_to_start_before_confirming && keyMayBeValid[confirming_revoke_for] == 2) {
+                uint16_t KEY_STATUS_ADDR = 0 + (confirming_revoke_for * 16);
+                this->keyMgr->pendingReads.push_back(axi::AxiLite::ARFlit_addr13_user0 {
+                    .arprot=0,
+                    .araddr=KEY_STATUS_ADDR,
+                });
+                waiting_for_revoke_to_start_before_confirming = false;
+            }
+
+            if (this->keyMgr->reads.size() > 0) {
+                const auto& [arFlit, rFlit] = this->keyMgr->reads.front();
+                if (arFlit.araddr == (confirming_revoke_for * 16)) {
+                    if (rFlit.rdata == 0) {
+                        // key confirmed revoked!
+                        n_confirmed_revokes++;
+                        keyMayBeValid[confirming_revoke_for] = 0;
+                        confirming_revoke_for = (confirming_revoke_for + 1) & key_mask;
+                        fmt::println(stderr, "confirming_revoke_for = {}", confirming_revoke_for);
+                    }
+
+                    if (n_confirmed_revokes < n_revokes_uploads) {
+                        if (keyMayBeValid[confirming_revoke_for] == 2) {
+                            // Send new reads only once a response comes back - overwhelming the MMIO with reads is bad for everyone
+                            uint16_t KEY_STATUS_ADDR = 0 + (confirming_revoke_for * 16);
+                            this->keyMgr->pendingReads.push_back(axi::AxiLite::ARFlit_addr13_user0 {
+                                .arprot=0,
+                                .araddr=KEY_STATUS_ADDR,
+                            });
+                            fmt::println(stderr, "Repeat read for {}, read status was {}", confirming_revoke_for, rFlit.rdata);
+                        } else {
+                            waiting_for_revoke_to_start_before_confirming = true;
+                        }
+                    }
+                } else {
+                    throw test_failure(fmt::format("Got read status for addr 0x{:x} when trying to confirm revoke key {}", arFlit.araddr, confirming_revoke_for));
+                }
+                this->keyMgr->reads.pop_front();
+            }
+        }
+
+        // Do upload/revoke write state machine
+        if (this->keyMgr->pendingWrites.size() == 0) {
+            if (can_start_confirming_revokes_next_time_zero_pending_writes && !started_confirming_revokes) {
+                started_confirming_revokes = true;
+                uint16_t KEY_STATUS_ADDR = 0 + (confirming_revoke_for * 16);
+                this->keyMgr->pendingReads.push_back(axi::AxiLite::ARFlit_addr13_user0 {
+                    .arprot=0,
+                    .araddr=KEY_STATUS_ADDR,
+                });
+            }
+            bool want_to_upload = n_sent_uploads < n_revokes_uploads;
+            bool can_upload = keyMayBeValid[next_upload] == 0;
+            if (want_to_upload && can_upload) {
+                enqueueKeyUploadWrites(next_upload, U128::random(rng));
+                n_sent_uploads++;
+                keyMayBeValid[next_upload] = 1;
+                next_upload = (next_upload + 1) & key_mask;
+            }
+            // Don't run ahead on revokes
+            if (((want_to_upload && can_upload) || !want_to_upload) && n_sent_uploads > revoke_after_n_uploads && n_sent_revokes < n_revokes_uploads && keyMayBeValid[next_revoke] == 1) {
+                fmt::println(stderr, "Sending revoke for {}", next_revoke);
+                enqueueKeyRevokeWrite(next_revoke);
+                n_sent_revokes++;
+                keyMayBeValid[next_revoke] = 2;
+                next_revoke = (next_revoke + 1) & key_mask;
+
+                can_start_confirming_revokes_next_time_zero_pending_writes = true;
+            }
+        }
+
+        // Stream DMAs through one specific key (if enabled).
+        // This should only affect revocation latency
+        if (dma_stream_on >= 0 && (n_confirmed_revokes < n_revokes_uploads) && (this->awInputs.empty() || this->wInputs.empty() || this->arInputs.empty())) {
+            key_manager::KeyId dma_key_id = dma_stream_on & 0xF;
+            U128 dma_key;
+            if (this->keyMgr->secrets.contains(dma_key_id)) {
+                dma_key = this->keyMgr->secrets[dma_key_id];
+            } else {
+                dma_key = U128{0};
+            }
+            uint8_t axi_id = last_dma_axi_id & 0xF;
+            last_dma_axi_id++;
+            int txn_cavs = -1;
+            uint8_t txn_data_flits = dma_txn_flits;
+
+            auto cap_data = this->test_librust_random_cap_with_key(rng, dma_key_id, dma_key, txn_cavs, CCapPerms_ReadWrite);
+            auto axi_params = cap_data.valid_transfer_params(32, txn_data_flits);
+            if (cap_data.perms & CCapPerms_Read) {
+                this->enqueueReadBurst(cap_data.cap, axi_params, axi_id);
+            }
+            if (cap_data.perms & CCapPerms_Write) {
+                this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
+            }
+            fmt::println(stderr, "Enqueued flits because {} < {}, confirming_revoke_for = {}, waiting = {}, state = {}", n_confirmed_revokes, n_revokes_uploads, confirming_revoke_for,  waiting_for_revoke_to_start_before_confirming, keyMayBeValid[confirming_revoke_for]);
+        }
+
+        ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>::driveInputsForTick(rng, dut, tick);
+    }
+    virtual bool shouldFinish(uint64_t tick) override {
+        if (final_tick == 0) {
+            if (n_confirmed_revokes == n_revokes_uploads && this->awInputs.empty() && this->wInputs.empty() && this->arInputs.empty()) {
+                // Give 1000 cycles of buffer
+                final_tick = tick + 10000;
+            }
+            return false;
+        } else {
+            return tick >= final_tick;
+        }
+    }
+};
+*/
