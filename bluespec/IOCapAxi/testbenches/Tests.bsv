@@ -200,10 +200,25 @@ interface UnifiedSingleExposerKeyMngrTb;
     interface IOCapSingleExposer#(4 /* ID bits */, 32 /* data bits */) exposer4x32;
 endinterface
 
-interface UnifiedFourExposerKeyMngrV2Tb;
-    interface AXI4Lite_Master#(TLog#('h2000), 32 /* data bits */, 0, 0, 0, 0, 0) keyStore;
-    interface Vector#(4, IOCapSingleExposer#(4 /* ID bits */, 32 /* data bits */)) exposer4x32;
+interface UnifiedSingleExposerKeyMngr64Tb;
+    interface AXI4Lite_Slave#(TLog#('h2000), 64 /* data bits */, 0, 0, 0, 0, 0) keyStore;
+    interface ReadOnly#(Vector#(256, KeyStatus)) debugKeyState;
+    interface ReadOnly#(Maybe#(KeyId)) debugEnableKey;
+    interface ReadOnly#(Maybe#(KeyId)) debugKillKey;
+    interface ReadOnly#(UInt#(64)) debugGoodWrite;
+    interface ReadOnly#(UInt#(64)) debugBadWrite;
+    interface ReadOnly#(UInt#(64)) debugGoodRead;
+    interface ReadOnly#(UInt#(64)) debugBadRead;
+
+    // TODO make this 64bits wide too
+    interface IOCapSingleExposer#(4 /* ID bits */, 32 /* data bits */) exposer4x32;
 endinterface
+
+
+// interface UnifiedFourExposerKeyMngrV2Tb;
+//     interface AXI4Lite_Master#(TLog#('h2000), 32 /* data bits */, 0, 0, 0, 0, 0) keyStore;
+//     interface Vector#(4, IOCapSingleExposer#(4 /* ID bits */, 32 /* data bits */)) exposer4x32;
+// endinterface
 
 interface CapDecodeTb#(type tcap);
     interface Sink#(tcap) stimulusIn;

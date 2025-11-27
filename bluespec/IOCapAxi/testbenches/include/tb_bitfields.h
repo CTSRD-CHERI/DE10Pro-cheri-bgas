@@ -608,6 +608,40 @@ namespace axi::AxiLite {
 		}
 		bool operator==(const WFlit_data32_user0&) const = default;
 	};
+	struct WFlit_data64_user0 {
+		/** 8-bit field */
+		uint8_t wstrb;
+		/** 64-bit field */
+		uint64_t wdata;
+	
+		static WFlit_data64_user0 unpack(const std::array<uint32_t, 3>& backing) {
+			WFlit_data64_user0 value{};
+			value.wstrb = (
+				uint8_t((backing[0] >> 0u) & 0xffu)
+			);
+			value.wdata = (
+				(uint64_t((backing[0] >> 8u) & 0xffffffu) << 0) | 
+				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 24) | 
+				(uint64_t((backing[2] >> 0u) & 0xffu) << 56)
+			);
+			return value;
+		}
+		std::array<uint32_t, 3> pack() const {
+			std::array<uint32_t, 3> backing{};
+			backing[0] = (
+				(uint32_t((wstrb >> 0u) & uint8_t(0xfful)) << 0) | 
+				(uint32_t((wdata >> 0u) & 0xfffffful) << 8)
+			);
+			backing[1] = (
+				uint32_t((wdata >> 24u) & 0xfffffffful)
+			);
+			backing[2] = (
+				uint32_t((wdata >> 56u) & 0xfful)
+			);
+			return backing;
+		}
+		bool operator==(const WFlit_data64_user0&) const = default;
+	};
 	struct BFlit_user0 {
 		/** 2-bit field */
 		uint8_t bresp;
@@ -679,6 +713,40 @@ namespace axi::AxiLite {
 			return backing;
 		}
 		bool operator==(const RFlit_data32_user0&) const = default;
+	};
+	struct RFlit_data64_user0 {
+		/** 2-bit field */
+		uint8_t rresp;
+		/** 64-bit field */
+		uint64_t rdata;
+	
+		static RFlit_data64_user0 unpack(const std::array<uint32_t, 3>& backing) {
+			RFlit_data64_user0 value{};
+			value.rresp = (
+				uint8_t((backing[0] >> 0u) & 0x3u)
+			);
+			value.rdata = (
+				(uint64_t((backing[0] >> 2u) & 0x3fffffffu) << 0) | 
+				(uint64_t((backing[1] >> 0u) & 0xffffffffu) << 30) | 
+				(uint64_t((backing[2] >> 0u) & 0x3u) << 62)
+			);
+			return value;
+		}
+		std::array<uint32_t, 3> pack() const {
+			std::array<uint32_t, 3> backing{};
+			backing[0] = (
+				(uint32_t((rresp >> 0u) & uint8_t(0x3ul)) << 0) | 
+				(uint32_t((rdata >> 0u) & 0x3ffffffful) << 2)
+			);
+			backing[1] = (
+				uint32_t((rdata >> 30u) & 0xfffffffful)
+			);
+			backing[2] = (
+				uint32_t((rdata >> 62u) & 0x3ul)
+			);
+			return backing;
+		}
+		bool operator==(const RFlit_data64_user0&) const = default;
 	};
 	
 }
@@ -2011,6 +2079,15 @@ template <> class fmt::formatter<axi::AxiLite::WFlit_data32_user0> {
 		return format_to(ctx.out(), "WFlit_data32_user0 {{ .wstrb = 0x{:01x}, .wdata = 0x{:08x} }}", s.wstrb, s.wdata);
 	}
 };
+template <> class fmt::formatter<axi::AxiLite::WFlit_data64_user0> {
+	public:
+	// Ignore parse formats - only {} is supported for this type
+	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+	template <typename Context>
+	constexpr auto format (axi::AxiLite::WFlit_data64_user0 const& s, Context& ctx) const {
+		return format_to(ctx.out(), "WFlit_data64_user0 {{ .wstrb = 0x{:02x}, .wdata = 0x{:016x} }}", s.wstrb, s.wdata);
+	}
+};
 template <> class fmt::formatter<axi::AxiLite::BFlit_user0> {
 	public:
 	// Ignore parse formats - only {} is supported for this type
@@ -2036,6 +2113,15 @@ template <> class fmt::formatter<axi::AxiLite::RFlit_data32_user0> {
 	template <typename Context>
 	constexpr auto format (axi::AxiLite::RFlit_data32_user0 const& s, Context& ctx) const {
 		return format_to(ctx.out(), "RFlit_data32_user0 {{ .rresp = 0x{:01x}, .rdata = 0x{:08x} }}", s.rresp, s.rdata);
+	}
+};
+template <> class fmt::formatter<axi::AxiLite::RFlit_data64_user0> {
+	public:
+	// Ignore parse formats - only {} is supported for this type
+	constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
+	template <typename Context>
+	constexpr auto format (axi::AxiLite::RFlit_data64_user0 const& s, Context& ctx) const {
+		return format_to(ctx.out(), "RFlit_data64_user0 {{ .rresp = 0x{:01x}, .rdata = 0x{:016x} }}", s.rresp, s.rdata);
 	}
 };
 template <> class fmt::formatter<key_manager::Tuple2_KeyId_MaybeKey> {

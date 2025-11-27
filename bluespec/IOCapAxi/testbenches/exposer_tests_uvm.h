@@ -335,14 +335,6 @@ public:
 
     BasicKeyManagerShimStimulus() : KeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO32>() {}
     virtual void setup() override {
-        // Memory map:
-// [0x0, 0x10, 0x20, 0x30, 0x40... 0x1000) = read/write key status
-// [0x1000, 0x1010, 0x1020... 0x2000)      = write key values
-// [0x1000, 0x1008, 0x1010, 0x1018]        = read performance counters
-//                                           - good write
-//                                           - bad write
-//                                           - good read
-//                                           - bad read
         for (auto& [key_id, key_val] : this->secrets) {
             auto key_data = key_val.stdify();
             const uint16_t KEY_STATUS_ADDR = 0 + (key_id * 16);
@@ -490,6 +482,185 @@ public:
                 uint64_t rFlitPacked;
                 POP_OUTPUT(keyStore_r, rFlitPacked);
                 auto rFlit = axi::AxiLite::RFlit_data32_user0::unpack(rFlitPacked);
+                if (rFlit.rresp != 0) {
+                    throw test_failure("KeyStore read returned error");
+                }
+                if (readsInProgress.size() == 0) {
+                    throw test_failure("KeyStore sent read response when none in progress");
+                }
+
+                auto& latencyTrackedAr = readsInProgress.front();
+                ar_r_latency.push_back(tick - latencyTrackedAr.tick_initiated);
+                reads.emplace_back(latencyTrackedAr.value, rFlit);
+                readsInProgress.pop_front();
+            } else {
+                NOPOP_OUTPUT(keyStore_r);
+            }
+        }
+    }
+    #define STRINGIFY(x) STRINGIFY2(x)
+    #define STRINGIFY2(x) #x
+    #define DUMP_MEAN_OF(name, x) fmt::println(stats, STRINGIFY(name) "_mean = {}", mean_of(x));
+    virtual void dump_toml_stats(FILE* stats) override {
+        DUMP_MEAN_OF(keymngr_aw_b_latency, aw_b_latency);
+        DUMP_MEAN_OF(keymngr_ar_r_latency, ar_r_latency);
+    }
+    #undef DUMP_MEAN_OF
+    #undef STRINGIFY2
+    #undef STRINGIFY
+};
+
+template<class DUT>
+class BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO64>: public KeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO64> {
+    // For the setup state: a queue of the 
+    std::deque<std::pair<axi::AxiLite::AWFlit_addr13_user0, axi::AxiLite::WFlit_data64_user0>> setupWrites;
+    uint64_t pendingSetupResponses;
+
+    // For in-situ state, the queue of previously initiated reads and writes
+    std::deque<LatencyTracked<axi::AxiLite::ARFlit_addr13_user0>> readsInProgress;
+    std::deque<LatencyTracked<axi::AxiLite::AWFlit_addr13_user0>> writesInProgress;
+
+public:
+    // publically growable, the list of pending writes and pending reads
+    std::deque<std::pair<axi::AxiLite::AWFlit_addr13_user0, axi::AxiLite::WFlit_data64_user0>> pendingWrites;
+    std::deque<axi::AxiLite::ARFlit_addr13_user0> pendingReads;
+    
+    // publically readable, the results of previously-pending reads
+    std::deque<std::pair<axi::AxiLite::ARFlit_addr13_user0, axi::AxiLite::RFlit_data64_user0>> reads;
+
+    // publically readable - the cycle latencies of each write and read
+    std::vector<uint64_t> aw_b_latency;
+    std::vector<uint64_t> ar_r_latency;
+
+    BasicKeyManagerShimStimulus() : KeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO64>() {}
+    virtual void setup() override {
+        for (auto& [key_id, key_val] : this->secrets) {
+            auto key_data = key_val.stdify();
+            const uint16_t KEY_STATUS_ADDR = 0 + (key_id * 16);
+            const uint16_t KEY_DATA_ADDR = 0x1000 + (key_id * 16);
+            // two writes of key data
+            setupWrites.push_back(std::make_pair(
+                axi::AxiLite::AWFlit_addr13_user0 {
+                    .awprot=0,
+                    .awaddr=uint16_t(KEY_DATA_ADDR + 0)
+                },
+                axi::AxiLite::WFlit_data64_user0 {
+                    .wstrb=0b11111111,
+                    .wdata=(uint64_t(key_data[1]) << 32) | key_data[0],
+                }
+            ));
+            setupWrites.push_back(std::make_pair(
+                axi::AxiLite::AWFlit_addr13_user0 {
+                    .awprot=0,
+                    .awaddr=uint16_t(KEY_DATA_ADDR + 8)
+                },
+                axi::AxiLite::WFlit_data64_user0 {
+                    .wstrb=0b11111111,
+                    .wdata=(uint64_t(key_data[3]) << 32) | key_data[2],
+                }
+            ));
+            // one write of key status
+            setupWrites.push_back(std::make_pair(
+                axi::AxiLite::AWFlit_addr13_user0 {
+                    .awprot=0,
+                    .awaddr=KEY_STATUS_ADDR,
+                },
+                axi::AxiLite::WFlit_data64_user0 {
+                    .wstrb=0b11111111,
+                    .wdata=1, // keyvalid
+                }
+            ));
+        }
+        pendingSetupResponses = setupWrites.size();
+    }
+    virtual bool isReady() override {
+        return pendingSetupResponses == 0;
+    }
+    virtual void driveInputsForKeyMgr(DUT& dut, uint64_t tick) override {
+        if (pendingSetupResponses) {
+            if (!setupWrites.empty() && CANPUT_INPUT(keyStore_aw) && CANPUT_INPUT(keyStore_w)) {
+                auto [awFlit, wFlit] = setupWrites.front();
+
+                PUT_INPUT(keyStore_aw, awFlit.pack());
+                PUT_INPUT(keyStore_w, verilate_array(wFlit.pack()));
+
+                setupWrites.pop_front();
+            } else {
+                NOPUT_INPUT(keyStore_aw);
+                NOPUT_INPUT(keyStore_w);
+            }
+
+            if (CANPEEK_OUTPUT(keyStore_b)) {
+                char bFlitPacked;
+                POP_OUTPUT(keyStore_b, bFlitPacked);
+                auto bFlit = axi::AxiLite::BFlit_user0::unpack(bFlitPacked);
+                pendingSetupResponses--;
+                if (bFlit.bresp != 0) {
+                    throw test_failure("KeyStore Write returned error");
+                }
+            } else {
+                NOPOP_OUTPUT(keyStore_b);
+            }
+        } else {
+            // Move from pendingWrites -> writesInProgress if AW&W are free
+            if (!pendingWrites.empty() && CANPUT_INPUT(keyStore_aw) && CANPUT_INPUT(keyStore_w)) {
+                auto [awFlit, wFlit] = pendingWrites.front();
+
+                PUT_INPUT(keyStore_aw, awFlit.pack());
+                PUT_INPUT(keyStore_w, verilate_array(wFlit.pack()));
+                
+                writesInProgress.push_back(LatencyTracked {
+                    .tick_initiated = tick,
+                    .value = awFlit
+                });
+                pendingWrites.pop_front();
+            } else {
+                NOPUT_INPUT(keyStore_aw);
+                NOPUT_INPUT(keyStore_w);
+            }
+
+            // Move from writesInProgress -> aw_b_latency if a write was completed
+            if (CANPEEK_OUTPUT(keyStore_b)) {
+                char bFlitPacked;
+                POP_OUTPUT(keyStore_b, bFlitPacked);
+                auto bFlit = axi::AxiLite::BFlit_user0::unpack(bFlitPacked);
+
+                if (writesInProgress.size() == 0) {
+                    throw test_failure("KeyStore sent write response when none in progress");
+                }
+
+                auto& latencyTrackedAw = writesInProgress.front();
+                aw_b_latency.push_back(tick - latencyTrackedAw.tick_initiated);
+
+                if (bFlit.bresp != 0) {
+                    throw test_failure(fmt::format("KeyStore Write {} returned error {}", latencyTrackedAw, bFlit));
+                }
+
+                writesInProgress.pop_front();
+            } else {
+                NOPOP_OUTPUT(keyStore_b);
+            }
+
+            // Move from pendingReads -> readsInProgress if AR is free
+            if (!pendingReads.empty() && CANPUT_INPUT(keyStore_ar)) {
+                auto arFlit = pendingReads.front();
+
+                PUT_INPUT(keyStore_ar, arFlit.pack());
+                
+                readsInProgress.push_back(LatencyTracked {
+                    .tick_initiated = tick,
+                    .value = arFlit
+                });
+                pendingReads.pop_front();
+            } else {
+                NOPUT_INPUT(keyStore_ar);
+            }
+
+            // Move from readsInProgress -> ar_r_latency, reads if a read was completed
+            if (CANPEEK_OUTPUT(keyStore_r)) {
+                VlWide<3> rFlitPacked;
+                POP_OUTPUT(keyStore_r, rFlitPacked);
+                auto rFlit = axi::AxiLite::RFlit_data64_user0::unpack(stdify_array(rFlitPacked));
                 if (rFlit.rresp != 0) {
                     throw test_failure("KeyStore read returned error");
                 }
@@ -716,6 +887,9 @@ protected:
             });
         }
     }
+    
+    virtual void enqueueKeyUploadWrites(key_manager::KeyId upload_key_id, U128 upload_key){};
+    virtual void enqueueKeyRevokeWrite(key_manager::KeyId revoke_key_id){};
 
 public:
     ExposerStimulus(BasicKeyManagerShimStimulus<DUT, V>* keyMgr, SanitizedMemStimulus<DUT>* sanitizedMem) :
@@ -776,6 +950,147 @@ public:
         sanitizedMem->dump_toml_stats(stats);
         keyMgr->dump_toml_stats(stats);
     }
+};
+
+template<class DUT, CapType ctype, KeyMngrVersion V>
+class MMIOExposerStimulus;
+
+template<class DUT, CapType ctype>
+class MMIOExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> {
+protected:
+    virtual void enqueueKeyUploadWrites(key_manager::KeyId upload_key_id, U128 upload_key) override {
+        auto key_data = upload_key.stdify();
+        const uint16_t KEY_STATUS_ADDR = 0 + (upload_key_id * 16);
+        const uint16_t KEY_DATA_ADDR = 0x1000 + (upload_key_id * 16);
+        // four writes of key data
+        this->keyMgr->pendingWrites.push_back(std::make_pair(
+            axi::AxiLite::AWFlit_addr13_user0 {
+                .awprot=0,
+                .awaddr=uint16_t(KEY_DATA_ADDR + 0)
+            },
+            axi::AxiLite::WFlit_data32_user0 {
+                .wstrb=0b1111,
+                .wdata=key_data[0],
+            }
+        ));
+        this->keyMgr->pendingWrites.push_back(std::make_pair(
+            axi::AxiLite::AWFlit_addr13_user0 {
+                .awprot=0,
+                .awaddr=uint16_t(KEY_DATA_ADDR + 4)
+            },
+            axi::AxiLite::WFlit_data32_user0 {
+                .wstrb=0b1111,
+                .wdata=key_data[1],
+            }
+        ));
+        this->keyMgr->pendingWrites.push_back(std::make_pair(
+            axi::AxiLite::AWFlit_addr13_user0 {
+                .awprot=0,
+                .awaddr=uint16_t(KEY_DATA_ADDR + 8)
+            },
+            axi::AxiLite::WFlit_data32_user0 {
+                .wstrb=0b1111,
+                .wdata=key_data[2],
+            }
+        ));
+        this->keyMgr->pendingWrites.push_back(std::make_pair(
+            axi::AxiLite::AWFlit_addr13_user0 {
+                .awprot=0,
+                .awaddr=uint16_t(KEY_DATA_ADDR + 12)
+            },
+            axi::AxiLite::WFlit_data32_user0 {
+                .wstrb=0b1111,
+                .wdata=key_data[3],
+            }
+        ));
+        // one write of key status
+        this->keyMgr->pendingWrites.push_back(std::make_pair(
+            axi::AxiLite::AWFlit_addr13_user0 {
+                .awprot=0,
+                .awaddr=KEY_STATUS_ADDR,
+            },
+            axi::AxiLite::WFlit_data32_user0 {
+                .wstrb=0b1111,
+                .wdata=1, // keyvalid
+            }
+        ));
+    }
+    virtual void enqueueKeyRevokeWrite(key_manager::KeyId revoke_key_id) override {
+        const uint16_t KEY_STATUS_ADDR = 0 + (revoke_key_id * 16);
+        this->keyMgr->pendingWrites.push_back(std::make_pair(
+            axi::AxiLite::AWFlit_addr13_user0 {
+                .awprot=0,
+                .awaddr=KEY_STATUS_ADDR,
+            },
+            axi::AxiLite::WFlit_data32_user0 {
+                .wstrb=0b1111,
+                .wdata=0, // key invalid
+            }
+        ));
+    }
+public:
+    virtual ~MMIOExposerStimulus() = default;
+    MMIOExposerStimulus(BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO32>* keyMgr, SanitizedMemStimulus<DUT>* sanitizedMem) :
+        ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>(keyMgr, sanitizedMem) {}
+};
+
+template<class DUT, CapType ctype>
+class MMIOExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO64> : public ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO64> {
+protected:
+    virtual void enqueueKeyUploadWrites(key_manager::KeyId upload_key_id, U128 upload_key) override {
+        auto key_data = upload_key.stdify();
+        const uint16_t KEY_STATUS_ADDR = 0 + (upload_key_id * 16);
+        const uint16_t KEY_DATA_ADDR = 0x1000 + (upload_key_id * 16);
+        // two writes of key data
+        this->keyMgr->pendingWrites.push_back(std::make_pair(
+            axi::AxiLite::AWFlit_addr13_user0 {
+                .awprot=0,
+                .awaddr=uint16_t(KEY_DATA_ADDR + 0)
+            },
+            axi::AxiLite::WFlit_data64_user0 {
+                .wstrb=0b11111111,
+                .wdata=(uint64_t(key_data[1]) << 32) | key_data[0],
+            }
+        ));
+        this->keyMgr->pendingWrites.push_back(std::make_pair(
+            axi::AxiLite::AWFlit_addr13_user0 {
+                .awprot=0,
+                .awaddr=uint16_t(KEY_DATA_ADDR + 8)
+            },
+            axi::AxiLite::WFlit_data64_user0 {
+                .wstrb=0b11111111,
+                .wdata=(uint64_t(key_data[3]) << 32) | key_data[2],
+            }
+        ));
+        // one write of key status
+        this->keyMgr->pendingWrites.push_back(std::make_pair(
+            axi::AxiLite::AWFlit_addr13_user0 {
+                .awprot=0,
+                .awaddr=KEY_STATUS_ADDR,
+            },
+            axi::AxiLite::WFlit_data64_user0 {
+                .wstrb=0b11111111,
+                .wdata=1, // keyvalid
+            }
+        ));
+    }
+    virtual void enqueueKeyRevokeWrite(key_manager::KeyId revoke_key_id) override {
+        const uint16_t KEY_STATUS_ADDR = 0 + (revoke_key_id * 16);
+        this->keyMgr->pendingWrites.push_back(std::make_pair(
+            axi::AxiLite::AWFlit_addr13_user0 {
+                .awprot=0,
+                .awaddr=KEY_STATUS_ADDR,
+            },
+            axi::AxiLite::WFlit_data64_user0 {
+                .wstrb=0b11111111,
+                .wdata=0, // key invalid
+            }
+        ));
+    }
+public:
+    virtual ~MMIOExposerStimulus() = default;
+    MMIOExposerStimulus(BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO64>* keyMgr, SanitizedMemStimulus<DUT>* sanitizedMem) :
+        ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO64>(keyMgr, sanitizedMem) {}
 };
 
 template<class AddrFlit, class DataFlit>
@@ -1901,9 +2216,9 @@ template <> class fmt::formatter<MMIOUploadLatencyStats> {
 };
 
 
-template<class DUT, CapType ctype>
-class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> {
-    
+template<class DUT, CapType ctype, KeyMngrVersion V>
+class BaseMMIOExposerScoreboard : public BaseExposerScoreboard<DUT, ctype, V> {
+protected:
     std::unordered_map<key_manager::KeyId, MMIORevokeLatencyStats> revokes;
     // std::vector<uint64_t> revoke_mmio_response_latency;
     // ^ track that using the key manager stats
@@ -1935,9 +2250,11 @@ class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseExposer
     uint64_t last_upload_tick = 0;
     uint64_t n_uploads = 0;
 
+    virtual void handleKeyUpload(KeyMngrShimInput<V>& inputKeyManager) = 0;
+
     virtual void monitorAndScoreKeyManager(
         DUT& dut, uint64_t tick,
-        KeyMngrShimInput<KeyMngrV2_AsDUT_MMIO32>& inputKeyManager, KeyMngrShimOutput<KeyMngrV2_AsDUT_MMIO32>& outputKeyManager
+        KeyMngrShimInput<V>& inputKeyManager, KeyMngrShimOutput<V>& outputKeyManager
     ) override {
         if (!this->keyMgr->isReady()) {
             return;
@@ -1978,8 +2295,8 @@ class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseExposer
                 n_revokes++;
             } else if (inputKeyManager.aw.value().awaddr >= 16*256) {
                 int uploading_key = (inputKeyManager.aw.value().awaddr - 16*256) / 16;
-                uploadingKeyData[uploading_key][((inputKeyManager.aw.value().awaddr - 16*256) % 16) / 4] = inputKeyManager.w.value().wdata;
-                
+                handleKeyUpload(inputKeyManager);
+
                 if (!uploads.contains(uploading_key)) {
                     uploads[uploading_key] = MMIOUploadLatencyStats {
                         .upload_data_mmio_sent_tick = tick,
@@ -2112,10 +2429,10 @@ class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseExposer
         }
     }
 public:
-    ExposerScoreboard(BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO32>* keyMgr, bool expectPassthroughInvalidTransactions = false) :
-        BaseExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>(keyMgr, expectPassthroughInvalidTransactions)
+    BaseMMIOExposerScoreboard(BasicKeyManagerShimStimulus<DUT, V>* keyMgr, bool expectPassthroughInvalidTransactions = false) :
+        BaseExposerScoreboard<DUT, ctype, V>(keyMgr, expectPassthroughInvalidTransactions)
         {}
-    virtual ~ExposerScoreboard() override = default;
+    virtual ~BaseMMIOExposerScoreboard() override = default;
     // Should raise a test_failure on failure
     virtual void endTest() override {
         // TODO log inputs and outputs
@@ -2153,7 +2470,7 @@ public:
     #define STRINGIFY2(x) #x
     #define DUMP_MEAN_OF(name, x) fmt::println(stats, STRINGIFY(name) "_mean = {}", mean_of(x));
     virtual void dump_toml_stats(FILE* stats) override {
-        BaseExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>::dump_toml_stats(stats);
+        BaseExposerScoreboard<DUT, ctype, V>::dump_toml_stats(stats);
         if (n_revokes > 0) {
             DUMP_MEAN_OF(revoke_mmio_debug_killkey_latency, revoke_mmio_debug_killkey_latency);
             DUMP_MEAN_OF(revoke_mmio_debug_state_invalidnotrevoked_latency, revoke_mmio_debug_state_invalidnotrevoked_latency);
@@ -2180,6 +2497,34 @@ public:
     #undef DUMP_MEAN_OF
     #undef STRINGIFY2
     #undef STRINGIFY
+};
+
+template<class DUT, CapType ctype>
+class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseMMIOExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> {
+    virtual void handleKeyUpload(KeyMngrShimInput<KeyMngrV2_AsDUT_MMIO32>& inputKeyManager) override {
+        int uploading_key = (inputKeyManager.aw.value().awaddr - 16*256) / 16;
+        this->uploadingKeyData[uploading_key][((inputKeyManager.aw.value().awaddr - 16*256) % 16) / 4] = inputKeyManager.w.value().wdata;
+    }
+public:
+    ExposerScoreboard(BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO32>* keyMgr, bool expectPassthroughInvalidTransactions = false) :
+        BaseMMIOExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>(keyMgr, expectPassthroughInvalidTransactions)
+        {}
+    virtual ~ExposerScoreboard() override = default;
+};
+
+template<class DUT, CapType ctype>
+class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO64> : public BaseMMIOExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO64> {
+    virtual void handleKeyUpload(KeyMngrShimInput<KeyMngrV2_AsDUT_MMIO64>& inputKeyManager) override {
+        int uploading_key = (inputKeyManager.aw.value().awaddr - 16*256) / 16;
+        int start_byte = ((inputKeyManager.aw.value().awaddr - 16*256) % 16) / 4;
+        this->uploadingKeyData[uploading_key][start_byte] = inputKeyManager.w.value().wdata & 0xFFFF'FFFF;
+        this->uploadingKeyData[uploading_key][start_byte+1] = (inputKeyManager.w.value().wdata >> 32) & 0xFFFF'FFFF;
+    }
+public:
+    ExposerScoreboard(BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO64>* keyMgr, bool expectPassthroughInvalidTransactions = false) :
+        BaseMMIOExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO64>(keyMgr, expectPassthroughInvalidTransactions)
+        {}
+    virtual ~ExposerScoreboard() override = default;
 };
 
 template<class DUT, CapType ctype = CapType::Cap2024_02, KeyMngrVersion V = KeyMngrV1>
@@ -2661,8 +3006,8 @@ public:
     }
 };
 
-template<class DUT, CapType ctype>
-class UVMRevokeOverMMIOBenchmark : public ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> {
+template<class DUT, CapType ctype, KeyMngrVersion V>
+class UVMRevokeOverMMIOBenchmark : public MMIOExposerStimulus<DUT, ctype, V> {
     key_manager::KeyId dma_key_id;
     key_manager::KeyId revoke_key_id;
 
@@ -2680,8 +3025,8 @@ public:
     virtual std::string name() override {
         return fmt::format("UVMRevokeOverMMIOBenchmark (Stream of {} {}-flit {}-cav txns, DMA {} Revoke {}, delay {})", n_transactions, (int)txn_data_flits, txn_cavs, (int)dma_key_id, (int)revoke_key_id, revoke_delay);
     }
-    UVMRevokeOverMMIOBenchmark(key_manager::KeyId dma_key_id, key_manager::KeyId revoke_key_id, uint64_t n_transactions, uint8_t txn_data_flits, int txn_cavs, uint64_t revoke_delay=0) : ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>(
-        new BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO32>(),
+    UVMRevokeOverMMIOBenchmark(key_manager::KeyId dma_key_id, key_manager::KeyId revoke_key_id, uint64_t n_transactions, uint8_t txn_data_flits, int txn_cavs, uint64_t revoke_delay=0) : MMIOExposerStimulus<DUT, ctype, V>(
+        new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
     ), dma_key_id(dma_key_id), revoke_key_id(revoke_key_id), n_transactions(n_transactions), txn_data_flits(txn_data_flits), txn_cavs(txn_cavs), revoke_delay(revoke_delay) {}
     virtual void setup(std::mt19937& rng) override {
@@ -2705,7 +3050,7 @@ public:
             }
         }
         
-        ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>::setup(rng);
+        ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual void driveInputsForTick(std::mt19937& rng, DUT& dut, uint64_t tick) {
         // Once half of the DMAs have started
@@ -2715,21 +3060,11 @@ public:
 
         if (tick == tick_to_revoke_on && tick_to_revoke_on != 0) {
             // Sent a revocation request
-            const uint16_t KEY_STATUS_ADDR = 0 + (revoke_key_id * 16);
-            this->keyMgr->pendingWrites.push_back(std::make_pair(
-                axi::AxiLite::AWFlit_addr13_user0 {
-                    .awprot=0,
-                    .awaddr=KEY_STATUS_ADDR,
-                },
-                axi::AxiLite::WFlit_data32_user0 {
-                    .wstrb=0b1111,
-                    .wdata=0, // key invalid
-                }
-            ));
+            this->enqueueKeyRevokeWrite(revoke_key_id);
             started_revoke = true;
         }
 
-        ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>::driveInputsForTick(rng, dut, tick);
+        ExposerStimulus<DUT, ctype, V>::driveInputsForTick(rng, dut, tick);
     }
     virtual bool shouldFinish(uint64_t tick) override {
         if (final_tick == 0) {
@@ -2744,8 +3079,8 @@ public:
     }
 };
 
-template<class DUT, CapType ctype>
-class UVMUploadOverMMIOBenchmark : public ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> {
+template<class DUT, CapType ctype, KeyMngrVersion V>
+class UVMUploadOverMMIOBenchmark : public MMIOExposerStimulus<DUT, ctype, V> {
     key_manager::KeyId dma_key_id;
     key_manager::KeyId upload_key_id;
 
@@ -2764,8 +3099,8 @@ public:
     virtual std::string name() override {
         return fmt::format("UVMUploadOverMMIOBenchmark (Stream of {} {}-flit {}-cav txns, DMA {} Upload {}, delay {})", n_transactions, (int)txn_data_flits, txn_cavs, (int)dma_key_id, (int)upload_key_id, upload_delay);
     }
-    UVMUploadOverMMIOBenchmark(key_manager::KeyId dma_key_id, key_manager::KeyId upload_key_id, uint64_t n_transactions, uint8_t txn_data_flits, int txn_cavs, uint64_t upload_delay=0) : ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>(
-        new BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO32>(),
+    UVMUploadOverMMIOBenchmark(key_manager::KeyId dma_key_id, key_manager::KeyId upload_key_id, uint64_t n_transactions, uint8_t txn_data_flits, int txn_cavs, uint64_t upload_delay=0) : MMIOExposerStimulus<DUT, ctype, V>(
+        new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
     ), dma_key_id(dma_key_id), upload_key_id(upload_key_id), n_transactions(n_transactions), txn_data_flits(txn_data_flits), txn_cavs(txn_cavs), upload_delay(upload_delay) {}
     virtual void setup(std::mt19937& rng) override {
@@ -2791,7 +3126,7 @@ public:
             }
         }
         
-        ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>::setup(rng);
+        ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual void driveInputsForTick(std::mt19937& rng, DUT& dut, uint64_t tick) {
         // Once 1/10th of the DMAs have started
@@ -2800,66 +3135,11 @@ public:
         }
 
         if (tick == tick_to_upload_on && tick_to_upload_on != 0) {
-            // Send the upload requests
-            auto key_data = upload_key.stdify();
-            const uint16_t KEY_STATUS_ADDR = 0 + (upload_key_id * 16);
-            const uint16_t KEY_DATA_ADDR = 0x1000 + (upload_key_id * 16);
-            // four writes of key data
-            this->keyMgr->pendingWrites.push_back(std::make_pair(
-                axi::AxiLite::AWFlit_addr13_user0 {
-                    .awprot=0,
-                    .awaddr=uint16_t(KEY_DATA_ADDR + 0)
-                },
-                axi::AxiLite::WFlit_data32_user0 {
-                    .wstrb=0b1111,
-                    .wdata=key_data[0],
-                }
-            ));
-            this->keyMgr->pendingWrites.push_back(std::make_pair(
-                axi::AxiLite::AWFlit_addr13_user0 {
-                    .awprot=0,
-                    .awaddr=uint16_t(KEY_DATA_ADDR + 4)
-                },
-                axi::AxiLite::WFlit_data32_user0 {
-                    .wstrb=0b1111,
-                    .wdata=key_data[1],
-                }
-            ));
-            this->keyMgr->pendingWrites.push_back(std::make_pair(
-                axi::AxiLite::AWFlit_addr13_user0 {
-                    .awprot=0,
-                    .awaddr=uint16_t(KEY_DATA_ADDR + 8)
-                },
-                axi::AxiLite::WFlit_data32_user0 {
-                    .wstrb=0b1111,
-                    .wdata=key_data[2],
-                }
-            ));
-            this->keyMgr->pendingWrites.push_back(std::make_pair(
-                axi::AxiLite::AWFlit_addr13_user0 {
-                    .awprot=0,
-                    .awaddr=uint16_t(KEY_DATA_ADDR + 12)
-                },
-                axi::AxiLite::WFlit_data32_user0 {
-                    .wstrb=0b1111,
-                    .wdata=key_data[3],
-                }
-            ));
-            // one write of key status
-            this->keyMgr->pendingWrites.push_back(std::make_pair(
-                axi::AxiLite::AWFlit_addr13_user0 {
-                    .awprot=0,
-                    .awaddr=KEY_STATUS_ADDR,
-                },
-                axi::AxiLite::WFlit_data32_user0 {
-                    .wstrb=0b1111,
-                    .wdata=1, // keyvalid
-                }
-            ));
+            this->enqueueKeyUploadWrites(upload_key_id, upload_key);
             started_upload = true;
         }
 
-        ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>::driveInputsForTick(rng, dut, tick);
+        ExposerStimulus<DUT, ctype, V>::driveInputsForTick(rng, dut, tick);
     }
     virtual bool shouldFinish(uint64_t tick) override {
         if (final_tick == 0) {
@@ -2874,84 +3154,13 @@ public:
     }
 };
 
-template<class DUT, CapType ctype>
-class UVMRollingUploadRevokeMMIOBenchmark : public ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> {
+template<class DUT, CapType ctype, KeyMngrVersion V>
+class UVMRollingUploadRevokeMMIOBenchmark : public MMIOExposerStimulus<DUT, ctype, V> {
     uint64_t n_revokes_uploads;
     uint64_t revoke_after_n_uploads;
     uint8_t key_mask;
     int dma_stream_on;
     uint8_t dma_txn_flits;
-
-    void enqueueKeyUploadWrites(key_manager::KeyId upload_key_id, U128 upload_key) {
-        auto key_data = upload_key.stdify();
-        const uint16_t KEY_STATUS_ADDR = 0 + (upload_key_id * 16);
-        const uint16_t KEY_DATA_ADDR = 0x1000 + (upload_key_id * 16);
-        // four writes of key data
-        this->keyMgr->pendingWrites.push_back(std::make_pair(
-            axi::AxiLite::AWFlit_addr13_user0 {
-                .awprot=0,
-                .awaddr=uint16_t(KEY_DATA_ADDR + 0)
-            },
-            axi::AxiLite::WFlit_data32_user0 {
-                .wstrb=0b1111,
-                .wdata=key_data[0],
-            }
-        ));
-        this->keyMgr->pendingWrites.push_back(std::make_pair(
-            axi::AxiLite::AWFlit_addr13_user0 {
-                .awprot=0,
-                .awaddr=uint16_t(KEY_DATA_ADDR + 4)
-            },
-            axi::AxiLite::WFlit_data32_user0 {
-                .wstrb=0b1111,
-                .wdata=key_data[1],
-            }
-        ));
-        this->keyMgr->pendingWrites.push_back(std::make_pair(
-            axi::AxiLite::AWFlit_addr13_user0 {
-                .awprot=0,
-                .awaddr=uint16_t(KEY_DATA_ADDR + 8)
-            },
-            axi::AxiLite::WFlit_data32_user0 {
-                .wstrb=0b1111,
-                .wdata=key_data[2],
-            }
-        ));
-        this->keyMgr->pendingWrites.push_back(std::make_pair(
-            axi::AxiLite::AWFlit_addr13_user0 {
-                .awprot=0,
-                .awaddr=uint16_t(KEY_DATA_ADDR + 12)
-            },
-            axi::AxiLite::WFlit_data32_user0 {
-                .wstrb=0b1111,
-                .wdata=key_data[3],
-            }
-        ));
-        // one write of key status
-        this->keyMgr->pendingWrites.push_back(std::make_pair(
-            axi::AxiLite::AWFlit_addr13_user0 {
-                .awprot=0,
-                .awaddr=KEY_STATUS_ADDR,
-            },
-            axi::AxiLite::WFlit_data32_user0 {
-                .wstrb=0b1111,
-                .wdata=1, // keyvalid
-            }
-        ));
-    }
-    void enqueueKeyRevokeWrite(key_manager::KeyId revoke_key_id) {
-        const uint16_t KEY_STATUS_ADDR = 0 + (revoke_key_id * 16);
-        this->keyMgr->pendingWrites.push_back(std::make_pair(
-            axi::AxiLite::AWFlit_addr13_user0 {
-                .awprot=0,
-                .awaddr=KEY_STATUS_ADDR,
-            },
-            axi::AxiLite::WFlit_data32_user0 {
-                .wstrb=0b1111,
-                .wdata=0, // key invalid
-            }
-        ));
-    }
 
     uint8_t last_dma_axi_id = 0;
     bool started_confirming_revokes = false;
@@ -2965,8 +3174,8 @@ public:
     virtual std::string name() override {
         return fmt::format("UVMRollingUploadRevokeMMIOBenchmark ({} revokes-and-uploads, revoke after {}, around mask 0x{:x}, {}-flit dma stream on key {})", n_revokes_uploads, revoke_after_n_uploads, key_mask, dma_txn_flits, dma_stream_on);
     }
-    UVMRollingUploadRevokeMMIOBenchmark(uint64_t n_revokes_uploads, uint64_t revoke_after_n_uploads, uint8_t key_mask=0xFF, uint8_t dma_txn_flits=0, int dma_stream_on=-1) : ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>(
-        new BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO32>(),
+    UVMRollingUploadRevokeMMIOBenchmark(uint64_t n_revokes_uploads, uint64_t revoke_after_n_uploads, uint8_t key_mask=0xFF, uint8_t dma_txn_flits=0, int dma_stream_on=-1) : MMIOExposerStimulus<DUT, ctype, V>(
+        new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
     ), n_revokes_uploads(n_revokes_uploads), revoke_after_n_uploads(revoke_after_n_uploads), key_mask(key_mask), dma_txn_flits(dma_txn_flits), dma_stream_on(dma_stream_on) {
         if (revoke_after_n_uploads > n_revokes_uploads) {
@@ -2980,24 +3189,24 @@ public:
 
         // N uploads to start
         for (uint64_t i = 0; i < revoke_after_n_uploads; ++i) {
-            enqueueKeyUploadWrites((key_manager::KeyId)(i & key_mask), U128::random(rng));
+            this->enqueueKeyUploadWrites((key_manager::KeyId)(i & key_mask), U128::random(rng));
         }
         // alternate a revoke with a write until all writes completed
         for (uint64_t i = revoke_after_n_uploads; i < n_revokes_uploads; ++i) {
-            enqueueKeyRevokeWrite((key_manager::KeyId)((i - revoke_after_n_uploads) & key_mask));
+            this->enqueueKeyRevokeWrite((key_manager::KeyId)((i - revoke_after_n_uploads) & key_mask));
             if (i == revoke_after_n_uploads) {
                 n_writes_before_first_revoke = this->keyMgr->pendingWrites.size();
             }
-            enqueueKeyUploadWrites((key_manager::KeyId)(i & key_mask), U128::random(rng));
+            this->enqueueKeyUploadWrites((key_manager::KeyId)(i & key_mask), U128::random(rng));
         }
         // do the final revokes
         for (uint64_t i = n_revokes_uploads; i < n_revokes_uploads + revoke_after_n_uploads; ++i) {
-            enqueueKeyRevokeWrite((key_manager::KeyId)((i - revoke_after_n_uploads) & key_mask));
+            this->enqueueKeyRevokeWrite((key_manager::KeyId)((i - revoke_after_n_uploads) & key_mask));
         }
 
         start_confirming_revokes_once_n_pendingwrites = this->keyMgr->pendingWrites.size() - n_writes_before_first_revoke;
 
-        ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>::setup(rng);
+        ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual void driveInputsForTick(std::mt19937& rng, DUT& dut, uint64_t tick) {
         // Do revocation reads as a state machine
@@ -3064,7 +3273,7 @@ public:
             }
         }
 
-        ExposerStimulus<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>::driveInputsForTick(rng, dut, tick);
+        ExposerStimulus<DUT, ctype, V>::driveInputsForTick(rng, dut, tick);
     }
     virtual bool shouldFinish(uint64_t tick) override {
         if (final_tick == 0) {
@@ -3228,14 +3437,14 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
                 expectPassthroughInvalidTransactions
             )
         );
-    } else if constexpr (V == KeyMngrV2_AsDUT_MMIO32) {
+    } else if constexpr (V == KeyMngrV2_AsDUT_MMIO32 || V == KeyMngrV2_AsDUT_MMIO64) {
         // REVOKE LATENCY TESTS
         // ====================
 
         // dma_key != revoke_key
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype, V>(
                     /* dma_key */ 0, /* revoke_key */ 1, /* n_transactions */ 100, /* txn_data_flits */ 1, /* txn_cavs */ 0
                 ),
                 expectPassthroughInvalidTransactions
@@ -3243,7 +3452,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         );
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype, V>(
                     /* dma_key */ 0, /* revoke_key */ 1, /* n_transactions */ 100, /* txn_data_flits */ 16, /* txn_cavs */ 0
                 ),
                 expectPassthroughInvalidTransactions
@@ -3251,7 +3460,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         );
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype, V>(
                     /* dma_key */ 0, /* revoke_key */ 1, /* n_transactions */ 100, /* txn_data_flits */ 16, /* txn_cavs */ 1
                 ),
                 expectPassthroughInvalidTransactions
@@ -3259,7 +3468,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         );
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype, V>(
                     /* dma_key */ 0, /* revoke_key */ 1, /* n_transactions */ 100, /* txn_data_flits */ 16, /* txn_cavs */ 2
                 ),
                 expectPassthroughInvalidTransactions
@@ -3270,7 +3479,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         // where txn_cavs increases...
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype, V>(
                     /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 4, /* txn_cavs */ 0
                 ),
                 expectPassthroughInvalidTransactions
@@ -3278,7 +3487,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         );
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype, V>(
                     /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 4, /* txn_cavs */ 1
                 ),
                 expectPassthroughInvalidTransactions
@@ -3286,7 +3495,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         );
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                new UVMRevokeOverMMIOBenchmark<TheDUT, ctype, V>(
                     /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 4, /* txn_cavs */ 2
                 ),
                 expectPassthroughInvalidTransactions
@@ -3301,7 +3510,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
                 }
                 tests.push_back(
                     new ExposerUVMishTest(
-                        new UVMRevokeOverMMIOBenchmark<TheDUT, ctype>(
+                        new UVMRevokeOverMMIOBenchmark<TheDUT, ctype, V>(
                             /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, txn_data_flits, /* txn_cavs */ 0,
                             revoke_delay
                         ),
@@ -3317,7 +3526,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         // dma_key != upload_key
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMUploadOverMMIOBenchmark<TheDUT, ctype>(
+                new UVMUploadOverMMIOBenchmark<TheDUT, ctype, V>(
                     /* dma_key */ 0, /* upload_key */ 1, /* n_transactions */ 100, /* txn_data_flits */ 1, /* txn_cavs */ 0
                 ),
                 expectPassthroughInvalidTransactions
@@ -3325,7 +3534,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         );
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMUploadOverMMIOBenchmark<TheDUT, ctype>(
+                new UVMUploadOverMMIOBenchmark<TheDUT, ctype, V>(
                     /* dma_key */ 0, /* upload_key */ 1, /* n_transactions */ 100, /* txn_data_flits */ 16, /* txn_cavs */ 0
                 ),
                 expectPassthroughInvalidTransactions
@@ -3333,7 +3542,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         );
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMUploadOverMMIOBenchmark<TheDUT, ctype>(
+                new UVMUploadOverMMIOBenchmark<TheDUT, ctype, V>(
                     /* dma_key */ 0, /* upload_key */ 1, /* n_transactions */ 100, /* txn_data_flits */ 16, /* txn_cavs */ 1
                 ),
                 expectPassthroughInvalidTransactions
@@ -3341,7 +3550,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         );
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMUploadOverMMIOBenchmark<TheDUT, ctype>(
+                new UVMUploadOverMMIOBenchmark<TheDUT, ctype, V>(
                     /* dma_key */ 0, /* upload_key */ 1, /* n_transactions */ 100, /* txn_data_flits */ 16, /* txn_cavs */ 2
                 ),
                 expectPassthroughInvalidTransactions
@@ -3352,7 +3561,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         // where txn_cavs increases...
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMUploadOverMMIOBenchmark<TheDUT, ctype>(
+                new UVMUploadOverMMIOBenchmark<TheDUT, ctype, V>(
                     /* dma_key */ 0, /* upload_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 4, /* txn_cavs */ 0
                 ),
                 expectPassthroughInvalidTransactions
@@ -3360,7 +3569,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         );
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMUploadOverMMIOBenchmark<TheDUT, ctype>(
+                new UVMUploadOverMMIOBenchmark<TheDUT, ctype, V>(
                     /* dma_key */ 0, /* upload_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 4, /* txn_cavs */ 1
                 ),
                 expectPassthroughInvalidTransactions
@@ -3368,7 +3577,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         );
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMUploadOverMMIOBenchmark<TheDUT, ctype>(
+                new UVMUploadOverMMIOBenchmark<TheDUT, ctype, V>(
                     /* dma_key */ 0, /* upload_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 4, /* txn_cavs */ 2
                 ),
                 expectPassthroughInvalidTransactions
@@ -3381,7 +3590,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
 
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMRollingUploadRevokeMMIOBenchmark<TheDUT, ctype>(
+                new UVMRollingUploadRevokeMMIOBenchmark<TheDUT, ctype, V>(
                     /* n_revokes_uploads */ 1000, /* revoke_after_n_uploads */ 10
                 ),
                 expectPassthroughInvalidTransactions
@@ -3390,7 +3599,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
 
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMRollingUploadRevokeMMIOBenchmark<TheDUT, ctype>(
+                new UVMRollingUploadRevokeMMIOBenchmark<TheDUT, ctype, V>(
                     /* n_revokes_uploads */ 1000, /* revoke_after_n_uploads */ 20
                 ),
                 expectPassthroughInvalidTransactions
@@ -3402,7 +3611,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         // dma_txn_flits=4 breaks something?
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMRollingUploadRevokeMMIOBenchmark<TheDUT, ctype>(
+                new UVMRollingUploadRevokeMMIOBenchmark<TheDUT, ctype, V>(
                     /* n_revokes_uploads */ 1000, /* revoke_after_n_uploads */ 20, /* key_mask */ 0xFF, /* dma_txn_flits */ 8, /* dma_stream_on */ 0
                 ),
                 expectPassthroughInvalidTransactions
@@ -3411,7 +3620,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         // but the fewer keys you use, the longer you have to wait to reuse them
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMRollingUploadRevokeMMIOBenchmark<TheDUT, ctype>(
+                new UVMRollingUploadRevokeMMIOBenchmark<TheDUT, ctype, V>(
                     /* n_revokes_uploads */ 1000, /* revoke_after_n_uploads */ 20, /* key_mask */ 0b11, /* dma_txn_flits */ 8, /* dma_stream_on */ 0
                 ),
                 expectPassthroughInvalidTransactions
@@ -3419,7 +3628,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         );
         tests.push_back(
             new ExposerUVMishTest(
-                new UVMRollingUploadRevokeMMIOBenchmark<TheDUT, ctype>(
+                new UVMRollingUploadRevokeMMIOBenchmark<TheDUT, ctype, V>(
                     /* n_revokes_uploads */ 1000, /* revoke_after_n_uploads */ 20, /* key_mask */ 0b11, /* dma_txn_flits */ 24, /* dma_stream_on */ 0
                 ),
                 expectPassthroughInvalidTransactions

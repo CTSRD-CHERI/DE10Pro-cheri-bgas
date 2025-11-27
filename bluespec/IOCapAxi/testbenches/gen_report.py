@@ -119,6 +119,11 @@ RELEVANT_PROJECTS.update({
         (3, 1),
         (4, 1),
         (9, 1),
+    )
+})
+RELEVANT_PROJECTS.update({
+    f"full_exposer_{n}checkers_{p}per_64": f"mkCombinedIOCapExposerV6_blockinvalid_{n}pool_{p}percycle_KeyManager2V1_64_Tb"
+    for (n, p) in (
         (1, 2),
         (2, 2),
         (3, 2),
