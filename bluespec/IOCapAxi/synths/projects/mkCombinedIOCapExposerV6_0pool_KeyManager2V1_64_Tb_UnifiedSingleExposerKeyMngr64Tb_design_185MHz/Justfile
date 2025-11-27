@@ -1,0 +1,25 @@
+project_name := "mkCombinedIOCapExposerV6_0pool_KeyManager2V1_64_Tb_UnifiedSingleExposerKeyMngr64Tb_design"
+dut := "mkCombinedIOCapExposerV6_0pool_KeyManager2V1_64_Tb"
+
+default:
+    @just --list
+
+synth:
+    cd ../../../ && make ./build/verilog/{{dut}}.v
+    make ./output_files/{{project_name}}.sta.rpt
+
+force-synth:
+    cd ../../../ && make ./build/verilog/{{dut}}.v
+    quartus_sh --flow compile {{project_name}}
+
+reports:
+    grep -B 1 -A 6 "; Fmax Summary" output_files/{{project_name}}.sta.rpt
+    grep -B 1 -A 90 "; Fitter Resource Usage Summary" output_files/{{project_name}}.fit.place.rpt
+
+gui:
+    quartus {{project_name}}.qpf &
+
+clean:
+    rm -rf ./output_files/
+    rm -rf ./qdb/
+

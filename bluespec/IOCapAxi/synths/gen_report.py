@@ -131,7 +131,7 @@ RELEVANT_PROJECTS = {
     "full_exposer_0checkers": "mkCombinedIOCapExposerV6_0pool_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_185MHz",
 }
 RELEVANT_PROJECTS.update({
-    f"full_exposer_{n}checkers_{p}per": f"mkCombinedIOCapExposerV6_blockinvalid_{n}pool_{p}percycle_KeyManager2V1_Tb_UnifiedSingleExposerKeyMngrTb_design_185MHz"
+    f"full_exposer_{n}checkers_{p}per_64": f"mkCombinedIOCapExposerV6_blockinvalid_{n}pool_{p}percycle_KeyManager2V1_64_Tb_UnifiedSingleExposerKeyMngrTb_design_185MHz"
     for (n, p) in (
         (1, 2),
         (2, 2),
