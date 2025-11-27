@@ -1914,16 +1914,22 @@ class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseExposer
     std::vector<uint64_t> revoke_w_data_flits_at_mmio;
     std::vector<uint64_t> revoke_r_data_flits_at_killkey;
     std::vector<uint64_t> revoke_w_data_flits_at_killkey;
-    bool had_revoke = false;
     std::unordered_map<uint64_t, key_manager::KeyId> revoke_on_tick;
 
-    bool had_upload = false;
+    uint64_t first_revoke_tick = 0;
+    uint64_t last_revoke_tick = 0;
+    uint64_t n_revokes = 0;
+
     std::unordered_map<uint64_t, key_manager::KeyId> upload_on_tick;
     std::array<std::array<uint32_t, 4>, 256> uploadingKeyData;
     std::unordered_map<key_manager::KeyId, MMIOUploadLatencyStats> uploads;
     std::vector<uint64_t> upload_mmio_status_latency;
     std::vector<uint64_t> upload_mmio_debug_enablekey_latency;
     std::vector<uint64_t> upload_mmio_debug_state_valid_latency;
+
+    uint64_t first_upload_tick = 0;
+    uint64_t last_upload_tick = 0;
+    uint64_t n_uploads = 0;
 
     virtual void monitorAndScoreKeyManager(
         DUT& dut, uint64_t tick,
@@ -1962,16 +1968,21 @@ class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseExposer
                     .w_data_flits_at_mmio = w_data_flits_at_mmio,
                 };
 
-                had_revoke = true;
+                if (first_revoke_tick == 0) {
+                    first_revoke_tick = tick;
+                }
+                n_revokes++;
             } else if (inputKeyManager.aw.value().awaddr >= 16*256) {
                 int uploading_key = (inputKeyManager.aw.value().awaddr - 16*256) / 16;
-                // fmt::println(stderr, "Writing to key data for key {} with status {}", uploading_key, (int)outputKeyManager.debugKeyStatuses.keyStatuses[uploading_key]);
                 uploadingKeyData[uploading_key][((inputKeyManager.aw.value().awaddr - 16*256) % 16) / 4] = inputKeyManager.w.value().wdata;
                 
                 if (!uploads.contains(uploading_key)) {
                     uploads[uploading_key] = MMIOUploadLatencyStats {
                         .upload_data_mmio_sent_tick = tick,
                     };
+                    if (first_upload_tick == 0) {
+                        first_upload_tick = tick;
+                    }
                 }
             } else if (inputKeyManager.aw.value().awaddr < 16*256 && inputKeyManager.w.value().wdata == 1) {
                 // Now uploading key 
@@ -1989,7 +2000,7 @@ class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseExposer
                 // fmt::println(stderr, "key {} upload MMIO sent {}", (int)uploading_key, tick);
                 uploads[uploading_key].upload_status_mmio_sent_tick = tick;
 
-                had_upload = true;
+                n_uploads++;
             }
         }
 
@@ -2061,6 +2072,7 @@ class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseExposer
                 revoke_w_data_flits_at_killkey.push_back(
                     revoke_stats.w_data_flits_at_killkey
                 );
+                last_revoke_tick = tick;
                 it = revokes.erase(it);
                 continue;
             }
@@ -2088,6 +2100,7 @@ class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseExposer
                     tick - upload_stats.upload_data_mmio_sent_tick
                 );
                 it = uploads.erase(it);
+                last_upload_tick = tick;
                 continue;
             }
             
@@ -2137,7 +2150,7 @@ public:
     #define DUMP_MEAN_OF(name, x) fmt::println(stats, STRINGIFY(name) "_mean = {}", mean_of(x));
     virtual void dump_toml_stats(FILE* stats) override {
         BaseExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32>::dump_toml_stats(stats);
-        if (had_revoke) {
+        if (n_revokes > 0) {
             DUMP_MEAN_OF(revoke_mmio_debug_killkey_latency, revoke_mmio_debug_killkey_latency);
             DUMP_MEAN_OF(revoke_mmio_debug_state_invalidnotrevoked_latency, revoke_mmio_debug_state_invalidnotrevoked_latency);
             DUMP_MEAN_OF(revoke_mmio_debug_state_invalid_latency, revoke_mmio_debug_state_invalid_latency);
@@ -2146,25 +2159,19 @@ public:
             DUMP_MEAN_OF(revoke_r_data_flits_at_killkey, revoke_r_data_flits_at_killkey);
             DUMP_MEAN_OF(revoke_w_data_flits_at_killkey, revoke_w_data_flits_at_killkey);
         }
-        if (had_upload) {
+        if (n_uploads > 0) {
             DUMP_MEAN_OF(upload_mmio_status_latency, upload_mmio_status_latency);
             DUMP_MEAN_OF(upload_mmio_debug_enablekey_latency, upload_mmio_debug_enablekey_latency);
             DUMP_MEAN_OF(upload_mmio_debug_state_valid_latency, upload_mmio_debug_state_valid_latency);
         }
-        // DUMP_MEAN_OF(this->key, wTxns.w_w_latency);
-        // DUMP_MEAN_OF(b_b_latency, wTxns.b_b_latency);
-        // DUMP_MEAN_OF(r_r_latency, rTxns.r_r_latency);
-        // fmt::println(stats, "total_write = {}", totalWriteTxns);
-        // fmt::println(stats, "confirmed_write = {}", confirmedWriteTxns);
-        // fmt::println(stats, "exp_invalid_write = {}", totalWriteTxns - confirmedWriteTxns);
-        // fmt::println(stats, "perf_valid_write = {}", signalledGoodWrite);
-        // fmt::println(stats, "perf_invalid_write = {}", signalledBadWrite);
-        // fmt::println(stats, "total_read = {}", totalReadTxns);
-        // fmt::println(stats, "confirmed_read = {}", confirmedReadTxns);
-        // fmt::println(stats, "exp_invalid_read = {}", totalReadTxns - confirmedReadTxns);
-        // fmt::println(stats, "perf_valid_read = {}", signalledGoodRead);
-        // fmt::println(stats, "perf_invalid_read = {}", signalledBadRead);
-        // fmt::println(stats, "valid_txn_ratio = {}", (double(confirmedWriteTxns + confirmedReadTxns))/(double(totalWriteTxns + totalReadTxns)));
+        fmt::println(stats, "first_revoke_tick = {}", first_revoke_tick);
+        fmt::println(stats, "last_revoke_tick = {}", last_revoke_tick);
+        fmt::println(stats, "n_revokes = {}", n_revokes);
+        fmt::println(stats, "n_revokes_per_cycle = {}", double(n_revokes) * 10 / double(last_revoke_tick - first_revoke_tick));
+        fmt::println(stats, "first_upload_tick = {}", first_upload_tick);
+        fmt::println(stats, "last_upload_tick = {}", last_upload_tick);
+        fmt::println(stats, "n_uploads = {}", n_uploads);
+        fmt::println(stats, "n_uploads_per_cycle = {}", double(n_uploads) * 10 / double(last_upload_tick - first_upload_tick));
     }
     #undef DUMP_MEAN_OF
     #undef STRINGIFY2

@@ -24,6 +24,14 @@ exp_invalid_read = 0
 perf_valid_read = 1
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Valid-Key Valid-Cap Valid-CCapPerms::Write"]
 success = true
@@ -51,6 +59,14 @@ exp_invalid_read = 0
 perf_valid_read = 0
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Valid-Key Valid-Cap Valid-CCapPerms::ReadWrite"]
 success = true
@@ -78,6 +94,14 @@ exp_invalid_read = 0
 perf_valid_read = 1
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Valid-Key Valid-Cap OOB-CCapPerms::Read"]
 success = true
@@ -105,6 +129,14 @@ exp_invalid_read = 1
 perf_valid_read = 0
 perf_invalid_read = 1
 valid_txn_ratio = 0
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Valid-Key Valid-Cap OOB-CCapPerms::Write"]
 success = true
@@ -132,6 +164,14 @@ exp_invalid_read = 0
 perf_valid_read = 0
 perf_invalid_read = 0
 valid_txn_ratio = 0
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Valid-Key Valid-Cap BadPerms"]
 success = true
@@ -159,6 +199,14 @@ exp_invalid_read = 1
 perf_valid_read = 0
 perf_invalid_read = 1
 valid_txn_ratio = 0
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Valid-Key BadSig-Cap"]
 success = true
@@ -186,6 +234,14 @@ exp_invalid_read = 1
 perf_valid_read = 0
 perf_invalid_read = 1
 valid_txn_ratio = 0
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Invalid-Key CCapPerms::ReadWrite"]
 success = true
@@ -213,6 +269,14 @@ exp_invalid_read = 1
 perf_valid_read = 0
 perf_invalid_read = 1
 valid_txn_ratio = 0
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 100 CCapPerms::ReadWrite 1-flit transactions"]
 success = true
@@ -240,6 +304,14 @@ exp_invalid_read = 0
 perf_valid_read = 100
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 100 CCapPerms::ReadWrite 4-flit transactions"]
 success = true
@@ -267,6 +339,14 @@ exp_invalid_read = 0
 perf_valid_read = 100
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 100 CCapPerms::ReadWrite 8-flit transactions"]
 success = true
@@ -294,6 +374,14 @@ exp_invalid_read = 0
 perf_valid_read = 100
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 100 CCapPerms::ReadWrite 16-flit transactions"]
 success = true
@@ -321,6 +409,14 @@ exp_invalid_read = 0
 perf_valid_read = 100
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 100 CCapPerms::ReadWrite 32-flit transactions"]
 success = true
@@ -348,6 +444,14 @@ exp_invalid_read = 0
 perf_valid_read = 100
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 10000 librust random valid Cap2024_11 4-flit transactions"]
 success = true
@@ -375,6 +479,14 @@ exp_invalid_read = 0
 perf_valid_read = 5988
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 10000 librust random valid Cap2024_11 0-caveat 4-flit transactions"]
 success = true
@@ -402,6 +514,14 @@ exp_invalid_read = 0
 perf_valid_read = 6583
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 10000 librust random valid Cap2024_11 1-caveat 4-flit transactions"]
 success = true
@@ -429,6 +549,14 @@ exp_invalid_read = 0
 perf_valid_read = 6010
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 10000 librust random valid Cap2024_11 2-caveat 4-flit transactions"]
 success = true
@@ -456,6 +584,14 @@ exp_invalid_read = 0
 perf_valid_read = 5833
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 10000 librust random valid Cap2024_11 0-caveat 1-flit transactions"]
 success = true
@@ -483,6 +619,14 @@ exp_invalid_read = 0
 perf_valid_read = 6583
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 10000 librust random valid Cap2024_11 1-caveat 1-flit transactions"]
 success = true
@@ -510,6 +654,14 @@ exp_invalid_read = 0
 perf_valid_read = 6010
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 10000 librust random valid Cap2024_11 2-caveat 1-flit transactions"]
 success = true
@@ -537,6 +689,14 @@ exp_invalid_read = 0
 perf_valid_read = 5833
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 1-flit 0-cav txns, DMA 0 Revoke 1, delay 0)"]
 success = true
@@ -571,6 +731,14 @@ revoke_r_data_flits_at_mmio_mean = 0
 revoke_w_data_flits_at_mmio_mean = 0
 revoke_r_data_flits_at_killkey_mean = 0
 revoke_w_data_flits_at_killkey_mean = 0
+first_revoke_tick = 2001
+last_revoke_tick = 2061
+n_revokes = 1
+n_revokes_per_cycle = 0.16666666666666666
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 1, delay 0)"]
 success = true
@@ -605,6 +773,14 @@ revoke_r_data_flits_at_mmio_mean = 0
 revoke_w_data_flits_at_mmio_mean = 0
 revoke_r_data_flits_at_killkey_mean = 0
 revoke_w_data_flits_at_killkey_mean = 0
+first_revoke_tick = 2001
+last_revoke_tick = 2051
+n_revokes = 1
+n_revokes_per_cycle = 0.2
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 1-cav txns, DMA 0 Revoke 1, delay 0)"]
 success = true
@@ -639,6 +815,14 @@ revoke_r_data_flits_at_mmio_mean = 0
 revoke_w_data_flits_at_mmio_mean = 0
 revoke_r_data_flits_at_killkey_mean = 0
 revoke_w_data_flits_at_killkey_mean = 0
+first_revoke_tick = 1801
+last_revoke_tick = 1871
+n_revokes = 1
+n_revokes_per_cycle = 0.14285714285714285
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 2-cav txns, DMA 0 Revoke 1, delay 0)"]
 success = true
@@ -673,6 +857,14 @@ revoke_r_data_flits_at_mmio_mean = 0
 revoke_w_data_flits_at_mmio_mean = 0
 revoke_r_data_flits_at_killkey_mean = 0
 revoke_w_data_flits_at_killkey_mean = 0
+first_revoke_tick = 1921
+last_revoke_tick = 1981
+n_revokes = 1
+n_revokes_per_cycle = 0.16666666666666666
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
@@ -707,6 +899,14 @@ revoke_r_data_flits_at_mmio_mean = 5
 revoke_w_data_flits_at_mmio_mean = 2
 revoke_r_data_flits_at_killkey_mean = 3
 revoke_w_data_flits_at_killkey_mean = 0
+first_revoke_tick = 1911
+last_revoke_tick = 2041
+n_revokes = 1
+n_revokes_per_cycle = 0.07692307692307693
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 1-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
@@ -741,6 +941,14 @@ revoke_r_data_flits_at_mmio_mean = 4
 revoke_w_data_flits_at_mmio_mean = 1
 revoke_r_data_flits_at_killkey_mean = 6
 revoke_w_data_flits_at_killkey_mean = 3
+first_revoke_tick = 1791
+last_revoke_tick = 1951
+n_revokes = 1
+n_revokes_per_cycle = 0.0625
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 2-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
@@ -775,6 +983,14 @@ revoke_r_data_flits_at_mmio_mean = 3
 revoke_w_data_flits_at_mmio_mean = 0
 revoke_r_data_flits_at_killkey_mean = 5
 revoke_w_data_flits_at_killkey_mean = 2
+first_revoke_tick = 1871
+last_revoke_tick = 2021
+n_revokes = 1
+n_revokes_per_cycle = 0.06666666666666667
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
 success = true
@@ -809,6 +1025,14 @@ revoke_r_data_flits_at_mmio_mean = 4
 revoke_w_data_flits_at_mmio_mean = 1
 revoke_r_data_flits_at_killkey_mean = 6
 revoke_w_data_flits_at_killkey_mean = 3
+first_revoke_tick = 1921
+last_revoke_tick = 2081
+n_revokes = 1
+n_revokes_per_cycle = 0.0625
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
 success = true
@@ -843,6 +1067,14 @@ revoke_r_data_flits_at_mmio_mean = 3
 revoke_w_data_flits_at_mmio_mean = 0
 revoke_r_data_flits_at_killkey_mean = 5
 revoke_w_data_flits_at_killkey_mean = 2
+first_revoke_tick = 1931
+last_revoke_tick = 2081
+n_revokes = 1
+n_revokes_per_cycle = 0.06666666666666667
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
 success = true
@@ -877,6 +1109,14 @@ revoke_r_data_flits_at_mmio_mean = 6
 revoke_w_data_flits_at_mmio_mean = 3
 revoke_r_data_flits_at_killkey_mean = 4
 revoke_w_data_flits_at_killkey_mean = 1
+first_revoke_tick = 1941
+last_revoke_tick = 2081
+n_revokes = 1
+n_revokes_per_cycle = 0.07142857142857142
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
 success = true
@@ -911,6 +1151,14 @@ revoke_r_data_flits_at_mmio_mean = 5
 revoke_w_data_flits_at_mmio_mean = 2
 revoke_r_data_flits_at_killkey_mean = 3
 revoke_w_data_flits_at_killkey_mean = 0
+first_revoke_tick = 1951
+last_revoke_tick = 2081
+n_revokes = 1
+n_revokes_per_cycle = 0.07692307692307693
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
 success = true
@@ -945,6 +1193,14 @@ revoke_r_data_flits_at_mmio_mean = 4
 revoke_w_data_flits_at_mmio_mean = 1
 revoke_r_data_flits_at_killkey_mean = 6
 revoke_w_data_flits_at_killkey_mean = 3
+first_revoke_tick = 1961
+last_revoke_tick = 2121
+n_revokes = 1
+n_revokes_per_cycle = 0.0625
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
@@ -979,6 +1235,14 @@ revoke_r_data_flits_at_mmio_mean = 45
 revoke_w_data_flits_at_mmio_mean = 42
 revoke_r_data_flits_at_killkey_mean = 43
 revoke_w_data_flits_at_killkey_mean = 40
+first_revoke_tick = 1911
+last_revoke_tick = 2591
+n_revokes = 1
+n_revokes_per_cycle = 0.014705882352941176
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
 success = true
@@ -1013,6 +1277,14 @@ revoke_r_data_flits_at_mmio_mean = 44
 revoke_w_data_flits_at_mmio_mean = 41
 revoke_r_data_flits_at_killkey_mean = 50
 revoke_w_data_flits_at_killkey_mean = 47
+first_revoke_tick = 1921
+last_revoke_tick = 2691
+n_revokes = 1
+n_revokes_per_cycle = 0.012987012987012988
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
 success = true
@@ -1047,6 +1319,14 @@ revoke_r_data_flits_at_mmio_mean = 43
 revoke_w_data_flits_at_mmio_mean = 40
 revoke_r_data_flits_at_killkey_mean = 49
 revoke_w_data_flits_at_killkey_mean = 46
+first_revoke_tick = 1931
+last_revoke_tick = 2691
+n_revokes = 1
+n_revokes_per_cycle = 0.013157894736842105
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
 success = true
@@ -1081,6 +1361,14 @@ revoke_r_data_flits_at_mmio_mean = 50
 revoke_w_data_flits_at_mmio_mean = 47
 revoke_r_data_flits_at_killkey_mean = 48
 revoke_w_data_flits_at_killkey_mean = 45
+first_revoke_tick = 1941
+last_revoke_tick = 2691
+n_revokes = 1
+n_revokes_per_cycle = 0.013333333333333334
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
 success = true
@@ -1115,6 +1403,14 @@ revoke_r_data_flits_at_mmio_mean = 49
 revoke_w_data_flits_at_mmio_mean = 46
 revoke_r_data_flits_at_killkey_mean = 47
 revoke_w_data_flits_at_killkey_mean = 44
+first_revoke_tick = 1951
+last_revoke_tick = 2691
+n_revokes = 1
+n_revokes_per_cycle = 0.013513513513513514
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
 success = true
@@ -1149,6 +1445,14 @@ revoke_r_data_flits_at_mmio_mean = 48
 revoke_w_data_flits_at_mmio_mean = 45
 revoke_r_data_flits_at_killkey_mean = 54
 revoke_w_data_flits_at_killkey_mean = 51
+first_revoke_tick = 1961
+last_revoke_tick = 2691
+n_revokes = 1
+n_revokes_per_cycle = 0.0136986301369863
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
@@ -1183,6 +1487,14 @@ revoke_r_data_flits_at_mmio_mean = 85
 revoke_w_data_flits_at_mmio_mean = 82
 revoke_r_data_flits_at_killkey_mean = 83
 revoke_w_data_flits_at_killkey_mean = 80
+first_revoke_tick = 1911
+last_revoke_tick = 3121
+n_revokes = 1
+n_revokes_per_cycle = 0.008264462809917356
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
 success = true
@@ -1217,6 +1529,14 @@ revoke_r_data_flits_at_mmio_mean = 84
 revoke_w_data_flits_at_mmio_mean = 81
 revoke_r_data_flits_at_killkey_mean = 94
 revoke_w_data_flits_at_killkey_mean = 91
+first_revoke_tick = 1921
+last_revoke_tick = 3271
+n_revokes = 1
+n_revokes_per_cycle = 0.007407407407407408
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
 success = true
@@ -1251,6 +1571,14 @@ revoke_r_data_flits_at_mmio_mean = 83
 revoke_w_data_flits_at_mmio_mean = 80
 revoke_r_data_flits_at_killkey_mean = 93
 revoke_w_data_flits_at_killkey_mean = 90
+first_revoke_tick = 1931
+last_revoke_tick = 3271
+n_revokes = 1
+n_revokes_per_cycle = 0.007462686567164179
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
 success = true
@@ -1285,6 +1613,14 @@ revoke_r_data_flits_at_mmio_mean = 94
 revoke_w_data_flits_at_mmio_mean = 91
 revoke_r_data_flits_at_killkey_mean = 92
 revoke_w_data_flits_at_killkey_mean = 89
+first_revoke_tick = 1941
+last_revoke_tick = 3271
+n_revokes = 1
+n_revokes_per_cycle = 0.007518796992481203
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
 success = true
@@ -1319,6 +1655,14 @@ revoke_r_data_flits_at_mmio_mean = 93
 revoke_w_data_flits_at_mmio_mean = 90
 revoke_r_data_flits_at_killkey_mean = 91
 revoke_w_data_flits_at_killkey_mean = 88
+first_revoke_tick = 1951
+last_revoke_tick = 3271
+n_revokes = 1
+n_revokes_per_cycle = 0.007575757575757576
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
 success = true
@@ -1353,6 +1697,14 @@ revoke_r_data_flits_at_mmio_mean = 92
 revoke_w_data_flits_at_mmio_mean = 89
 revoke_r_data_flits_at_killkey_mean = 102
 revoke_w_data_flits_at_killkey_mean = 99
+first_revoke_tick = 1961
+last_revoke_tick = 3171
+n_revokes = 1
+n_revokes_per_cycle = 0.008264462809917356
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
@@ -1387,6 +1739,14 @@ revoke_r_data_flits_at_mmio_mean = 125
 revoke_w_data_flits_at_mmio_mean = 122
 revoke_r_data_flits_at_killkey_mean = 123
 revoke_w_data_flits_at_killkey_mean = 120
+first_revoke_tick = 1911
+last_revoke_tick = 3541
+n_revokes = 1
+n_revokes_per_cycle = 0.006134969325153374
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
 success = true
@@ -1421,6 +1781,14 @@ revoke_r_data_flits_at_mmio_mean = 124
 revoke_w_data_flits_at_mmio_mean = 121
 revoke_r_data_flits_at_killkey_mean = 138
 revoke_w_data_flits_at_killkey_mean = 135
+first_revoke_tick = 1921
+last_revoke_tick = 3831
+n_revokes = 1
+n_revokes_per_cycle = 0.005235602094240838
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
 success = true
@@ -1455,6 +1823,14 @@ revoke_r_data_flits_at_mmio_mean = 123
 revoke_w_data_flits_at_mmio_mean = 120
 revoke_r_data_flits_at_killkey_mean = 137
 revoke_w_data_flits_at_killkey_mean = 134
+first_revoke_tick = 1931
+last_revoke_tick = 3831
+n_revokes = 1
+n_revokes_per_cycle = 0.005263157894736842
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
 success = true
@@ -1489,6 +1865,14 @@ revoke_r_data_flits_at_mmio_mean = 138
 revoke_w_data_flits_at_mmio_mean = 135
 revoke_r_data_flits_at_killkey_mean = 136
 revoke_w_data_flits_at_killkey_mean = 133
+first_revoke_tick = 1941
+last_revoke_tick = 3831
+n_revokes = 1
+n_revokes_per_cycle = 0.005291005291005291
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
 success = true
@@ -1523,6 +1907,14 @@ revoke_r_data_flits_at_mmio_mean = 137
 revoke_w_data_flits_at_mmio_mean = 134
 revoke_r_data_flits_at_killkey_mean = 135
 revoke_w_data_flits_at_killkey_mean = 132
+first_revoke_tick = 1951
+last_revoke_tick = 3831
+n_revokes = 1
+n_revokes_per_cycle = 0.005319148936170213
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
 success = true
@@ -1557,6 +1949,14 @@ revoke_r_data_flits_at_mmio_mean = 136
 revoke_w_data_flits_at_mmio_mean = 133
 revoke_r_data_flits_at_killkey_mean = 150
 revoke_w_data_flits_at_killkey_mean = 147
+first_revoke_tick = 1961
+last_revoke_tick = 3651
+n_revokes = 1
+n_revokes_per_cycle = 0.005917159763313609
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
@@ -1591,6 +1991,14 @@ revoke_r_data_flits_at_mmio_mean = 165
 revoke_w_data_flits_at_mmio_mean = 162
 revoke_r_data_flits_at_killkey_mean = 163
 revoke_w_data_flits_at_killkey_mean = 160
+first_revoke_tick = 1911
+last_revoke_tick = 3941
+n_revokes = 1
+n_revokes_per_cycle = 0.0049261083743842365
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
 success = true
@@ -1625,6 +2033,14 @@ revoke_r_data_flits_at_mmio_mean = 164
 revoke_w_data_flits_at_mmio_mean = 161
 revoke_r_data_flits_at_killkey_mean = 182
 revoke_w_data_flits_at_killkey_mean = 179
+first_revoke_tick = 1921
+last_revoke_tick = 4271
+n_revokes = 1
+n_revokes_per_cycle = 0.00425531914893617
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
 success = true
@@ -1659,6 +2075,14 @@ revoke_r_data_flits_at_mmio_mean = 163
 revoke_w_data_flits_at_mmio_mean = 160
 revoke_r_data_flits_at_killkey_mean = 181
 revoke_w_data_flits_at_killkey_mean = 178
+first_revoke_tick = 1931
+last_revoke_tick = 4271
+n_revokes = 1
+n_revokes_per_cycle = 0.004273504273504274
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
 success = true
@@ -1693,6 +2117,14 @@ revoke_r_data_flits_at_mmio_mean = 182
 revoke_w_data_flits_at_mmio_mean = 179
 revoke_r_data_flits_at_killkey_mean = 180
 revoke_w_data_flits_at_killkey_mean = 177
+first_revoke_tick = 1941
+last_revoke_tick = 4271
+n_revokes = 1
+n_revokes_per_cycle = 0.004291845493562232
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
 success = true
@@ -1727,6 +2159,14 @@ revoke_r_data_flits_at_mmio_mean = 181
 revoke_w_data_flits_at_mmio_mean = 178
 revoke_r_data_flits_at_killkey_mean = 179
 revoke_w_data_flits_at_killkey_mean = 176
+first_revoke_tick = 1951
+last_revoke_tick = 4271
+n_revokes = 1
+n_revokes_per_cycle = 0.004310344827586207
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
 success = true
@@ -1761,6 +2201,14 @@ revoke_r_data_flits_at_mmio_mean = 180
 revoke_w_data_flits_at_mmio_mean = 177
 revoke_r_data_flits_at_killkey_mean = 198
 revoke_w_data_flits_at_killkey_mean = 195
+first_revoke_tick = 1961
+last_revoke_tick = 4131
+n_revokes = 1
+n_revokes_per_cycle = 0.004608294930875576
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
@@ -1795,6 +2243,14 @@ revoke_r_data_flits_at_mmio_mean = 205
 revoke_w_data_flits_at_mmio_mean = 202
 revoke_r_data_flits_at_killkey_mean = 203
 revoke_w_data_flits_at_killkey_mean = 200
+first_revoke_tick = 1911
+last_revoke_tick = 4341
+n_revokes = 1
+n_revokes_per_cycle = 0.00411522633744856
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
 success = true
@@ -1829,6 +2285,14 @@ revoke_r_data_flits_at_mmio_mean = 204
 revoke_w_data_flits_at_mmio_mean = 201
 revoke_r_data_flits_at_killkey_mean = 226
 revoke_w_data_flits_at_killkey_mean = 223
+first_revoke_tick = 1921
+last_revoke_tick = 4711
+n_revokes = 1
+n_revokes_per_cycle = 0.0035842293906810036
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
 success = true
@@ -1863,6 +2327,14 @@ revoke_r_data_flits_at_mmio_mean = 203
 revoke_w_data_flits_at_mmio_mean = 200
 revoke_r_data_flits_at_killkey_mean = 225
 revoke_w_data_flits_at_killkey_mean = 222
+first_revoke_tick = 1931
+last_revoke_tick = 4711
+n_revokes = 1
+n_revokes_per_cycle = 0.0035971223021582736
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
 success = true
@@ -1897,6 +2369,14 @@ revoke_r_data_flits_at_mmio_mean = 226
 revoke_w_data_flits_at_mmio_mean = 223
 revoke_r_data_flits_at_killkey_mean = 224
 revoke_w_data_flits_at_killkey_mean = 221
+first_revoke_tick = 1941
+last_revoke_tick = 4711
+n_revokes = 1
+n_revokes_per_cycle = 0.0036101083032490976
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
 success = true
@@ -1931,6 +2411,14 @@ revoke_r_data_flits_at_mmio_mean = 225
 revoke_w_data_flits_at_mmio_mean = 222
 revoke_r_data_flits_at_killkey_mean = 223
 revoke_w_data_flits_at_killkey_mean = 220
+first_revoke_tick = 1951
+last_revoke_tick = 4711
+n_revokes = 1
+n_revokes_per_cycle = 0.0036231884057971015
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
 success = true
@@ -1965,6 +2453,14 @@ revoke_r_data_flits_at_mmio_mean = 224
 revoke_w_data_flits_at_mmio_mean = 221
 revoke_r_data_flits_at_killkey_mean = 246
 revoke_w_data_flits_at_killkey_mean = 219
+first_revoke_tick = 1961
+last_revoke_tick = 4591
+n_revokes = 1
+n_revokes_per_cycle = 0.0038022813688212928
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."UVMUploadOverMMIOBenchmark (Stream of 100 1-flit 0-cav txns, DMA 0 Upload 1, delay 0)"]
 success = true
@@ -1995,6 +2491,14 @@ valid_txn_ratio = 1
 upload_mmio_status_latency_mean = 40
 upload_mmio_debug_enablekey_latency_mean = 50
 upload_mmio_debug_state_valid_latency_mean = 60
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 1751
+last_upload_tick = 1811
+n_uploads = 1
+n_uploads_per_cycle = 0.16666666666666666
 
 [tests."UVMUploadOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Upload 1, delay 0)"]
 success = true
@@ -2025,6 +2529,14 @@ valid_txn_ratio = 1
 upload_mmio_status_latency_mean = 40
 upload_mmio_debug_enablekey_latency_mean = 50
 upload_mmio_debug_state_valid_latency_mean = 60
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 1751
+last_upload_tick = 1811
+n_uploads = 1
+n_uploads_per_cycle = 0.16666666666666666
 
 [tests."UVMUploadOverMMIOBenchmark (Stream of 100 16-flit 1-cav txns, DMA 0 Upload 1, delay 0)"]
 success = true
@@ -2055,6 +2567,14 @@ valid_txn_ratio = 1
 upload_mmio_status_latency_mean = 40
 upload_mmio_debug_enablekey_latency_mean = 50
 upload_mmio_debug_state_valid_latency_mean = 60
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 1751
+last_upload_tick = 1811
+n_uploads = 1
+n_uploads_per_cycle = 0.16666666666666666
 
 [tests."UVMUploadOverMMIOBenchmark (Stream of 100 16-flit 2-cav txns, DMA 0 Upload 1, delay 0)"]
 success = true
@@ -2085,6 +2605,14 @@ valid_txn_ratio = 1
 upload_mmio_status_latency_mean = 40
 upload_mmio_debug_enablekey_latency_mean = 50
 upload_mmio_debug_state_valid_latency_mean = 60
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 1751
+last_upload_tick = 1811
+n_uploads = 1
+n_uploads_per_cycle = 0.16666666666666666
 
 [tests."UVMUploadOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Upload 0, delay 0)"]
 success = true
@@ -2115,6 +2643,14 @@ valid_txn_ratio = 0.88
 upload_mmio_status_latency_mean = 40
 upload_mmio_debug_enablekey_latency_mean = 50
 upload_mmio_debug_state_valid_latency_mean = 60
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 1661
+last_upload_tick = 1721
+n_uploads = 1
+n_uploads_per_cycle = 0.16666666666666666
 
 [tests."UVMUploadOverMMIOBenchmark (Stream of 100 4-flit 1-cav txns, DMA 0 Upload 0, delay 0)"]
 success = true
@@ -2145,6 +2681,14 @@ valid_txn_ratio = 0.88
 upload_mmio_status_latency_mean = 40
 upload_mmio_debug_enablekey_latency_mean = 50
 upload_mmio_debug_state_valid_latency_mean = 60
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 1661
+last_upload_tick = 1721
+n_uploads = 1
+n_uploads_per_cycle = 0.16666666666666666
 
 [tests."UVMUploadOverMMIOBenchmark (Stream of 100 4-flit 2-cav txns, DMA 0 Upload 0, delay 0)"]
 success = true
@@ -2175,6 +2719,14 @@ valid_txn_ratio = 0.88
 upload_mmio_status_latency_mean = 40
 upload_mmio_debug_enablekey_latency_mean = 50
 upload_mmio_debug_state_valid_latency_mean = 60
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 1661
+last_upload_tick = 1721
+n_uploads = 1
+n_uploads_per_cycle = 0.16666666666666666
 
 [tests."UVMRollingUploadRevokeMMIOBenchmark (1000 revokes-and-uploads, revoke after 10)"]
 success = true
@@ -2212,6 +2764,14 @@ revoke_w_data_flits_at_killkey_mean = 0
 upload_mmio_status_latency_mean = 41.26
 upload_mmio_debug_enablekey_latency_mean = 51.26
 upload_mmio_debug_state_valid_latency_mean = 61.26
+first_revoke_tick = 1781
+last_revoke_tick = 61321
+n_revokes = 1000
+n_revokes_per_cycle = 0.16795431642593214
+first_upload_tick = 21
+last_upload_tick = 61191
+n_uploads = 1000
+n_uploads_per_cycle = 0.16347882949158085
 
 [tests."UVMRollingUploadRevokeMMIOBenchmark (1000 revokes-and-uploads, revoke after 20)"]
 success = true
@@ -2249,6 +2809,14 @@ revoke_w_data_flits_at_killkey_mean = 0
 upload_mmio_status_latency_mean = 41.26
 upload_mmio_debug_enablekey_latency_mean = 51.26
 upload_mmio_debug_state_valid_latency_mean = 61.26
+first_revoke_tick = 2281
+last_revoke_tick = 61321
+n_revokes = 1000
+n_revokes_per_cycle = 0.16937669376693767
+first_upload_tick = 21
+last_upload_tick = 61091
+n_uploads = 1000
+n_uploads_per_cycle = 0.1637465203864418
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_NonZeroWhenUnused Cap2024_11 transactions"]
 success = true
@@ -2276,6 +2844,14 @@ exp_invalid_read = 74
 perf_valid_read = 0
 perf_invalid_read = 74
 valid_txn_ratio = 0
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_TooBig_IndexNonZero_Invalid Cap2024_11 transactions"]
 success = true
@@ -2303,6 +2879,14 @@ exp_invalid_read = 59
 perf_valid_read = 0
 perf_invalid_read = 59
 valid_txn_ratio = 0
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_TooBig_IndexZero_Valid Cap2024_11 transactions"]
 success = true
@@ -2330,6 +2914,14 @@ exp_invalid_read = 0
 perf_valid_read = 59
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav2_NonZeroWhenUnused_Invalid Cap2024_11 transactions"]
 success = true
@@ -2357,6 +2949,14 @@ exp_invalid_read = 65
 perf_valid_read = 0
 perf_invalid_read = 65
 valid_txn_ratio = 0
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav2_YSmallerThanX_Invalid Cap2024_11 transactions"]
 success = true
@@ -2384,6 +2984,14 @@ exp_invalid_read = 54
 perf_valid_read = 0
 perf_invalid_read = 54
 valid_txn_ratio = 0
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_TooBig_IndexZero_Cav2_InBounds_Valid Cap2024_11 transactions"]
 success = true
@@ -2411,6 +3019,14 @@ exp_invalid_read = 0
 perf_valid_read = 54
 perf_invalid_read = 0
 valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_TooBig_IndexZero_Cav2_ExceedsIdentity_Invalid Cap2024_11 transactions"]
 success = true
@@ -2438,6 +3054,14 @@ exp_invalid_read = 54
 perf_valid_read = 0
 perf_invalid_read = 54
 valid_txn_ratio = 0
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav2_ShrinksToZero_Valid Cap2024_11 transactions"]
 success = true
@@ -2465,6 +3089,14 @@ exp_invalid_read = 54
 perf_valid_read = 0
 perf_invalid_read = 54
 valid_txn_ratio = 0
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
 
 [summary]
 completed = 79
