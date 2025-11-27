@@ -1,6 +1,6 @@
 [tests."Valid-Key Valid-Cap Valid-CCapPerms::Read"]
 success = true
-ending_tick = 2370
+ending_tick = 2350
 aw_throughput = -nan
 w_throughput = -nan
 ar_throughput = 1
@@ -27,7 +27,7 @@ valid_txn_ratio = 1
 
 [tests."Valid-Key Valid-Cap Valid-CCapPerms::Write"]
 success = true
-ending_tick = 2370
+ending_tick = 2350
 aw_throughput = 1
 w_throughput = 0.8333333333333334
 ar_throughput = -nan
@@ -54,7 +54,7 @@ valid_txn_ratio = 1
 
 [tests."Valid-Key Valid-Cap Valid-CCapPerms::ReadWrite"]
 success = true
-ending_tick = 2370
+ending_tick = 2350
 aw_throughput = 1
 w_throughput = 0.8333333333333334
 ar_throughput = 1
@@ -81,7 +81,7 @@ valid_txn_ratio = 1
 
 [tests."Valid-Key Valid-Cap OOB-CCapPerms::Read"]
 success = true
-ending_tick = 2370
+ending_tick = 2350
 aw_throughput = -nan
 w_throughput = -nan
 ar_throughput = 1
@@ -108,7 +108,7 @@ valid_txn_ratio = 0
 
 [tests."Valid-Key Valid-Cap OOB-CCapPerms::Write"]
 success = true
-ending_tick = 2370
+ending_tick = 2350
 aw_throughput = 1
 w_throughput = 0.8333333333333334
 ar_throughput = -nan
@@ -135,7 +135,7 @@ valid_txn_ratio = 0
 
 [tests."Valid-Key Valid-Cap BadPerms"]
 success = true
-ending_tick = 2370
+ending_tick = 2350
 aw_throughput = 1
 w_throughput = 0.8333333333333334
 ar_throughput = 1
@@ -162,7 +162,7 @@ valid_txn_ratio = 0
 
 [tests."Valid-Key BadSig-Cap"]
 success = true
-ending_tick = 2370
+ending_tick = 2350
 aw_throughput = 1
 w_throughput = 0.8333333333333334
 ar_throughput = 1
@@ -189,7 +189,7 @@ valid_txn_ratio = 0
 
 [tests."Invalid-Key CCapPerms::ReadWrite"]
 success = true
-ending_tick = 2470
+ending_tick = 2400
 aw_throughput = 1
 w_throughput = 0.8333333333333334
 ar_throughput = 1
@@ -216,7 +216,7 @@ valid_txn_ratio = 0
 
 [tests."Stream of 100 CCapPerms::ReadWrite 1-flit transactions"]
 success = true
-ending_tick = 15361
+ending_tick = 15341
 aw_throughput = 1
 w_throughput = 0.28328611898017
 ar_throughput = 1
@@ -243,7 +243,7 @@ valid_txn_ratio = 1
 
 [tests."Stream of 100 CCapPerms::ReadWrite 4-flit transactions"]
 success = true
-ending_tick = 15401
+ending_tick = 15381
 aw_throughput = 1
 w_throughput = 0.9900990099009901
 ar_throughput = 1
@@ -270,7 +270,7 @@ valid_txn_ratio = 1
 
 [tests."Stream of 100 CCapPerms::ReadWrite 8-flit transactions"]
 success = true
-ending_tick = 19401
+ending_tick = 19381
 aw_throughput = 0.9950248756218906
 w_throughput = 0.9950248756218906
 ar_throughput = 0.9950248756218906
@@ -297,7 +297,7 @@ valid_txn_ratio = 1
 
 [tests."Stream of 100 CCapPerms::ReadWrite 16-flit transactions"]
 success = true
-ending_tick = 27401
+ending_tick = 27381
 aw_throughput = 0.5141388174807198
 w_throughput = 0.9975062344139651
 ar_throughput = 0.5141388174807198
@@ -324,7 +324,7 @@ valid_txn_ratio = 1
 
 [tests."Stream of 100 CCapPerms::ReadWrite 32-flit transactions"]
 success = true
-ending_tick = 43401
+ending_tick = 43381
 aw_throughput = 0.26143790849673204
 w_throughput = 0.9987515605493134
 ar_throughput = 0.26143790849673204
@@ -351,7 +351,7 @@ valid_txn_ratio = 1
 
 [tests."Stream of 10000 librust random valid Cap2024_11 4-flit transactions"]
 success = true
-ending_tick = 343301
+ending_tick = 343281
 aw_throughput = 1
 w_throughput = 0.9414317599404811
 ar_throughput = 1
@@ -378,7 +378,7 @@ valid_txn_ratio = 1
 
 [tests."Stream of 10000 librust random valid Cap2024_11 0-caveat 4-flit transactions"]
 success = true
-ending_tick = 368881
+ending_tick = 368861
 aw_throughput = 1
 w_throughput = 0.9998504784688995
 ar_throughput = 1
@@ -405,7 +405,7 @@ valid_txn_ratio = 1
 
 [tests."Stream of 10000 librust random valid Cap2024_11 1-caveat 4-flit transactions"]
 success = true
-ending_tick = 342751
+ending_tick = 342731
 aw_throughput = 1
 w_throughput = 0.9373627739342972
 ar_throughput = 1
@@ -432,7 +432,7 @@ valid_txn_ratio = 1
 
 [tests."Stream of 10000 librust random valid Cap2024_11 2-caveat 4-flit transactions"]
 success = true
-ending_tick = 334681
+ending_tick = 334661
 aw_throughput = 1
 w_throughput = 0.9127436679485479
 ar_throughput = 1
@@ -459,7 +459,7 @@ valid_txn_ratio = 1
 
 [tests."Stream of 10000 librust random valid Cap2024_11 0-caveat 1-flit transactions"]
 success = true
-ending_tick = 368841
+ending_tick = 368821
 aw_throughput = 1
 w_throughput = 0.2504400584247781
 ar_throughput = 1
@@ -486,7 +486,7 @@ valid_txn_ratio = 1
 
 [tests."Stream of 10000 librust random valid Cap2024_11 1-caveat 1-flit transactions"]
 success = true
-ending_tick = 342601
+ending_tick = 342581
 aw_throughput = 1
 w_throughput = 0.2503736300232481
 ar_throughput = 1
@@ -513,7 +513,7 @@ valid_txn_ratio = 1
 
 [tests."Stream of 10000 librust random valid Cap2024_11 2-caveat 1-flit transactions"]
 success = true
-ending_tick = 334681
+ending_tick = 334661
 aw_throughput = 1
 w_throughput = 0.2502768549280177
 ar_throughput = 1
@@ -540,7 +540,7 @@ valid_txn_ratio = 1
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 1-flit 0-cav txns, DMA 0 Revoke 1, delay 0)"]
 success = true
-ending_tick = 14381
+ending_tick = 14311
 aw_throughput = 1
 w_throughput = 0.3051643192488263
 ar_throughput = 1
@@ -574,7 +574,7 @@ revoke_w_data_flits_at_killkey_mean = 0
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 1, delay 0)"]
 success = true
-ending_tick = 21901
+ending_tick = 21831
 aw_throughput = 0.9219858156028369
 w_throughput = 0.9961685823754789
 ar_throughput = 0.6606334841628959
@@ -608,7 +608,7 @@ revoke_w_data_flits_at_killkey_mean = 0
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 1-cav txns, DMA 0 Revoke 1, delay 0)"]
 success = true
-ending_tick = 19661
+ending_tick = 19591
 aw_throughput = 1
 w_throughput = 0.9817073170731707
 ar_throughput = 1
@@ -642,7 +642,7 @@ revoke_w_data_flits_at_killkey_mean = 0
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 2-cav txns, DMA 0 Revoke 1, delay 0)"]
 success = true
-ending_tick = 20961
+ending_tick = 20891
 aw_throughput = 0.8719723183391004
 w_throughput = 0.9726315789473684
 ar_throughput = 1
@@ -676,7 +676,7 @@ revoke_w_data_flits_at_killkey_mean = 0
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
-ending_tick = 14321
+ending_tick = 14301
 aw_throughput = 1
 w_throughput = 0.9808429118773946
 ar_throughput = 1
@@ -710,7 +710,7 @@ revoke_w_data_flits_at_killkey_mean = 0
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 1-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
-ending_tick = 13801
+ending_tick = 13781
 aw_throughput = 1
 w_throughput = 0.9057377049180327
 ar_throughput = 1
@@ -744,7 +744,7 @@ revoke_w_data_flits_at_killkey_mean = 3
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 2-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
-ending_tick = 14031
+ending_tick = 14011
 aw_throughput = 1
 w_throughput = 0.898876404494382
 ar_throughput = 1
@@ -778,7 +778,7 @@ revoke_w_data_flits_at_killkey_mean = 2
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
 success = true
-ending_tick = 14321
+ending_tick = 14301
 aw_throughput = 1
 w_throughput = 0.9808429118773946
 ar_throughput = 1
@@ -812,7 +812,7 @@ revoke_w_data_flits_at_killkey_mean = 3
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
 success = true
-ending_tick = 14321
+ending_tick = 14301
 aw_throughput = 1
 w_throughput = 0.9808429118773946
 ar_throughput = 1
@@ -846,7 +846,7 @@ revoke_w_data_flits_at_killkey_mean = 2
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
 success = true
-ending_tick = 14321
+ending_tick = 14301
 aw_throughput = 1
 w_throughput = 0.9808429118773946
 ar_throughput = 1
@@ -880,7 +880,7 @@ revoke_w_data_flits_at_killkey_mean = 1
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
 success = true
-ending_tick = 14321
+ending_tick = 14301
 aw_throughput = 1
 w_throughput = 0.9808429118773946
 ar_throughput = 1
@@ -914,7 +914,7 @@ revoke_w_data_flits_at_killkey_mean = 0
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
 success = true
-ending_tick = 14321
+ending_tick = 14301
 aw_throughput = 1
 w_throughput = 0.9808429118773946
 ar_throughput = 1
@@ -948,7 +948,7 @@ revoke_w_data_flits_at_killkey_mean = 3
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
-ending_tick = 16531
+ending_tick = 16511
 aw_throughput = 1
 w_throughput = 0.9903288201160542
 ar_throughput = 1
@@ -982,7 +982,7 @@ revoke_w_data_flits_at_killkey_mean = 40
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
 success = true
-ending_tick = 16531
+ending_tick = 16511
 aw_throughput = 1
 w_throughput = 0.9903288201160542
 ar_throughput = 1
@@ -1016,7 +1016,7 @@ revoke_w_data_flits_at_killkey_mean = 47
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
 success = true
-ending_tick = 16531
+ending_tick = 16511
 aw_throughput = 1
 w_throughput = 0.9903288201160542
 ar_throughput = 1
@@ -1050,7 +1050,7 @@ revoke_w_data_flits_at_killkey_mean = 46
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
 success = true
-ending_tick = 16531
+ending_tick = 16511
 aw_throughput = 1
 w_throughput = 0.9903288201160542
 ar_throughput = 1
@@ -1084,7 +1084,7 @@ revoke_w_data_flits_at_killkey_mean = 45
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
 success = true
-ending_tick = 16531
+ending_tick = 16511
 aw_throughput = 1
 w_throughput = 0.9903288201160542
 ar_throughput = 1
@@ -1118,7 +1118,7 @@ revoke_w_data_flits_at_killkey_mean = 44
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 8-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
 success = true
-ending_tick = 16531
+ending_tick = 16511
 aw_throughput = 1
 w_throughput = 0.9903288201160542
 ar_throughput = 1
@@ -1152,7 +1152,7 @@ revoke_w_data_flits_at_killkey_mean = 51
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
-ending_tick = 19091
+ending_tick = 19071
 aw_throughput = 1
 w_throughput = 0.9935316946959897
 ar_throughput = 1
@@ -1186,7 +1186,7 @@ revoke_w_data_flits_at_killkey_mean = 80
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
 success = true
-ending_tick = 19091
+ending_tick = 19071
 aw_throughput = 1
 w_throughput = 0.9935316946959897
 ar_throughput = 1
@@ -1220,7 +1220,7 @@ revoke_w_data_flits_at_killkey_mean = 91
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
 success = true
-ending_tick = 19091
+ending_tick = 19071
 aw_throughput = 1
 w_throughput = 0.9935316946959897
 ar_throughput = 1
@@ -1254,7 +1254,7 @@ revoke_w_data_flits_at_killkey_mean = 90
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
 success = true
-ending_tick = 19091
+ending_tick = 19071
 aw_throughput = 1
 w_throughput = 0.9935316946959897
 ar_throughput = 1
@@ -1288,7 +1288,7 @@ revoke_w_data_flits_at_killkey_mean = 89
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
 success = true
-ending_tick = 19091
+ending_tick = 19071
 aw_throughput = 1
 w_throughput = 0.9935316946959897
 ar_throughput = 1
@@ -1322,7 +1322,7 @@ revoke_w_data_flits_at_killkey_mean = 88
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 12-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
 success = true
-ending_tick = 19091
+ending_tick = 19071
 aw_throughput = 1
 w_throughput = 0.9935316946959897
 ar_throughput = 1
@@ -1356,7 +1356,7 @@ revoke_w_data_flits_at_killkey_mean = 99
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
-ending_tick = 21651
+ending_tick = 21631
 aw_throughput = 1
 w_throughput = 0.9951409135082604
 ar_throughput = 1
@@ -1390,7 +1390,7 @@ revoke_w_data_flits_at_killkey_mean = 120
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
 success = true
-ending_tick = 21651
+ending_tick = 21631
 aw_throughput = 0.9846153846153847
 w_throughput = 0.9951409135082604
 ar_throughput = 1
@@ -1424,7 +1424,7 @@ revoke_w_data_flits_at_killkey_mean = 135
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
 success = true
-ending_tick = 21651
+ending_tick = 21631
 aw_throughput = 0.9846153846153847
 w_throughput = 0.9951409135082604
 ar_throughput = 1
@@ -1458,7 +1458,7 @@ revoke_w_data_flits_at_killkey_mean = 134
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
 success = true
-ending_tick = 21651
+ending_tick = 21631
 aw_throughput = 0.9846153846153847
 w_throughput = 0.9951409135082604
 ar_throughput = 1
@@ -1492,7 +1492,7 @@ revoke_w_data_flits_at_killkey_mean = 133
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
 success = true
-ending_tick = 21651
+ending_tick = 21631
 aw_throughput = 0.9846153846153847
 w_throughput = 0.9951409135082604
 ar_throughput = 1
@@ -1526,7 +1526,7 @@ revoke_w_data_flits_at_killkey_mean = 132
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
 success = true
-ending_tick = 21651
+ending_tick = 21631
 aw_throughput = 0.9411764705882353
 w_throughput = 0.9951409135082604
 ar_throughput = 1
@@ -1560,7 +1560,7 @@ revoke_w_data_flits_at_killkey_mean = 147
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
-ending_tick = 24211
+ending_tick = 24191
 aw_throughput = 0.8888888888888888
 w_throughput = 0.9961089494163424
 ar_throughput = 0.9866666666666667
@@ -1594,7 +1594,7 @@ revoke_w_data_flits_at_killkey_mean = 160
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
 success = true
-ending_tick = 24211
+ending_tick = 24191
 aw_throughput = 0.8421052631578947
 w_throughput = 0.9961089494163424
 ar_throughput = 0.9899665551839465
@@ -1628,7 +1628,7 @@ revoke_w_data_flits_at_killkey_mean = 179
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
 success = true
-ending_tick = 24211
+ending_tick = 24191
 aw_throughput = 0.8421052631578947
 w_throughput = 0.9961089494163424
 ar_throughput = 0.9899665551839465
@@ -1662,7 +1662,7 @@ revoke_w_data_flits_at_killkey_mean = 178
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
 success = true
-ending_tick = 24211
+ending_tick = 24191
 aw_throughput = 0.8421052631578947
 w_throughput = 0.9961089494163424
 ar_throughput = 0.9899665551839465
@@ -1696,7 +1696,7 @@ revoke_w_data_flits_at_killkey_mean = 177
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
 success = true
-ending_tick = 24211
+ending_tick = 24191
 aw_throughput = 0.8421052631578947
 w_throughput = 0.9961089494163424
 ar_throughput = 0.9899665551839465
@@ -1730,7 +1730,7 @@ revoke_w_data_flits_at_killkey_mean = 176
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 20-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
 success = true
-ending_tick = 24211
+ending_tick = 24191
 aw_throughput = 0.8
 w_throughput = 0.9961089494163424
 ar_throughput = 0.8835820895522388
@@ -1764,7 +1764,7 @@ revoke_w_data_flits_at_killkey_mean = 195
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 0)"]
 success = true
-ending_tick = 26771
+ending_tick = 26751
 aw_throughput = 0.7804878048780488
 w_throughput = 0.9967553536664504
 ar_throughput = 0.8705882352941177
@@ -1798,7 +1798,7 @@ revoke_w_data_flits_at_killkey_mean = 200
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 10)"]
 success = true
-ending_tick = 26771
+ending_tick = 26751
 aw_throughput = 0.735632183908046
 w_throughput = 0.9967553536664504
 ar_throughput = 0.8731563421828908
@@ -1832,7 +1832,7 @@ revoke_w_data_flits_at_killkey_mean = 223
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 20)"]
 success = true
-ending_tick = 26771
+ending_tick = 26751
 aw_throughput = 0.735632183908046
 w_throughput = 0.9967553536664504
 ar_throughput = 0.8731563421828908
@@ -1866,7 +1866,7 @@ revoke_w_data_flits_at_killkey_mean = 222
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 30)"]
 success = true
-ending_tick = 26771
+ending_tick = 26751
 aw_throughput = 0.735632183908046
 w_throughput = 0.9967553536664504
 ar_throughput = 0.8731563421828908
@@ -1900,7 +1900,7 @@ revoke_w_data_flits_at_killkey_mean = 221
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 40)"]
 success = true
-ending_tick = 26771
+ending_tick = 26751
 aw_throughput = 0.735632183908046
 w_throughput = 0.9967553536664504
 ar_throughput = 0.8731563421828908
@@ -1934,7 +1934,7 @@ revoke_w_data_flits_at_killkey_mean = 220
 
 [tests."UVMRevokeOverMMIOBenchmark (Stream of 100 24-flit 0-cav txns, DMA 0 Revoke 0, delay 50)"]
 success = true
-ending_tick = 26771
+ending_tick = 26751
 aw_throughput = 0.735632183908046
 w_throughput = 0.9967553536664504
 ar_throughput = 0.7728459530026109
@@ -1968,7 +1968,7 @@ revoke_w_data_flits_at_killkey_mean = 219
 
 [tests."UVMUploadOverMMIOBenchmark (Stream of 100 1-flit 0-cav txns, DMA 0 Upload 1, delay 0)"]
 success = true
-ending_tick = 15361
+ending_tick = 15341
 aw_throughput = 1
 w_throughput = 0.28328611898017
 ar_throughput = 1
@@ -1992,13 +1992,13 @@ exp_invalid_read = 0
 perf_valid_read = 100
 perf_invalid_read = 0
 valid_txn_ratio = 1
-upload_mmio_status_latency_mean = 80
-upload_mmio_debug_enablekey_latency_mean = 90
-upload_mmio_debug_state_valid_latency_mean = 100
+upload_mmio_status_latency_mean = 40
+upload_mmio_debug_enablekey_latency_mean = 50
+upload_mmio_debug_state_valid_latency_mean = 60
 
 [tests."UVMUploadOverMMIOBenchmark (Stream of 100 16-flit 0-cav txns, DMA 0 Upload 1, delay 0)"]
 success = true
-ending_tick = 27401
+ending_tick = 27381
 aw_throughput = 0.5141388174807198
 w_throughput = 0.9975062344139651
 ar_throughput = 0.5141388174807198
@@ -2022,13 +2022,13 @@ exp_invalid_read = 0
 perf_valid_read = 100
 perf_invalid_read = 0
 valid_txn_ratio = 1
-upload_mmio_status_latency_mean = 80
-upload_mmio_debug_enablekey_latency_mean = 90
-upload_mmio_debug_state_valid_latency_mean = 100
+upload_mmio_status_latency_mean = 40
+upload_mmio_debug_enablekey_latency_mean = 50
+upload_mmio_debug_state_valid_latency_mean = 60
 
 [tests."UVMUploadOverMMIOBenchmark (Stream of 100 16-flit 1-cav txns, DMA 0 Upload 1, delay 0)"]
 success = true
-ending_tick = 25781
+ending_tick = 25761
 aw_throughput = 0.5805515239477503
 w_throughput = 0.9895977808599168
 ar_throughput = 0.5805515239477503
@@ -2052,13 +2052,13 @@ exp_invalid_read = 0
 perf_valid_read = 100
 perf_invalid_read = 0
 valid_txn_ratio = 1
-upload_mmio_status_latency_mean = 80
-upload_mmio_debug_enablekey_latency_mean = 90
-upload_mmio_debug_state_valid_latency_mean = 100
+upload_mmio_status_latency_mean = 40
+upload_mmio_debug_enablekey_latency_mean = 50
+upload_mmio_debug_state_valid_latency_mean = 60
 
 [tests."UVMUploadOverMMIOBenchmark (Stream of 100 16-flit 2-cav txns, DMA 0 Upload 1, delay 0)"]
 success = true
-ending_tick = 25501
+ending_tick = 25481
 aw_throughput = 0.583941605839416
 w_throughput = 0.9816124469589816
 ar_throughput = 0.583941605839416
@@ -2082,9 +2082,9 @@ exp_invalid_read = 0
 perf_valid_read = 100
 perf_invalid_read = 0
 valid_txn_ratio = 1
-upload_mmio_status_latency_mean = 80
-upload_mmio_debug_enablekey_latency_mean = 90
-upload_mmio_debug_state_valid_latency_mean = 100
+upload_mmio_status_latency_mean = 40
+upload_mmio_debug_enablekey_latency_mean = 50
+upload_mmio_debug_state_valid_latency_mean = 60
 
 [tests."UVMUploadOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Upload 0, delay 0)"]
 success = true
@@ -2112,9 +2112,9 @@ exp_invalid_read = 12
 perf_valid_read = 88
 perf_invalid_read = 12
 valid_txn_ratio = 0.88
-upload_mmio_status_latency_mean = 80
-upload_mmio_debug_enablekey_latency_mean = 90
-upload_mmio_debug_state_valid_latency_mean = 100
+upload_mmio_status_latency_mean = 40
+upload_mmio_debug_enablekey_latency_mean = 50
+upload_mmio_debug_state_valid_latency_mean = 60
 
 [tests."UVMUploadOverMMIOBenchmark (Stream of 100 4-flit 1-cav txns, DMA 0 Upload 0, delay 0)"]
 success = true
@@ -2142,9 +2142,9 @@ exp_invalid_read = 12
 perf_valid_read = 88
 perf_invalid_read = 12
 valid_txn_ratio = 0.88
-upload_mmio_status_latency_mean = 80
-upload_mmio_debug_enablekey_latency_mean = 90
-upload_mmio_debug_state_valid_latency_mean = 100
+upload_mmio_status_latency_mean = 40
+upload_mmio_debug_enablekey_latency_mean = 50
+upload_mmio_debug_state_valid_latency_mean = 60
 
 [tests."UVMUploadOverMMIOBenchmark (Stream of 100 4-flit 2-cav txns, DMA 0 Upload 0, delay 0)"]
 success = true
@@ -2172,19 +2172,19 @@ exp_invalid_read = 12
 perf_valid_read = 88
 perf_invalid_read = 12
 valid_txn_ratio = 0.88
-upload_mmio_status_latency_mean = 80
-upload_mmio_debug_enablekey_latency_mean = 90
-upload_mmio_debug_state_valid_latency_mean = 100
+upload_mmio_status_latency_mean = 40
+upload_mmio_debug_enablekey_latency_mean = 50
+upload_mmio_debug_state_valid_latency_mean = 60
 
 [tests."UVMRollingUploadRevokeMMIOBenchmark (1000 revokes-and-uploads, revoke after 10)"]
 success = true
-ending_tick = 121401
+ending_tick = 61521
 aw_throughput = -nan
 w_throughput = -nan
 ar_throughput = -nan
 b_throughput = -nan
 r_throughput = -nan
-keymngr_aw_b_latency_mean = 20.418333333333333
+keymngr_aw_b_latency_mean = 20.42
 keymngr_ar_r_latency_mean = 20
 aw_aw_latency_mean = -nan
 ar_ar_latency_mean = -nan
@@ -2209,19 +2209,19 @@ revoke_r_data_flits_at_mmio_mean = 0
 revoke_w_data_flits_at_mmio_mean = 0
 revoke_r_data_flits_at_killkey_mean = 0
 revoke_w_data_flits_at_killkey_mean = 0
-upload_mmio_status_latency_mean = 81.24
-upload_mmio_debug_enablekey_latency_mean = 91.24
-upload_mmio_debug_state_valid_latency_mean = 101.24
+upload_mmio_status_latency_mean = 41.26
+upload_mmio_debug_enablekey_latency_mean = 51.26
+upload_mmio_debug_state_valid_latency_mean = 61.26
 
 [tests."UVMRollingUploadRevokeMMIOBenchmark (1000 revokes-and-uploads, revoke after 20)"]
 success = true
-ending_tick = 121501
+ending_tick = 61721
 aw_throughput = -nan
 w_throughput = -nan
 ar_throughput = -nan
 b_throughput = -nan
 r_throughput = -nan
-keymngr_aw_b_latency_mean = 20.418333333333333
+keymngr_aw_b_latency_mean = 20.42
 keymngr_ar_r_latency_mean = 20
 aw_aw_latency_mean = -nan
 ar_ar_latency_mean = -nan
@@ -2246,13 +2246,13 @@ revoke_r_data_flits_at_mmio_mean = 0
 revoke_w_data_flits_at_mmio_mean = 0
 revoke_r_data_flits_at_killkey_mean = 0
 revoke_w_data_flits_at_killkey_mean = 0
-upload_mmio_status_latency_mean = 81.24
-upload_mmio_debug_enablekey_latency_mean = 91.24
-upload_mmio_debug_state_valid_latency_mean = 101.24
+upload_mmio_status_latency_mean = 41.26
+upload_mmio_debug_enablekey_latency_mean = 51.26
+upload_mmio_debug_state_valid_latency_mean = 61.26
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_NonZeroWhenUnused Cap2024_11 transactions"]
 success = true
-ending_tick = 114201
+ending_tick = 114181
 aw_throughput = 1
 w_throughput = 0.9968847352024922
 ar_throughput = 1
@@ -2279,7 +2279,7 @@ valid_txn_ratio = 0
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_TooBig_IndexNonZero_Invalid Cap2024_11 transactions"]
 success = true
-ending_tick = 113711
+ending_tick = 113691
 aw_throughput = 1
 w_throughput = 0.9878542510121457
 ar_throughput = 1
@@ -2306,7 +2306,7 @@ valid_txn_ratio = 0
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_TooBig_IndexZero_Valid Cap2024_11 transactions"]
 success = true
-ending_tick = 113711
+ending_tick = 113691
 aw_throughput = 0.9494163424124513
 w_throughput = 0.9878542510121457
 ar_throughput = 0.7946127946127947
@@ -2333,7 +2333,7 @@ valid_txn_ratio = 1
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav2_NonZeroWhenUnused_Invalid Cap2024_11 transactions"]
 success = true
-ending_tick = 113911
+ending_tick = 113891
 aw_throughput = 1
 w_throughput = 0.9880478087649402
 ar_throughput = 1
@@ -2360,7 +2360,7 @@ valid_txn_ratio = 0
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav2_YSmallerThanX_Invalid Cap2024_11 transactions"]
 success = true
-ending_tick = 114221
+ending_tick = 114201
 aw_throughput = 1
 w_throughput = 0.9797822706065319
 ar_throughput = 1
@@ -2387,7 +2387,7 @@ valid_txn_ratio = 0
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_TooBig_IndexZero_Cav2_InBounds_Valid Cap2024_11 transactions"]
 success = true
-ending_tick = 114221
+ending_tick = 114201
 aw_throughput = 0.6702127659574468
 w_throughput = 0.9797822706065319
 ar_throughput = 1
@@ -2414,7 +2414,7 @@ valid_txn_ratio = 1
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_TooBig_IndexZero_Cav2_ExceedsIdentity_Invalid Cap2024_11 transactions"]
 success = true
-ending_tick = 114221
+ending_tick = 114201
 aw_throughput = 1
 w_throughput = 0.9797822706065319
 ar_throughput = 1
@@ -2441,7 +2441,7 @@ valid_txn_ratio = 0
 
 [tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav2_ShrinksToZero_Valid Cap2024_11 transactions"]
 success = true
-ending_tick = 103881
+ending_tick = 103861
 aw_throughput = 1
 w_throughput = 0.2775330396475771
 ar_throughput = 1

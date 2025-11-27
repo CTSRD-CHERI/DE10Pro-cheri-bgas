@@ -134,7 +134,7 @@ struct MaybeValidCapWithRange {
  */
 
 // Helper macros for generating stimulus
-#define CANPUT_INPUT(name) ((dut.RDY_## name ##_put != 0) && (dut. name ##_canPut != 0) && (dut.EN_ ## name ## _put == 0))
+#define CANPUT_INPUT(name) ((dut.RDY_## name ##_put != 0) && (dut. name ##_canPut != 0))
 #define PUT_INPUT(name, value) do { \
     dut.EN_## name ##_put = 1;      \
     dut. name ##_put_val = (value); \
@@ -1918,7 +1918,7 @@ class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseExposer
     std::unordered_map<uint64_t, key_manager::KeyId> revoke_on_tick;
 
     bool had_upload = false;
-    // std::unordered_map<uint64_t, std::pair<key_manager::KeyId, U128>> upload_on_tick;
+    std::unordered_map<uint64_t, key_manager::KeyId> upload_on_tick;
     std::array<std::array<uint32_t, 4>, 256> uploadingKeyData;
     std::unordered_map<key_manager::KeyId, MMIOUploadLatencyStats> uploads;
     std::vector<uint64_t> upload_mmio_status_latency;
@@ -1996,12 +1996,15 @@ class ExposerScoreboard<DUT, ctype, KeyMngrV2_AsDUT_MMIO32> : public BaseExposer
         if (outputKeyManager.debugEnableKey.keyIdValid) {
             key_manager::KeyId uploading_key = outputKeyManager.debugEnableKey.keyId;
             uploads[uploading_key].enable_key_observed_tick = tick;
+            upload_on_tick[tick + 20] = uploading_key;
+        }
 
+        if (upload_on_tick.contains(tick)) {
+            key_manager::KeyId uploading_key = upload_on_tick[tick];
             // fmt::println(stderr, "key {} debugEnable Seen {}", (int)uploading_key, tick);
-
             auto arr = verilate_array(uploadingKeyData[uploading_key]);
             this->secrets[uploading_key] = U128::from_verilated(arr);
-            // revoke_on_tick[tick + 0] = revoking_key;
+            upload_on_tick.erase(tick);
         }
 
         if (outputKeyManager.debugKillKey.keyIdValid) {
