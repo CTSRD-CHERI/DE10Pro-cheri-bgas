@@ -11,6 +11,7 @@ import IOCapAxi_Types :: *;
 import IOCapAxi_KeyManager2_Types :: *;
 import IOCapAxi_KeyManager2_KeyStatePipe :: *;
 import IOCapAxi_KeyManager2_KeyDataPipe :: *;
+import IOCapAxi_Konata :: *;
 import SamUtil :: *;
 
 interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc;
@@ -49,7 +50,7 @@ interface IOCapAxi_KeyManager2_MMIO#(type t_data, numeric type n_checkers);
     interface ReadOnly#(UInt#(64)) debugBadRead;
 endinterface
 
-module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc keyState, IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc keyData, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_MMIO#(t_data, n_checkers))  provisos (
+module mkIOCapAxi_KeyManager2_MMIO#(KonataMode kMode, IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc keyState, IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc keyData, KeyManager2ErrorUnit error)(IOCapAxi_KeyManager2_MMIO#(t_data, n_checkers))  provisos (
     // t_data must be divisible by 8
     // i.e. (t_data/8) * 8 == t_data
     Mul#(TDiv#(t_data, 8), 8, t_data),
@@ -186,7 +187,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
                 };
             end
         endcase
-        $display("IOCap - key manager - handle_read - ", fshow(ar), " - ", fshow(response));
+        konataEvent(kMode, "MmioRd", fshow(ar) + $format(" - ") + fshow(response));
         axiShim.master.r.put(flit);
     endrule
 
@@ -283,7 +284,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc ke
                 , buser: ?
             };
         end
-        $display("IOCap - key manager - handle_write - ", fshow(aw), " - ", fshow(w), " - ", fshow(validWrite));
+        konataEvent(kMode, "MmioWr", fshow(aw) + $format(" - ") + fshow(w) + $format(" - ") + fshow(validWrite));
         axiShim.master.b.put(flit);
     endrule
 

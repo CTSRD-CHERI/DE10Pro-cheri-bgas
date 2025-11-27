@@ -9,7 +9,7 @@ import IOCapAxi_Konata :: *;
 module mkCombinedIOCapExposerV6_blockinvalid_3pool_2percycle_KeyManager2V1_Tb(UnifiedSingleExposerKeyMngrTb);
     NumProxy#(3) exposerPoolSize = ?;
 
-    let keyMgr32Impl <- mkIOCapAxi_KeyManager2_V1;
+    let keyMgr32Impl <- mkIOCapAxi_KeyManager2_V1(KONATA_FLIT);
     let exposerImpl <- mkSimpleIOCapExposerV6(
         KONATA_OFF, keyMgr32Impl.exposerPorts[0], True,
         exposerPoolSize,
