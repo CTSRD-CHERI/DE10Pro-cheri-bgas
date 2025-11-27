@@ -2781,7 +2781,7 @@ public:
     }
     virtual void driveInputsForTick(std::mt19937& rng, DUT& dut, uint64_t tick) {
         // Once 1/10th of the DMAs have started
-        if (!started_upload && (this->awInputs.size() <= (n_transactions * 4 / 10)) && tick_to_upload_on == 0) {
+        if (!started_upload && (this->awInputs.size() <= (n_transactions * 4 * 9 / 10)) && tick_to_upload_on == 0) {
             tick_to_upload_on = tick + upload_delay;
         }
 
