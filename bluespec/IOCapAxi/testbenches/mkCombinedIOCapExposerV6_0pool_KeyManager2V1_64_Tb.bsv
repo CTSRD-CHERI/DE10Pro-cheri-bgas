@@ -19,6 +19,7 @@ module mkCombinedIOCapExposerV6_0pool_KeyManager2V1_64_Tb(UnifiedSingleExposerKe
     );
 
     interface keyStore = keyMgr64Impl.hostFacingSlave;
+    interface keyStoreReady = keyMgr64Impl.ready;
     interface debugEnableKey = keyMgr64Impl.debugEnableKey;
     interface debugKillKey = keyMgr64Impl.debugKillKey;
     interface debugKeyState = keyMgr64Impl.debugKeyState;

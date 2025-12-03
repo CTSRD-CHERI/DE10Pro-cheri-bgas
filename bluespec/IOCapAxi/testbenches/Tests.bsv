@@ -189,6 +189,7 @@ endinterface
 
 interface UnifiedSingleExposerKeyMngrTb;
     interface AXI4Lite_Slave#(TLog#('h2000), 32 /* data bits */, 0, 0, 0, 0, 0) keyStore;
+    interface ReadOnly#(Bool) keyStoreReady;
     interface ReadOnly#(Vector#(256, KeyStatus)) debugKeyState;
     interface ReadOnly#(Maybe#(KeyId)) debugEnableKey;
     interface ReadOnly#(Maybe#(KeyId)) debugKillKey;
@@ -202,6 +203,7 @@ endinterface
 
 interface UnifiedSingleExposerKeyMngr64Tb;
     interface AXI4Lite_Slave#(TLog#('h2000), 64 /* data bits */, 0, 0, 0, 0, 0) keyStore;
+    interface ReadOnly#(Bool) keyStoreReady;
     interface ReadOnly#(Vector#(256, KeyStatus)) debugKeyState;
     interface ReadOnly#(Maybe#(KeyId)) debugEnableKey;
     interface ReadOnly#(Maybe#(KeyId)) debugKillKey;

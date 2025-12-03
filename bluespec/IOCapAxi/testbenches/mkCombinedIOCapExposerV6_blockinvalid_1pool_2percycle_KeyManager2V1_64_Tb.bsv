@@ -18,6 +18,7 @@ module mkCombinedIOCapExposerV6_blockinvalid_1pool_2percycle_KeyManager2V1_64_Tb
     );
 
     interface keyStore = keyMgr64Impl.hostFacingSlave;
+    interface keyStoreReady = keyMgr64Impl.ready;
     interface debugEnableKey = keyMgr64Impl.debugEnableKey;
     interface debugKillKey = keyMgr64Impl.debugKillKey;
     interface debugKeyState = keyMgr64Impl.debugKeyState;

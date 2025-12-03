@@ -242,6 +242,7 @@ template<>
 struct KeyMngrShimOutput<KeyMngrV2_AsDUT_MMIO32> {
     std::optional<axi::AxiLite::RFlit_data32_user0> r;
     std::optional<axi::AxiLite::BFlit_user0> b;
+    bool keyStoreReady;
 
     key_manager2::KeyStatuses debugKeyStatuses;
     key_manager2::refcountpipe::MaybeKeyId debugEnableKey;
@@ -269,6 +270,7 @@ template<>
 struct KeyMngrShimOutput<KeyMngrV2_AsDUT_MMIO64> {
     std::optional<axi::AxiLite::RFlit_data64_user0> r;
     std::optional<axi::AxiLite::BFlit_user0> b;
+    bool keyStoreReady;
 
     key_manager2::KeyStatuses debugKeyStatuses;
     key_manager2::refcountpipe::MaybeKeyId debugEnableKey;
@@ -778,6 +780,7 @@ void pull_output(DUT& dut, KeyMngrShimOutput<KeyMngrV2_AsDUT_MMIO32>& output) {
         NOPOP(keyStore_b);
     }
 
+    output.keyStoreReady = dut.keyStoreReady___05Fread;
     output.debugKeyStatuses = key_manager2::KeyStatuses::unpack(stdify_array(dut.debugKeyState___05Fread));
     output.debugEnableKey = key_manager2::refcountpipe::MaybeKeyId::unpack(dut.debugEnableKey___05Fread);
     output.debugKillKey = key_manager2::refcountpipe::MaybeKeyId::unpack(dut.debugKillKey___05Fread);
@@ -824,6 +827,7 @@ void pull_output(DUT& dut, KeyMngrShimOutput<KeyMngrV2_AsDUT_MMIO64>& output) {
         NOPOP(keyStore_b);
     }
 
+    output.keyStoreReady = dut.keyStoreReady___05Fread;
     output.debugKeyStatuses = key_manager2::KeyStatuses::unpack(stdify_array(dut.debugKeyState___05Fread));
     output.debugEnableKey = key_manager2::refcountpipe::MaybeKeyId::unpack(dut.debugEnableKey___05Fread);
     output.debugKillKey = key_manager2::refcountpipe::MaybeKeyId::unpack(dut.debugKillKey___05Fread);

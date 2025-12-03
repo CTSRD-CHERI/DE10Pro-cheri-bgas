@@ -321,6 +321,9 @@ class BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO32>: public KeyManage
     std::deque<LatencyTracked<axi::AxiLite::ARFlit_addr13_user0>> readsInProgress;
     std::deque<LatencyTracked<axi::AxiLite::AWFlit_addr13_user0>> writesInProgress;
 
+    // Set once the key manager output indicates the key store is ready
+    bool hasSeenIsReady = false;
+
 public:
     // publically growable, the list of pending writes and pending reads
     std::deque<std::pair<axi::AxiLite::AWFlit_addr13_user0, axi::AxiLite::WFlit_data32_user0>> pendingWrites;
@@ -395,9 +398,12 @@ public:
         pendingSetupResponses = setupWrites.size();
     }
     virtual bool isReady() override {
-        return pendingSetupResponses == 0;
+        return (pendingSetupResponses == 0) && hasSeenIsReady;
     }
     virtual void driveInputsForKeyMgr(DUT& dut, uint64_t tick) override {
+        if (dut.keyStoreReady___05Fread) {
+            hasSeenIsReady = true;
+        }
         if (pendingSetupResponses) {
             if (!setupWrites.empty() && CANPUT_INPUT(keyStore_aw) && CANPUT_INPUT(keyStore_w)) {
                 auto [awFlit, wFlit] = setupWrites.front();
@@ -422,7 +428,7 @@ public:
             } else {
                 NOPOP_OUTPUT(keyStore_b);
             }
-        } else {
+        } else if (hasSeenIsReady) {
             // Move from pendingWrites -> writesInProgress if AW&W are free
             if (!pendingWrites.empty() && CANPUT_INPUT(keyStore_aw) && CANPUT_INPUT(keyStore_w)) {
                 auto [awFlit, wFlit] = pendingWrites.front();
@@ -520,6 +526,9 @@ class BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO64>: public KeyManage
     std::deque<LatencyTracked<axi::AxiLite::ARFlit_addr13_user0>> readsInProgress;
     std::deque<LatencyTracked<axi::AxiLite::AWFlit_addr13_user0>> writesInProgress;
 
+    // Set once the key manager output indicates the key store is ready
+    bool hasSeenIsReady = false;
+
 public:
     // publically growable, the list of pending writes and pending reads
     std::deque<std::pair<axi::AxiLite::AWFlit_addr13_user0, axi::AxiLite::WFlit_data64_user0>> pendingWrites;
@@ -574,9 +583,12 @@ public:
         pendingSetupResponses = setupWrites.size();
     }
     virtual bool isReady() override {
-        return pendingSetupResponses == 0;
+        return (pendingSetupResponses == 0) && hasSeenIsReady;
     }
     virtual void driveInputsForKeyMgr(DUT& dut, uint64_t tick) override {
+        if (dut.keyStoreReady___05Fread) {
+            hasSeenIsReady = true;
+        }
         if (pendingSetupResponses) {
             if (!setupWrites.empty() && CANPUT_INPUT(keyStore_aw) && CANPUT_INPUT(keyStore_w)) {
                 auto [awFlit, wFlit] = setupWrites.front();
@@ -601,7 +613,7 @@ public:
             } else {
                 NOPOP_OUTPUT(keyStore_b);
             }
-        } else {
+        } else if (hasSeenIsReady) {
             // Move from pendingWrites -> writesInProgress if AW&W are free
             if (!pendingWrites.empty() && CANPUT_INPUT(keyStore_aw) && CANPUT_INPUT(keyStore_w)) {
                 auto [awFlit, wFlit] = pendingWrites.front();
@@ -2296,7 +2308,7 @@ protected:
             } else if (inputKeyManager.aw.value().awaddr >= 16*256) {
                 int uploading_key = (inputKeyManager.aw.value().awaddr - 16*256) / 16;
                 handleKeyUpload(inputKeyManager);
-
+                // fmt::println(stderr, "uploading data key to {}, 0x{:x}", uploading_key, inputKeyManager.aw.value().awaddr);
                 if (!uploads.contains(uploading_key)) {
                     uploads[uploading_key] = MMIOUploadLatencyStats {
                         .upload_data_mmio_sent_tick = tick,
@@ -2322,7 +2334,11 @@ protected:
                 uploads[uploading_key].upload_status_mmio_sent_tick = tick;
 
                 n_uploads++;
+            } else {
+                fmt::println(stderr, "unk write to 0x{:x} {}", inputKeyManager.aw.value().awaddr, inputKeyManager.w.value().wdata);
             }
+        } else if (inputKeyManager.aw || inputKeyManager.w) {
+            fmt::println(stderr, "aw XOR w {} {}", inputKeyManager.aw.value(), inputKeyManager.w.value());
         }
 
         if (outputKeyManager.debugEnableKey.keyIdValid) {

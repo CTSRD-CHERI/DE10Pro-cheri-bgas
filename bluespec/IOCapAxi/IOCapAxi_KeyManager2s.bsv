@@ -43,6 +43,7 @@ interface IOCapAxi_KeyManager2#(numeric type t_data, numeric type n_exposers);
     interface Vector#(n_exposers, IOCapAxi_KeyManager2_ExposerIfc) exposerPorts;
 
     interface AXI4Lite_Slave#(TLog#('h2000), t_data, 0, 0, 0, 0, 0) hostFacingSlave;
+    interface ReadOnly#(Bool) ready;
 
     interface KeyManager2ErrorUnit errorUnit;
 
@@ -165,6 +166,7 @@ module mkIOCapAxi_KeyManager2_V1#(KonataMode kMode)(IOCapAxi_KeyManager2#(t_data
     interface exposerPorts = cons(exposerPort, nil);
 
     interface hostFacingSlave = mmio.hostFacingSlave;
+    interface ready = keyData.mmio.ready;
 
     interface errorUnit = error;
 
