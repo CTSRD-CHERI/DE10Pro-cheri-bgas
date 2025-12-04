@@ -85,8 +85,10 @@ class LatencyStats:
     revoke_under_dma_20flits_debug_invalid_latency: List[int]
     revoke_under_dma_24flits_debug_invalid_latency: List[int]
 
-    n_revokes_per_cycle: int
-    n_uploads_per_cycle: int
+    n_revokes_per_cycle_rolling: int
+    n_uploads_per_cycle_rolling: int
+    n_revokes_per_cycle_alone: int
+    n_uploads_per_cycle_alone: int
 
 # group 1 = project name
 PROJECT_NAME_PATTERN = re.compile(r'^project_name := "(\w+)"')
@@ -251,8 +253,12 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats:
 
     # rolling revoke
     rolling = results["tests"]["UVMRollingUploadRevokeMMIOBenchmark (1000 revokes-and-uploads, revoke after 20, around mask 0xff, 0-flit dma stream on key -1)"]
-    n_revokes_per_cycle = rolling["n_revokes_per_cycle"]
-    n_uploads_per_cycle = rolling["n_uploads_per_cycle"]
+    n_revokes_per_cycle_rolling = rolling["n_revokes_per_cycle"]
+    n_uploads_per_cycle_rolling = rolling["n_uploads_per_cycle"]
+
+    upload_then_revoke = results["tests"]["UVMRollingUploadRevokeMMIOBenchmark (256 revokes-and-uploads, revoke after 256, around mask 0xff, 0-flit dma stream on key -1)"]
+    n_revokes_per_cycle_alone = upload_then_revoke["n_revokes_per_cycle"]
+    n_uploads_per_cycle_alone = rolling["n_uploads_per_cycle"]
 
     return LatencyStats(
         dut=dut,
@@ -288,14 +294,17 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats:
         revoke_under_dma_20flits_debug_invalid_latency=latency_stats(revoke_under_dma_state_debug_invalid_latency["20"]),
         revoke_under_dma_24flits_debug_invalid_latency=latency_stats(revoke_under_dma_state_debug_invalid_latency["24"]),
 
-        n_revokes_per_cycle=n_revokes_per_cycle,
-        n_uploads_per_cycle=n_uploads_per_cycle,
+        n_revokes_per_cycle_rolling=n_revokes_per_cycle_rolling,
+        n_uploads_per_cycle_rolling=n_uploads_per_cycle_rolling,
+
+        n_revokes_per_cycle_alone=n_revokes_per_cycle_alone,
+        n_uploads_per_cycle_alone=n_uploads_per_cycle_alone,
     )
 
 RELEVANT_PROJECTS = {
     # "single_checker_1per": "mkSingleChecker3_1percycle",
     # "single_checker_2per": "mkSingleChecker3_2percycle",
-    "full_exposer_0checkers": "mkCombinedIOCapExposerV6_0pool_KeyManager2V1_Tb"
+    "full_exposer_0checkers": "mkCombinedIOCapExposerV6_0pool_KeyManager2V1_64_Tb"
 }
 RELEVANT_PROJECTS.update({
     f"full_exposer_{n}checkers_{p}per": f"mkCombinedIOCapExposerV6_blockinvalid_{n}pool_{p}percycle_KeyManager2V1_Tb"

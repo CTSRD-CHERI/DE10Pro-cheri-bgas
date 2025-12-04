@@ -3622,6 +3622,15 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
             )
         );
 
+        tests.push_back(
+            new ExposerUVMishTest(
+                new UVMRollingUploadRevokeMMIOBenchmark<TheDUT, ctype, V>(
+                    /* n_revokes_uploads */ 256, /* revoke_after_n_uploads */ 256
+                ),
+                expectPassthroughInvalidTransactions
+            )
+        );
+
         // Adding a DMA stream should affect revoke latency but not upload latency, except! it will prevent you from creating/reusing new keys
         // Use short txns to ensure the thing is saturated.
         // dma_txn_flits=4 breaks something?

@@ -2818,6 +2818,51 @@ last_upload_tick = 61101
 n_uploads = 1000
 n_uploads_per_cycle = 0.16719612104999165
 
+[tests."UVMRollingUploadRevokeMMIOBenchmark (256 revokes-and-uploads, revoke after 256, around mask 0xff, 0-flit dma stream on key -1)"]
+success = true
+ending_tick = 18971
+aw_throughput = -nan
+w_throughput = -nan
+ar_throughput = -nan
+b_throughput = -nan
+r_throughput = -nan
+keymngr_aw_b_latency_mean = 20
+keymngr_ar_r_latency_mean = 20
+aw_aw_latency_mean = -nan
+ar_ar_latency_mean = -nan
+w_w_latency_mean = -nan
+b_b_latency_mean = -nan
+r_r_latency_mean = -nan
+total_write = 0
+confirmed_write = 0
+exp_invalid_write = 0
+perf_valid_write = 0
+perf_invalid_write = 0
+total_read = 0
+confirmed_read = 0
+exp_invalid_read = 0
+perf_valid_read = 0
+perf_invalid_read = 0
+valid_txn_ratio = -nan
+revoke_mmio_debug_killkey_latency_mean = 20
+revoke_mmio_debug_state_invalidnotrevoked_latency_mean = 20
+revoke_mmio_debug_state_invalid_latency_mean = 50
+revoke_r_data_flits_at_mmio_mean = 0
+revoke_w_data_flits_at_mmio_mean = 0
+revoke_r_data_flits_at_killkey_mean = 0
+revoke_w_data_flits_at_killkey_mean = 0
+upload_mmio_status_latency_mean = 40
+upload_mmio_debug_enablekey_latency_mean = 50
+upload_mmio_debug_state_valid_latency_mean = 60
+first_revoke_tick = 14091
+last_revoke_tick = 16691
+n_revokes = 256
+n_revokes_per_cycle = 0.9846153846153847
+first_upload_tick = 1291
+last_upload_tick = 14101
+n_uploads = 256
+n_uploads_per_cycle = 0.19984387197501952
+
 [tests."UVMRollingUploadRevokeMMIOBenchmark (1000 revokes-and-uploads, revoke after 20, around mask 0xff, 8-flit dma stream on key 0)"]
 success = true
 ending_tick = 120541
@@ -3220,6 +3265,6 @@ n_uploads = 0
 n_uploads_per_cycle = -nan
 
 [summary]
-completed = 82
-success = 80
+completed = 83
+success = 81
 fail = 2
