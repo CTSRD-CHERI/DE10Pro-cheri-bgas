@@ -3575,14 +3575,16 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
 
         // dma_key == upload_key
         // where txn_cavs increases...
-        tests.push_back(
-            new ExposerUVMishTest(
-                new UVMUploadOverMMIOBenchmark<TheDUT, ctype, V>(
-                    /* dma_key */ 0, /* upload_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ 4, /* txn_cavs */ 0
-                ),
-                expectPassthroughInvalidTransactions
-            )
-        );
+        for (int i = 4; i <= 24; i += 4) {
+            tests.push_back(
+                new ExposerUVMishTest(
+                    new UVMUploadOverMMIOBenchmark<TheDUT, ctype, V>(
+                        /* dma_key */ 0, /* upload_key */ 0, /* n_transactions */ 100, /* txn_data_flits */ i, /* txn_cavs */ 0
+                    ),
+                    expectPassthroughInvalidTransactions
+                )
+            );
+        }
         tests.push_back(
             new ExposerUVMishTest(
                 new UVMUploadOverMMIOBenchmark<TheDUT, ctype, V>(
