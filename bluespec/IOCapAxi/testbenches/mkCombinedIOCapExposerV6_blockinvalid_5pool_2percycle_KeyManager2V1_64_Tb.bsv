@@ -11,7 +11,7 @@ module mkCombinedIOCapExposerV6_blockinvalid_5pool_2percycle_KeyManager2V1_64_Tb
 
     let keyMgr64Impl <- mkIOCapAxi_KeyManager2_V1(KONATA_FLIT);
     let exposerImpl <- mkSimpleIOCapExposerV6(
-        KONATA_OFF, keyMgr64Impl.exposerPorts[0], True,
+        KONATA_FLIT, keyMgr64Impl.exposerPorts[0], True,
         exposerPoolSize,
         mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Read,
         mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Write

@@ -19,6 +19,7 @@ import Cap2024_11 :: *;
 import Cap2024_11_Decode_FastFSM :: *;
 import Cap2024_SigCheck_Aes_1RoundPerCycleFast :: *;
 import Cap2024_SigCheck_Aes_2RoundPerCycleFast :: *;
+import Cap2024_SigCheck_Aes_2RoundPerCycleFast2 :: *;
 
 export IOCapAxiChecker3(..);
 export IOCapAxiChecker3_Read(..);
@@ -183,18 +184,18 @@ module mkSimpleIOCapAxiChecker3V1#(
     RWire#(CapCheckResult#(Bit#(0))) sigCheckOutRWire <- mkRWire;
     // Using an RWire on output creates a long path from the AES input to the output FIFO.
     FIFOF#(CapCheckResult#(Bit#(0))) sigCheckOutFIFO <- mkFIFOF;
-    makeSigChecker(rwireToReadOnly(sigCheckInRWire), fifofToWriteOnly(sigCheckOutFIFO));
-    // makeSigChecker(rwireToReadOnly(sigCheckInRWire), rwireToWriteOnly(sigCheckOutRWire));
+    // makeSigChecker(rwireToReadOnly(sigCheckInRWire), fifofToWriteOnly(sigCheckOutFIFO));
+    makeSigChecker(rwireToReadOnly(sigCheckInRWire), rwireToWriteOnly(sigCheckOutRWire));
     let sigCheckIn = interface Sink;
         method Bool canPut() = True;
         method Action put(x) = sigCheckInRWire.wset(x);
     endinterface;
-    let sigCheckOut = toSource(sigCheckOutFIFO);
-    // let sigCheckOut = interface Source;
-    //     method Bool canPeek() = isValid(sigCheckOutRWire.wget());
-    //     method peek() = fromMaybe(?, sigCheckOutRWire.wget());
-    //     method Action drop() = noAction;
-    // endinterface;
+    // let sigCheckOut = toSource(sigCheckOutFIFO);
+    let sigCheckOut = interface Source;
+        method Bool canPeek() = isValid(sigCheckOutRWire.wget());
+        method peek() = fromMaybe(?, sigCheckOutRWire.wget());
+        method Action drop() = noAction;
+    endinterface;
 
     // (* no_implicit_conditions *)
     rule tick_sigcheck;
@@ -476,7 +477,8 @@ module mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Write#(KonataMode kMode)(
     let m <- mkSimpleIOCapAxiChecker3V1(
         kMode,
         connectFastFSMCapDecode_2024_11,
-        mk2RoundPerCycleCapSigCheckFast
+        // mk2RoundPerCycleCapSigCheckFast
+        mk2RoundPerCycleCapSigCheckFast2
     );
     interface checker = m;
 endmodule
@@ -486,7 +488,8 @@ module mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Read#(KonataMode kMode)(I
     let m <- mkSimpleIOCapAxiChecker3V1(
         kMode,
         connectFastFSMCapDecode_2024_11,
-        mk2RoundPerCycleCapSigCheckFast
+        // mk2RoundPerCycleCapSigCheckFast
+        mk2RoundPerCycleCapSigCheckFast2
     );
     interface checker = m;
 endmodule
@@ -945,7 +948,8 @@ module mkChecker3CombinedPipelinedFrontend#(
     ConfigReg#(KFlitId) savedFlitId <- mkConfigReg(?);
     ConfigReg#(FlitState#(no_iocap_flit)) flitState <- mkConfigReg(tagged NoFlit);
     // Use a separate FIFO for authflit to ensure that flitState can pipeline - keep picking up new flits while doing old ones
-    FIFOF#(Tuple2#(KFlitId, AuthenticatedFlit#(no_iocap_flit, Cap2024_11))) authFlitFIFO <- mkUGFIFOF;
+    // Use a bypass FIFO so that if we receive the key and the 4th flit at the same time we can immediately start checking
+    FIFOF#(Tuple2#(KFlitId, AuthenticatedFlit#(no_iocap_flit, Cap2024_11))) authFlitFIFO <- mkBypassFIFOF;
     ConfigReg#(KeyState) keyState <- mkConfigReg(tagged NoKeyId);
     Reg#(Tuple2#(no_iocap_flit, Bit#(256))) flitInProgress <- mkReg(unpack(0));
 

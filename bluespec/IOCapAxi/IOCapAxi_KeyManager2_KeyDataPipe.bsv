@@ -93,8 +93,8 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort#(IOCapAxi_Ke
     RWire#(KeyId) pendingKeyRevoke <- mkRWire;
     RWire#(Tuple3#(KeyId, Bit#(128), Bit#(16))) pendingKeyWrite <- mkRWire;
 
-    // Queue of incoming requests for keys
-    let keyReqFF <- mkFIFOF;
+    // Keys are requested from BRAM port B by a method on keyReqSink 
+
     // TODO under multiple checker ports this should carry the checker port ID
     // Queue of (KeyId, keyStatus[KeyId] == KeyValid)s requested from BRAM - should match 1:1 with responses from BRAM.
     // Carries the keyValid signal because carrying things through in order is convenient, and we do need to ensure that it isn't initially invalid (see reasoning in comment on IOCap_KeyManager2_KeyCache).
@@ -116,19 +116,6 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort#(IOCapAxi_Ke
     // Queue of outgoing responses to the Exposer with (KeyId, Key) pairs.
     let keyRespFF <- mkFIFOF;
 
-    rule start_retrieve_key(hasClearedBram);
-        keyReqFF.deq();
-        let keyId = keyReqFF.first(); 
-        pendingKeyIdFF.enq.put(tuple2(keyId, keyState.keyStatus(keyId) == KeyValid));
-        keyDataPort.portB.request.put(BRAMRequestBE {
-            writeen: 0,
-            responseOnWrite: False,
-            address: keyId,
-            datain: ?
-        });
-        $display("// IOCap - key manager cache - start retrieve key ", fshow(keyId), " - ", fshow(keyState.keyStatus(keyId)));
-    endrule
-
     // Push reads from the BRAM directly into the keyRespFF (start_retrieve_key is the only rule that starts BRAM reads)
     rule receive_key_from_bram(hasClearedBram);
         pendingKeyIdFF.deq.drop();
@@ -137,9 +124,9 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort#(IOCapAxi_Ke
         let keyId = tpl_1(keyId_valid_tuple);
         // keyValid[k] may have changed between requesting and receiving the key from BRAM.
         let wasValid = tpl_2(keyId_valid_tuple);
-        // TODO this isn't necessary anymore if we're using the MapFIFO?
-        let isValid = keyState.keyStatus(keyId) == KeyValid;
-        let valid = wasValid && isValid;
+        // // TODO this isn't necessary anymore if we're using the MapFIFO?
+        // let isValid = keyState.keyStatus(keyId) == KeyValid;
+        let valid = wasValid; // && isValid;
         let key <- keyDataPort.portB.response.get();
 
         if (valid) begin
@@ -175,7 +162,20 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort#(IOCapAxi_Ke
         keyDataPort.portA.request.put(req);
     endrule
     
-    let keyReqSink = toSink(keyReqFF);
+    let keyReqSink = interface Sink#(KeyId);
+        method Bool canPut() = hasClearedBram;
+        method Action put(KeyId keyId);
+            // TODO does this make a long path?
+            pendingKeyIdFF.enq.put(tuple2(keyId, keyState.keyStatus(keyId) == KeyValid));
+            keyDataPort.portB.request.put(BRAMRequestBE {
+                writeen: 0,
+                responseOnWrite: False,
+                address: keyId,
+                datain: ?
+            });
+            $display("// IOCap - key manager cache - start retrieve key ", fshow(keyId), " - ", fshow(keyState.keyStatus(keyId)));
+        endmethod
+    endinterface;
     let keyRespSrc = toSource(keyRespFF);
 
     interface mmio = interface IOCapAxi_KeyManager2_KeyDataPipe_MMIOIfc;
