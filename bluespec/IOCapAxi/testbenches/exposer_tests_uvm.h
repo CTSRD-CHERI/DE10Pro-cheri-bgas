@@ -1680,9 +1680,11 @@ protected:
     // Early versions of the exposer will always pass transactions through, even if it later registers them as "invalid" with the performance counters.
     bool expectPassthroughInvalidTransactions;
 
+    uint64_t awInProgress_firstTick;
     std::vector<axi::IOCapAxi::AWFlit_id4_addr64_user3> awInProgress;
     WriteTxnScoreboard wTxns;
 
+    uint64_t arInProgress_firstTick;
     std::vector<axi::IOCapAxi::ARFlit_id4_addr64_user3> arInProgress;
     ReadTxnScoreboard rTxns;
 
@@ -1711,6 +1713,7 @@ protected:
             // No matter what, we're going to get some data flits in and they're going to be related to this txnId.
             // Call this early so we can process W flits coming in while handling the rest of the AW
             if (awInProgress.size() == 1) {
+                awInProgress_firstTick = tick;
                 uint8_t txnId = awInProgress[0].awid;
                 uint64_t nDataFlits = axi::len_to_n_transfers(awInProgress[0].awlen);
                 wTxns.expectIncomingDataFlits(txnId, nDataFlits);
@@ -1780,7 +1783,7 @@ protected:
                 (capIsValid && rangeIsValid) || expectPassthroughInvalidTransactions, // valid
                 nDataFlits,
                 {
-                    tick,
+                    awInProgress_firstTick,
                     axi::SanitizedAxi::AWFlit_id4_addr64_user0 {
                         .awregion = awInProgress[0].awregion,
                         .awqos = awInProgress[0].awqos,
@@ -1804,6 +1807,9 @@ protected:
     void resolveArFlit(uint64_t tick, std::optional<axi::IOCapAxi::ARFlit_id4_addr64_user3> newIncomingFlit) {
         if (newIncomingFlit) {
             arInProgress.push_back(newIncomingFlit.value());
+            if (arInProgress.size() == 1) {
+                arInProgress_firstTick = tick;
+            }
         }
         if (arInProgress.size() > 4) {
             throw test_failure(fmt::format("BaseExposerScoreboard got nonsensical set of ar flits - too many somehow? {}", arInProgress));
@@ -1865,7 +1871,7 @@ protected:
                 (capIsValid && rangeIsValid) || expectPassthroughInvalidTransactions, // valid
                 axi::len_to_n_transfers(arInProgress[0].arlen),
                 {
-                    tick,
+                    arInProgress_firstTick,
                     axi::SanitizedAxi::ARFlit_id4_addr64_user0 {
                         .arregion = arInProgress[0].arregion,
                         .arqos = arInProgress[0].arqos,
