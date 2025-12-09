@@ -237,6 +237,10 @@ template <> class fmt::formatter<KeyMngrShimOutput<KeyMngrV2>> {
     }
 };
 
+constexpr uint8_t DEBUG_KEY_STATUS_INVALID = 1;
+constexpr uint8_t DEBUG_KEY_STATUS_VALID = 2;
+constexpr uint8_t DEBUG_KEY_STATUS_INVALID_PENDING_REVOKE = 4;
+
 // When the KeyMngr is an actual DUT, we can still inspect the innards?
 template<>
 struct KeyMngrShimOutput<KeyMngrV2_AsDUT_MMIO32> {

@@ -166,7 +166,7 @@ module mkIOCapAxi_KeyManager2_MMIO#(KonataMode kMode, IOCapAxi_KeyManager2_KeySt
         if ((ar.araddr & 'h1000) == 0) begin
             KeyId k = ar.araddr[11:4]; // Memory map is byte-addressed, each secret key is 16 bytes = 4 address bits
 
-            response = tagged Valid (zeroExtend(pack(keyState.keyStatus(k))));
+            response = tagged Valid (zeroExtend(keyStatusMmioPack(keyState.keyStatus(k))));
         end else if (ar.araddr < 'h1020) begin
             // We're between [0x1000 and 0x1020)
             // Read a performance counter

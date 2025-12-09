@@ -683,11 +683,11 @@ BLUESPEC_CAPCHECKRESULT_TUPLE2_CAPPERMS_CAPRANGE = [
 BLUESPEC_VECTOR_KEYSTATUS = [
     Struct(
         "KeyStatuses",
-        BackingArray.LSB(U32, 256 * 2 // 32),
+        BackingArray.LSB(U32, math.ceil(256 * 3 / 32)),
         [
             PackedArrayField.LSB(
                 name="keyStatuses",
-                entry_width=2,
+                entry_width=3,
                 len=256,
             )
         ]

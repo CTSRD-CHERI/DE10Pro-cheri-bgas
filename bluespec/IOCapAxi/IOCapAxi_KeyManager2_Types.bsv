@@ -18,4 +18,27 @@ typedef enum {
     KeyInvalidRevoked,       // = 0
     KeyValid,                // = 1
     KeyInvalidPendingRevoke  // = 2
-} KeyStatus deriving (Bits, FShow, Eq);
+} KeyStatus deriving (FShow, Eq);
+
+function Bit#(2) keyStatusMmioPack(KeyStatus k) = case (k) matches
+    KeyInvalidRevoked : 2'd0;
+    KeyValid : 2'd1;
+    KeyInvalidPendingRevoke : 2'd2;
+endcase;
+
+// Experiment: use one-hot encodings so that lookups in large vectors of KeyStatus
+// (which are usually comparing to a specific KeyStatus value, e.g. checking valid)
+// only have to use one bit
+instance Bits#(KeyStatus, 3);
+    function Bit#(3) pack(KeyStatus k) = case (k) matches
+        KeyInvalidRevoked : 3'b001;
+        KeyValid : 3'b010;
+        KeyInvalidPendingRevoke : 3'b100;
+    endcase;
+    function KeyStatus unpack(Bit#(3) b) = case (b) matches
+        3'b001 : KeyInvalidRevoked;
+        3'b010 : KeyValid;
+        3'b100 : KeyInvalidPendingRevoke;
+        default: ?;
+    endcase;
+endinstance

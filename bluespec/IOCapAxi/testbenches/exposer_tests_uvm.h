@@ -2298,7 +2298,7 @@ protected:
                 if (uploads.contains(revoking_key)) {
                     throw test_failure(fmt::format("Tried to revoke {} while it was being uploaded: {} {}", (int)revoking_key, uploads[revoking_key], tick));
                 }
-                if (outputKeyManager.debugKeyStatuses.keyStatuses[revoking_key] != 1) {
+                if (outputKeyManager.debugKeyStatuses.keyStatuses[revoking_key] != DEBUG_KEY_STATUS_VALID) {
                     throw test_failure(fmt::format("Tried to revoke {} while it was in state {}", (int)revoking_key, (int)outputKeyManager.debugKeyStatuses.keyStatuses[revoking_key]));
                 }
 
@@ -2336,7 +2336,7 @@ protected:
                 if (!uploads.contains(uploading_key)) {
                     throw test_failure(fmt::format("Tried to finalize upload for {} while it wasn't in progress", (int)uploading_key));
                 }
-                if (outputKeyManager.debugKeyStatuses.keyStatuses[uploading_key] != 0) {
+                if (outputKeyManager.debugKeyStatuses.keyStatuses[uploading_key] != DEBUG_KEY_STATUS_INVALID) {
                     throw test_failure(fmt::format("Tried to finalize upload for {} while it was in state {}", (int)uploading_key, (int)outputKeyManager.debugKeyStatuses.keyStatuses[uploading_key]));
                 }
 
@@ -2386,11 +2386,11 @@ protected:
         for (auto it = revokes.begin(); it != revokes.end();) {
             auto& [revoking_key, revoke_stats] = *it;
             if (revoke_stats.debug_state_invalidnotrevoked_tick == 0 &&
-                outputKeyManager.debugKeyStatuses.keyStatuses[revoking_key] == 2
+                outputKeyManager.debugKeyStatuses.keyStatuses[revoking_key] == DEBUG_KEY_STATUS_INVALID_PENDING_REVOKE
             ) {
                 revoke_stats.debug_state_invalidnotrevoked_tick = tick;
             } else if (
-                outputKeyManager.debugKeyStatuses.keyStatuses[revoking_key] == 0
+                outputKeyManager.debugKeyStatuses.keyStatuses[revoking_key] == DEBUG_KEY_STATUS_INVALID
             ) {
                 if (revoke_stats.debug_state_invalidnotrevoked_tick == 0) {
                     throw test_failure(fmt::format("State for key {} didn't transition through invalid-not-revoked", (int)revoking_key));
@@ -2431,7 +2431,7 @@ protected:
         for (auto it = uploads.begin(); it != uploads.end();) {
             auto& [uploading_key, upload_stats] = *it;
             if (
-                outputKeyManager.debugKeyStatuses.keyStatuses[uploading_key] == 1
+                outputKeyManager.debugKeyStatuses.keyStatuses[uploading_key] == DEBUG_KEY_STATUS_VALID
             ) {
                 if (upload_stats.upload_status_mmio_sent_tick == 0) {
                     throw test_failure(fmt::format("State for key {} didn't get a status write before changing", (int)uploading_key));
