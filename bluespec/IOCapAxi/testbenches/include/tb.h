@@ -425,28 +425,26 @@ public:
 
                 // Toggle clock - goes up at 5, 15, 25, 35...
                 if ((main_time % 10) == 5) {
+                    // Only start driving at 20 to let the reset status settle
+                    if (main_time >= 20) {
+                        // Tell generator and scoreboard that tick = (main_time - 5) so it's always an even multiple of 10
+
+                        // Drive the inputs just before the clock rises
+                        generator->driveInputsForTick(this->rng, dut, main_time - 5);
+                        // Monitor final outputs for previous tick and just-sent inputs for new tick,
+                        // processing outputs first so that new inputs don't have a backwards ripple effect
+                        scoreboard->monitorAndScore(dut, main_time - 5);
+                    }
+
+                    // Tick one cycle along...
                     dut.CLK = 1;
+                    if (setup.konata) {
+                        fmt::println(stdout, "C\t1");
+                    }
                 }
                 // Goes down at 10, 20, 30, 40...
                 else if ((main_time % 10) == 0) {
                     dut.CLK = 0;
-                    
-                    // Tick one cycle along...
-                    if (setup.konata) {
-                        fmt::println(stdout, "C\t1");
-                    }
-
-                    // Only start driving at 20 to let the reset status settle
-                    if (main_time >= 20) {
-                        // drive the inputs on the same tick the clock falls
-                        generator->driveInputsForTick(this->rng, dut, main_time);
-                    }
-                } else if ((main_time % 10) == 1) {
-                    // process output just after the clock actually falls, so the circuit actually evaluates??
-                    // If I do this at time%10==0 then some binary event signals are wrong - e.g. bumpPerfCounterBadRead looks like bumpPerfCounterGoodRead (somehow??) 
-                    if (main_time >= 20) {
-                        scoreboard->monitorAndScore(dut, main_time);
-                    }
                 }
 
                 dut.eval();

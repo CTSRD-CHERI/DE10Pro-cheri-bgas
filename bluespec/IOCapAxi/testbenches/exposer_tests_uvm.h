@@ -2354,7 +2354,7 @@ protected:
         if (outputKeyManager.debugEnableKey.keyIdValid) {
             key_manager::KeyId uploading_key = outputKeyManager.debugEnableKey.keyId;
             uploads[uploading_key].enable_key_observed_tick = tick;
-            upload_on_tick[tick + 20] = uploading_key;
+            upload_on_tick[tick + 10] = uploading_key;
         }
 
         if (upload_on_tick.contains(tick)) {
