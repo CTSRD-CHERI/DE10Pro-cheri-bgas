@@ -9,6 +9,10 @@ import re
 import sys
 from typing import Callable, List, TextIO, Tuple
 
+N_SEEDS = 32
+def seed_name(seed: int) -> str:
+    return f"Seed{seed:02d}"
+
 SPECIAL_INPUTS = ["CLK", "RST_N"]
 
 INPUT = re.compile(r"input\s+(\[(\d+)\s*:\s*0\]\s+)?(\w+);")
@@ -164,7 +168,7 @@ endmodule
         first = False
 
     print(suffix, file=file)
-    
+
 def qpf(project_name, file):
 # Old non-quartus ones
 # set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BRAM2Load.v"
@@ -211,8 +215,10 @@ DATE = "20:50:32  October 16, 2025"
 PROJECT_REVISION = "{project_name}"
 """
     print(contents, file=file)
+    for seed in range(N_SEEDS):
+        print(f"PROJECT_REVISION = \"{seed_name(seed)}\"", file=file)
 
-def qsf_from_bluespec(project_name, file):
+def qsf_from_bluespec(project_name, file, seed=None):
     prefix = f"""
 set_global_assignment -name TOP_LEVEL_ENTITY {project_name}
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 23.2.0
@@ -337,7 +343,6 @@ set_global_assignment -name VERILOG_FILE "$::env(BLUESPECDIR)/Verilog/BypassCros
 set_global_assignment -name VERILOG_FILE ../../verilog/input_harness.v
 set_global_assignment -name VERILOG_FILE ../../verilog/output_harness.v
 set_global_assignment -name VERILOG_FILE {project_name}.v
-set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 100
 set_global_assignment -name DEVICE 1SX280HU2F50E1VG
@@ -358,6 +363,12 @@ set_instance_assignment -name PARTITION_COLOUR 4286709717 -to {project_name} -en
 """
     #set_global_assignment -name ALLOW_REGISTER_RETIMING OFF
     print(suffix, file=file)
+
+    if seed is not None:
+        print(f"set_global_assignment -name SEED {seed}", file=file)
+        print(f"set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files_{seed}", file=file)
+    else:
+        print("set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files", file=file)
 
 def qsf_from_null(project_name, dut, file):
     contents = f"""
@@ -527,6 +538,10 @@ force-synth:
     cd ../../../ && make ./build/verilog/{{{{dut}}}}.v
     quartus_sh --flow compile {{{{project_name}}}}
 
+force-synth-seeds:
+    cd ../../../ && make ./build/verilog/{{{{dut}}}}.v
+    quartus_sh -t ../../compile_revisions.tcl {{{{project_name}}}} 
+
 reports:
     grep -B 1 -A 6 "; Fmax Summary" output_files/{{{{project_name}}}}.sta.rpt
     grep -B 1 -A 90 "; Fitter Resource Usage Summary" output_files/{{{{project_name}}}}.fit.place.rpt
@@ -644,11 +659,25 @@ if __name__ == '__main__':
     overwrite_if_different(DUT_QPF_FILE, lambda f: qpf(PROJECT_NAME, f))
     overwrite_if_different(DUT_SDC_FILE, lambda f: sdc(target_mhz, f))
 
-    if args.null_tb:
-        overwrite_if_different(DUT_QSF_FILE, lambda f: qsf_from_null(PROJECT_NAME, dut, f))
-        overwrite_if_different(MAKEFILE, lambda f: makefile_from_null(PROJECT_NAME, dut, f))
-        overwrite_if_different(JUSTFILE, lambda f: justfile_from_null(PROJECT_NAME, dut, f))
-    else:
-        overwrite_if_different(DUT_QSF_FILE, lambda f: qsf_from_bluespec(PROJECT_NAME, f))
-        overwrite_if_different(MAKEFILE, lambda f: makefile_from_bluespec(PROJECT_NAME, dut, f))
-        overwrite_if_different(JUSTFILE, lambda f: justfile_from_bluespec(PROJECT_NAME, dut, f))
+    assert not args.null_tb
+    # if args.null_tb:
+    #     overwrite_if_different(DUT_QSF_FILE, lambda f: qsf_from_null(PROJECT_NAME, dut, f))
+    #     overwrite_if_different(MAKEFILE, lambda f: makefile_from_null(PROJECT_NAME, dut, f))
+    #     overwrite_if_different(JUSTFILE, lambda f: justfile_from_null(PROJECT_NAME, dut, f))
+    # else:
+    #     overwrite_if_different(DUT_QSF_FILE, lambda f: qsf_from_bluespec(PROJECT_NAME, f))
+    #     overwrite_if_different(MAKEFILE, lambda f: makefile_from_bluespec(PROJECT_NAME, dut, f))
+    #     overwrite_if_different(JUSTFILE, lambda f: justfile_from_bluespec(PROJECT_NAME, dut, f))
+
+    overwrite_if_different(DUT_QSF_FILE, lambda f: qsf_from_bluespec(PROJECT_NAME, f))
+    overwrite_if_different(MAKEFILE, lambda f: makefile_from_bluespec(PROJECT_NAME, dut, f))
+    overwrite_if_different(JUSTFILE, lambda f: justfile_from_bluespec(PROJECT_NAME, dut, f))
+
+    for seed in range(N_SEEDS):
+        SEED_QSF_FILE = PROJECT_FOLDER / f"{seed_name(seed)}.qsf"
+        SEED_SDC_FILE = PROJECT_FOLDER / f"{seed_name(seed)}.sdc"
+        SEED_DESC = PROJECT_FOLDER / f"{seed_name(seed)}_description.txt"
+
+        overwrite_if_different(SEED_QSF_FILE, lambda f: qsf_from_bluespec(PROJECT_NAME, f, seed=seed))
+        overwrite_if_different(SEED_SDC_FILE, lambda f: sdc(target_mhz, f))
+        overwrite_if_different(SEED_DESC, lambda f: print(f"seed = {seed}", file=f))

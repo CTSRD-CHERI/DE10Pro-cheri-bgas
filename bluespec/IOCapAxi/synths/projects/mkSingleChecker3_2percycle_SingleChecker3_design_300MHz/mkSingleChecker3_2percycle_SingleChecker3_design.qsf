@@ -156,7 +156,6 @@ set_global_assignment -name VERILOG_FILE ../../../build/verilog/mkCombinedIOCapE
 set_global_assignment -name VERILOG_FILE ../../verilog/input_harness.v
 set_global_assignment -name VERILOG_FILE ../../verilog/output_harness.v
 set_global_assignment -name VERILOG_FILE mkSingleChecker3_2percycle_SingleChecker3_design.v
-set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 100
 set_global_assignment -name DEVICE 1SX280HU2F50E1VG
@@ -175,3 +174,4 @@ set_location_assignment PIN_BH20 -to RST_N -comment IOBANK_3C
 set_global_assignment -name POWER_APPLY_THERMAL_MARGIN ADDITIONAL
 set_instance_assignment -name PARTITION_COLOUR 4286709717 -to mkSingleChecker3_2percycle_SingleChecker3_design -entity mkSingleChecker3_2percycle_SingleChecker3_design
 
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files

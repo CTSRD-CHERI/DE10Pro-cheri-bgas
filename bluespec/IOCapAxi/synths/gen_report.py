@@ -8,6 +8,10 @@ import os
 from typing import Any, Dict, Generator, List, TextIO
 import re
 
+N_SEEDS = 32
+def seed_name(seed: int) -> str:
+    return f"Seed{seed:02d}"
+
 def git_hash() -> str:
     return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], encoding="utf-8")
 
@@ -68,58 +72,63 @@ def project_stats(project_dir: str) -> SynthStats:
         dut = file_line_one_regex_match(f, DUT_PATTERN).group(1)
         project_name = file_line_one_regex_match(f, PROJECT_NAME_PATTERN).group(1)
 
-    timing_file = os.path.join("projects", project_dir, "output_files", f"{project_name}.sta.rpt")
-    placing_file = os.path.join("projects", project_dir, "output_files", f"{project_name}.fit.place.rpt")
+    stats = []
+    for seed in range(N_SEEDS):
+        rev_name = seed_name(seed)
+        timing_file = os.path.join("projects", project_dir, f"output_files_{seed}", f"{rev_name}.sta.rpt")
+        placing_file = os.path.join("projects", project_dir, f"output_files_{seed}", f"{rev_name}.fit.place.rpt")
 
-    timing_timestamp = file_timestamp(timing_file)
-    placing_timestamp = file_timestamp(placing_file)
+        timing_timestamp = file_timestamp(timing_file)
+        placing_timestamp = file_timestamp(placing_file)
 
-    with open(timing_file, "r", encoding="utf-8") as f:
-        m = file_line_one_regex_match(f, FMAX_PATTERN)
-        assert float(m.group(1)) >= float(m.group(2))
-        fmax = m.group(2)
-    with open(placing_file, "r", encoding="utf-8") as f:
-        m = file_line_one_regex_match(f, LUTS_PATTERN)
-        luts = int(m.group(1).replace(",", ""))
-        luts_device_max = int(m.group(2).replace(",", ""))
-        assert luts_device_max > luts
+        with open(timing_file, "r", encoding="utf-8") as f:
+            m = file_line_one_regex_match(f, FMAX_PATTERN)
+            assert float(m.group(1)) >= float(m.group(2))
+            fmax = m.group(2)
+        with open(placing_file, "r", encoding="utf-8") as f:
+            m = file_line_one_regex_match(f, LUTS_PATTERN)
+            luts = int(m.group(1).replace(",", ""))
+            luts_device_max = int(m.group(2).replace(",", ""))
+            assert luts_device_max > luts
 
-        luts_db = {}
-        found_luts_db = False
-        for line in f:
-            if not found_luts_db and not line.startswith("; Fitter Resource Utilization by Entity"):
-                continue
-            if found_luts_db and line.startswith("Note: For table entries with two numbers listed, "):
-                assert luts_db != {}
-                found_luts_db = False
-            found_luts_db = True
-            m = GENERIC_LUTS_PATTERN.match(line)
-            if m:
-                name = m.group(1)
-                if name not in ['|', '|i|', '|o|', '|dut|']:
+            luts_db = {}
+            found_luts_db = False
+            for line in f:
+                if not found_luts_db and not line.startswith("; Fitter Resource Utilization by Entity"):
                     continue
-                alms = m.group(2)
-                print(name, alms)
-                if name in luts_db:
-                    raise RuntimeError(f"found two lut_db entries for {name} in {f}")
-                # round away from .5
-                luts_db[name] = round(float(alms))
-    
-    print(luts_db)
-    print(f)
-    assert abs(luts_db["|"] - luts) <= 2, f"Inconsistent LUTs for {f} - toplevel = {luts}, db = {luts_db['|']}"
+                if found_luts_db and line.startswith("Note: For table entries with two numbers listed, "):
+                    assert luts_db != {}
+                    found_luts_db = False
+                found_luts_db = True
+                m = GENERIC_LUTS_PATTERN.match(line)
+                if m:
+                    name = m.group(1)
+                    if name not in ['|', '|i|', '|o|', '|dut|']:
+                        continue
+                    alms = m.group(2)
+                    print(name, alms)
+                    if name in luts_db:
+                        raise RuntimeError(f"found two lut_db entries for {name} in {f}")
+                    # round away from .5
+                    luts_db[name] = round(float(alms))
+        
+        # print(luts_db)
+        # print(f)
+        assert abs(luts_db["|"] - luts) <= 2, f"Inconsistent LUTs for {f} - toplevel = {luts}, db = {luts_db['|']}"
 
-    return SynthStats(
-        dut=dut,
-        sta_timestamp=timing_timestamp,
-        fit_timestamp=placing_timestamp,
-        fmax=fmax,
-        luts_total=luts,
-        luts_dut=luts_db['|dut|'],
-        luts_input_harness=luts_db["|i|"],
-        luts_output_harness=luts_db["|o|"],
-        luts_device_max=luts_device_max
-    )
+        stats.append(SynthStats(
+            dut=dut,
+            sta_timestamp=timing_timestamp,
+            fit_timestamp=placing_timestamp,
+            fmax=fmax,
+            luts_total=luts,
+            luts_dut=luts_db['|dut|'],
+            luts_input_harness=luts_db["|i|"],
+            luts_output_harness=luts_db["|o|"],
+            luts_device_max=luts_device_max
+        ))
+    
+    return max(stats, key=lambda s: float(s.fmax))
 
 def all_equal(xs: List) -> bool:
     assert len(xs) > 0
@@ -128,10 +137,10 @@ def all_equal(xs: List) -> bool:
 RELEVANT_PROJECTS = {
     "single_checker_1per": "mkSingleChecker3_1percycle_SingleChecker3_design_300MHz",
     "single_checker_2per": "mkSingleChecker3_2percycle_SingleChecker3_design_300MHz",
-    "full_exposer_0checkers": "mkCombinedIOCapExposerV6_0pool_KeyManager2V1_64_Tb_UnifiedSingleExposerKeyMngr64Tb_design_185MHz",
+    "full_exposer_0checkers": "mkCombinedIOCapExposerV6_0pool_KeyManager2V1_64_Tb_UnifiedSingleExposerKeyMngr64Tb_design_200MHz",
 }
 RELEVANT_PROJECTS.update({
-    f"full_exposer_{n}checkers_{p}per_64": f"mkCombinedIOCapExposerV6_blockinvalid_{n}pool_{p}percycle_KeyManager2V1_64_Tb_UnifiedSingleExposerKeyMngr64Tb_design_185MHz"
+    f"full_exposer_{n}checkers_{p}per_64": f"mkCombinedIOCapExposerV6_blockinvalid_{n}pool_{p}percycle_KeyManager2V1_64_Tb_UnifiedSingleExposerKeyMngr64Tb_design_200MHz"
     for (n, p) in (
         (1, 2),
         (2, 2),
