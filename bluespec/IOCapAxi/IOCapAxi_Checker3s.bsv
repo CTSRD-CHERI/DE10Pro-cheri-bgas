@@ -18,6 +18,7 @@ import Cap2024 :: *;
 import Cap2024_11 :: *;
 import Cap2024_11_Decode_FastFSM :: *;
 import Cap2024_SigCheck_Aes_1RoundPerCycleFast :: *;
+import Cap2024_SigCheck_Aes_1RoundPerCycleFast2 :: *;
 import Cap2024_SigCheck_Aes_2RoundPerCycleFast :: *;
 import Cap2024_SigCheck_Aes_2RoundPerCycleFast2 :: *;
 
@@ -457,7 +458,8 @@ module mkSimpleIOCapAxiChecker3V1_FastDecode_1CycleAES_Write#(KonataMode kMode)(
     let m <- mkSimpleIOCapAxiChecker3V1(
         kMode,
         connectFastFSMCapDecode_2024_11,
-        mk1RoundPerCycleCapSigCheckFast
+        // mk1RoundPerCycleCapSigCheckFast
+        mk1RoundPerCycleCapSigCheckFast2
     );
     interface checker = m;
 endmodule
@@ -467,7 +469,8 @@ module mkSimpleIOCapAxiChecker3V1_FastDecode_1CycleAES_Read#(KonataMode kMode)(I
     let m <- mkSimpleIOCapAxiChecker3V1(
         kMode,
         connectFastFSMCapDecode_2024_11,
-        mk1RoundPerCycleCapSigCheckFast
+        // mk1RoundPerCycleCapSigCheckFast
+        mk1RoundPerCycleCapSigCheckFast2
     );
     interface checker = m;
 endmodule
