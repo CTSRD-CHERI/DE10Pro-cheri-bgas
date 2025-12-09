@@ -166,14 +166,14 @@ module mkIOCapAxi_KeyManager2_KeyDataPipe_DualPortSingleCheckerPort#(IOCapAxi_Ke
         method Bool canPut() = hasClearedBram;
         method Action put(KeyId keyId);
             // TODO does this make a long path?
-            pendingKeyIdFF.enq.put(tuple2(keyId, keyState.keyStatus(keyId) == KeyValid));
+            pendingKeyIdFF.enq.put(tuple2(keyId, keyState.keyIsValid(keyId)));
             keyDataPort.portB.request.put(BRAMRequestBE {
                 writeen: 0,
                 responseOnWrite: False,
                 address: keyId,
                 datain: ?
             });
-            $display("// IOCap - key manager cache - start retrieve key ", fshow(keyId), " - ", fshow(keyState.keyStatus(keyId)));
+            // $display("// IOCap - key manager cache - start retrieve key ", fshow(keyId), " - ", fshow(keyState.keyStatus(keyId)));
         endmethod
     endinterface;
     let keyRespSrc = toSource(keyRespFF);

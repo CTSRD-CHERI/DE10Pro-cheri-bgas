@@ -270,7 +270,7 @@ module mkIOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc_Shim(IOCapAxi_KeyManag
             end
         endmethod
 
-        method keyStatus(key) = keyStatusReg[key];
+        method keyIsValid(key) = keyStatusReg[key] == KeyValid;
     endinterface;
 endmodule
 

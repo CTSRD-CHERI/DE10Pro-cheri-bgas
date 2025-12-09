@@ -42,3 +42,7 @@ instance Bits#(KeyStatus, 3);
         default: ?;
     endcase;
 endinstance
+
+function Bool keyStatusIsValid(KeyStatus k) = (pack(k)[1] == 1);
+function Bool keyStatusNotValid(KeyStatus k) = (pack(k)[1] == 0);
+function Bool keyStatusNotInvalidRevoked(KeyStatus k) = (pack(k)[0] == 0);

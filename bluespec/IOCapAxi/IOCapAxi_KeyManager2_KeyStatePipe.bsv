@@ -41,7 +41,7 @@ interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc;
     method ActionValue#(Bool) tryRevokeAndClearKey(KeyId id);
 
     (* always_enabled *)
-    method KeyStatus keyStatus(KeyId key);
+    method Bool keyIsValid(KeyId key);
 endinterface
 
 interface IOCapAxi_KeyManager2_KeyStatePipe;
@@ -87,21 +87,21 @@ module mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg#(KeyManager2ErrorUnit error
     endrule
 
     interface mmio = interface IOCapAxi_KeyManager2_KeyStatePipe_MMIOIfc;
-        method ActionValue#(Bool) tryEnableKey(KeyId key);
-            if (keyStates[key] != KeyInvalidRevoked) begin
+        method ActionValue#(Bool) tryEnableKey(KeyId id);
+            if (keyStatusNotInvalidRevoked(keyStates[id])) begin
                 return False;
             end else begin
-                keyToMakeValid.wset(key);
+                keyToMakeValid.wset(id);
                 return True;
             end
         endmethod
 
-        method KeyStatus keyStatus(KeyId key) = keyStates[key];
+        method KeyStatus keyStatus(KeyId id) = keyStates[id];
     endinterface;
 
     interface keydata = interface IOCapAxi_KeyManager2_KeyStatePipe_KeyDataPipeIfc;
         method ActionValue#(Bool) tryWriteKey(KeyId id);
-            if (keyStates[id] != KeyInvalidRevoked) begin
+            if (keyStatusNotInvalidRevoked(keyStates[id])) begin
                 return False;
             end else begin
                 return True;
@@ -109,7 +109,7 @@ module mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg#(KeyManager2ErrorUnit error
         endmethod
 
         method ActionValue#(Bool) tryRevokeAndClearKey(KeyId id);
-            if (keyStates[id] != KeyValid) begin
+            if (keyStatusNotValid(keyStates[id])) begin
                 return False;
             end else begin
                 keyToStartRevoking.wset(id);
@@ -117,7 +117,8 @@ module mkIOCapAxi_KeyManager2_KeyStatePipe_SingleReg#(KeyManager2ErrorUnit error
             end
         endmethod
                 
-        method KeyStatus keyStatus(KeyId key) = keyStates[key];
+        // keyStates[id] != KeyValid i.e. middle bit set
+        method Bool keyIsValid(KeyId id) = keyStatusIsValid(keyStates[id]);
     endinterface;
 
     interface refcount = interface IOCapAxi_KeyManager2_KeyStatePipe_RefCountPipeIfc;
