@@ -1717,6 +1717,7 @@ protected:
                 uint8_t txnId = awInProgress[0].awid;
                 uint64_t nDataFlits = axi::len_to_n_transfers(awInProgress[0].awlen);
                 wTxns.expectIncomingDataFlits(txnId, nDataFlits);
+                fmt::println(stdout, "V\tAw0Send\t{}", tick);
             }
         }
         if (awInProgress.size() > 4) {
@@ -1809,6 +1810,7 @@ protected:
             arInProgress.push_back(newIncomingFlit.value());
             if (arInProgress.size() == 1) {
                 arInProgress_firstTick = tick;
+                fmt::println(stdout, "V\tAr0Send\t{}", tick);
             }
         }
         if (arInProgress.size() > 4) {
@@ -1908,11 +1910,13 @@ public:
 
         if (output.clean_flit_aw) {
             confirmedWriteTxns++;
+            fmt::println(stdout, "V\tAwRecv\t{}", tick);
             wTxns.checkAndFwdAwFlit(tick, output.clean_flit_aw.value());
         }
 
         if (output.clean_flit_ar) {
             confirmedReadTxns++;
+            fmt::println(stdout, "V\tArRecv\t{}", tick);
             rTxns.checkAndFwdArFlit(tick, output.clean_flit_ar.value());
         }
 

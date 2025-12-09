@@ -261,19 +261,20 @@ module mkSimpleIOCapAxiChecker3V1#(
 
                     if (sigCheckRes matches tagged Fail .*) begin
                         failed = True;
-                        $display("// IOCap - flit failed sigcheck");
+                        // $display("// IOCap - flit failed sigcheck");
                     end else if (decodeState.Decoded.failed) begin
                         failed = True;
-                        $display("// IOCap - flit failed decode earlier");
+                        // $display("// IOCap - flit failed decode earlier");
                     end
 
                     if (resps.canPut()) begin
                         resps.put(tuple4(savedAuthFlit.flit, flitId, keyId, !failed));
-                        $display("// flitCompleted from AwaitingSigCheck");
+                        konataEvent(kMode, "FlitChecked", fshow(!failed));
+                        // $display("// flitCompleted from AwaitingSigCheck");
                         flitCompleted.send();
                         newSigCheckState = tagged SigCheckIdle;
                     end else begin
-                        $display("// AwaitingSigCheck waiting on resps");
+                        // $display("// AwaitingSigCheck waiting on resps");
                         newSigCheckState = tagged AwaitingRespAvailable {
                             keyId: keyId,
                             failed: failed
@@ -296,7 +297,8 @@ module mkSimpleIOCapAxiChecker3V1#(
 
                 if (resps.canPut()) begin
                     resps.put(tuple4(savedAuthFlit.flit, flitId, keyId, !failed));
-                    $display("// flitCompleted from AwaitingRespAvailable");
+                    konataEvent(kMode, "FlitChecked", fshow(!failed));
+                    // $display("// flitCompleted from AwaitingRespAvailable");
                     flitCompleted.send();
                     newSigCheckState = tagged SigCheckIdle;
                 end else begin
@@ -313,16 +315,16 @@ module mkSimpleIOCapAxiChecker3V1#(
             case (newSigCheckState) matches
                 // Start and end SigCheckIdle to show that this flit is being finished
                 tagged SigCheckIdle : konataFlit(kMode, 
-                    $format("S\t") + fshow(flitId) + $format("\t12\tSigCheckIdle\nE\t") + fshow(flitId) + $format("\t12\tSigCheckIdle")
+                    $format("S\t") + fshow(flitId) + $format("\t30\tSigCheckIdle\nE\t") + fshow(flitId) + $format("\t30\tSigCheckIdle")
                 );
                 tagged SigCheckFailedEarly .* : konataFlit(kMode,
-                    $format("S\t") + fshow(flitId) + $format("\t12\tSigCheckFailedEarly")
+                    $format("S\t") + fshow(flitId) + $format("\t30\tSigCheckFailedEarly")
                 );
                 tagged AwaitingSigCheck {} : konataFlit(kMode,
-                    $format("S\t") + fshow(flitId) + $format("\t12\tAwaitingSigCheck")
+                    $format("S\t") + fshow(flitId) + $format("\t30\tAwaitingSigCheck")
                 );
                 tagged AwaitingRespAvailable {} : konataFlit(kMode,
-                    $format("S\t") + fshow(flitId) + $format("\t12\tAwaitingRespAvailable")
+                    $format("S\t") + fshow(flitId) + $format("\t30\tAwaitingRespAvailable")
                 );
             endcase
         end
@@ -339,7 +341,7 @@ module mkSimpleIOCapAxiChecker3V1#(
                     decodeIn.put(authFlit.cap);
                     decodeState <= tagged AwaitingFlitBounds;
                     savedAuthFlit <= authFlit;
-                    konataFlit(kMode, $format("S\t") + fshow(incomingFlitId) + $format("\t13\tAwaitingFlitBounds"));
+                    konataFlit(kMode, $format("S\t") + fshow(incomingFlitId) + $format("\t40\tAwaitingFlitBounds"));
                 end
             end
             tagged AwaitingFlitBounds : begin
@@ -392,7 +394,7 @@ module mkSimpleIOCapAxiChecker3V1#(
                     flitMax: max_addr,
                     boundsFailed: bounds_failed
                 };
-                konataFlit(kMode, $format("S\t") + fshow(savedFlitId) + $format("\t13\tAwaitingIOCapDecode"));
+                konataFlit(kMode, $format("S\t") + fshow(savedFlitId) + $format("\t40\tAwaitingIOCapDecode"));
             end
             tagged AwaitingIOCapDecode { flitMin: .flitMin, flitMax: .flitMax, boundsFailed: .boundsFailed } : begin
                 if (decodeOut.canPeek()) begin
@@ -422,7 +424,7 @@ module mkSimpleIOCapAxiChecker3V1#(
                     if (failed) begin
                         $display("// IOCap - flit failed Decode ", fshow(flit), " - ", fshow(decodeRes));
                     end
-                    konataFlit(kMode, $format("S\t") + fshow(savedFlitId) + $format("\t13\tDecoded"));
+                    konataFlit(kMode, $format("S\t") + fshow(savedFlitId) + $format("\t40\tDecoded"));
                     decodeState <= tagged Decoded {
                         failed: failed
                     };
@@ -430,7 +432,7 @@ module mkSimpleIOCapAxiChecker3V1#(
             end
             tagged Decoded .failed : begin
                 if (flitCompleted) begin
-                    konataFlit(kMode, $format("E\t") + fshow(savedFlitId) + $format("\t13\tDecoded"));
+                    konataFlit(kMode, $format("E\t") + fshow(savedFlitId) + $format("\t40\tDecoded"));
                     decodeState <= tagged DecodeIdle;
                 end
             end
@@ -738,7 +740,7 @@ module mkChecker3CombinedFrontend#(
                 savedFlitId <= flitId;
                 flitInProgress <= tuple2(flit, 0);
                 flitState <= tagged Building0;
-                konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t10\tB0"));
+                // B0 Konata is sent by the labeller which passed in the KFlitId
             end
             // Only take CapBits1 if we can start a new key search.
             { tagged Building0, tagged CapBits1 .bits } : begin
@@ -897,16 +899,16 @@ module mkChecker3CombinedFrontend#(
             case (newKeyState) matches
                 // Start and end SigCheckIdle to show that this flit is being finished
                 tagged NoKeyId : konataFlit(kMode,
-                    $format("S\t") + fshow(savedFlitId) + $format("\t11\tIdle\nE\t") + fshow(savedFlitId) + $format("\t11\tIdle")
+                    $format("S\t") + fshow(savedFlitId) + $format("\t20\tIdle\nE\t") + fshow(savedFlitId) + $format("\t20\tIdle")
                 );
                 tagged AwaitingKeyRequest .* : konataFlit(kMode,
-                    $format("S\t") + fshow(savedFlitId) + $format("\t11\tAwaitingKeyRequest")
+                    $format("S\t") + fshow(savedFlitId) + $format("\t20\tAwaitingKeyRequest")
                 );
                 tagged AwaitingKey .* : konataFlit(kMode,
-                    $format("S\t") + fshow(savedFlitId) + $format("\t11\tAwaitingKey")
+                    $format("S\t") + fshow(savedFlitId) + $format("\t20\tAwaitingKey")
                 );
                 tagged HasKey .* : konataFlit(kMode,
-                    $format("S\t") + fshow(savedFlitId) + $format("\t11\tHasKey")
+                    $format("S\t") + fshow(savedFlitId) + $format("\t20\tHasKey")
                 );
             endcase
         end
@@ -961,7 +963,7 @@ module mkChecker3CombinedPipelinedFrontend#(
                 savedFlitId <= flitId;
                 flitInProgress <= tuple2(flit, 0);
                 flitState <= tagged Building0;
-                konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t10\tB0"));
+                // B0 Konata is sent by the labeller which passed in the KFlitId
             end
             // Only take CapBits1 if we can start a new key search.
             { tagged Building0, tagged CapBits1 .bits } : if (keyState == tagged NoKeyId) begin
@@ -1122,16 +1124,16 @@ module mkChecker3CombinedPipelinedFrontend#(
             case (newKeyState) matches
                 // Start and end SigCheckIdle to show that this flit is being finished
                 tagged NoKeyId : konataFlit(kMode,
-                    $format("S\t") + fshow(keyFlitId) + $format("\t11\tIdle\nE\t") + fshow(keyFlitId) + $format("\t11\tIdle")
+                    $format("S\t") + fshow(keyFlitId) + $format("\t20\tIdle\nE\t") + fshow(keyFlitId) + $format("\t20\tIdle")
                 );
                 tagged AwaitingKeyRequest .* : konataFlit(kMode,
-                    $format("S\t") + fshow(keyFlitId) + $format("\t11\tAwaitingKeyRequest")
+                    $format("S\t") + fshow(keyFlitId) + $format("\t20\tAwaitingKeyRequest")
                 );
                 tagged AwaitingKey .* : konataFlit(kMode,
-                    $format("S\t") + fshow(keyFlitId) + $format("\t11\tAwaitingKey")
+                    $format("S\t") + fshow(keyFlitId) + $format("\t20\tAwaitingKey")
                 );
                 tagged HasKey .* : konataFlit(kMode,
-                    $format("S\t") + fshow(keyFlitId) + $format("\t11\tHasKey")
+                    $format("S\t") + fshow(keyFlitId) + $format("\t20\tHasKey")
                 );
             endcase
         end

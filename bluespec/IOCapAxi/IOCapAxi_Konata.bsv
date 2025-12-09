@@ -86,6 +86,10 @@ module mkIOCapAxiFlitLabeller#(
             konataFlit(kMode,
                 $format("L\t") + fshow(flitId) + $format("\t0\t") + fshow(burstAddr(f)) + $format(" %s#", (flitId.isRead ? "R" : "W")) + fshowAsUint(burstTid(f))
             );
+            // Send this here so that it's guaranteed to be ordered after the I - see Bluespec lang reference $13.8.1
+            konataFlit(kMode,
+                $format("S\t") + fshow(flitId) + $format("\t10\tB0")
+            );
         end
         sink.put(tuple2(f, flitId));
     endmethod

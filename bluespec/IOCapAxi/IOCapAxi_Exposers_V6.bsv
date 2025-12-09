@@ -231,8 +231,8 @@ module mkSimpleIOCapExposerV6#(
     rule sendKeyReq;
         case (tuple2(awKeyRequest.wget(), arKeyRequest.wget())) matches
             { tagged Invalid, tagged Invalid } : noAction;
-            { tagged Valid .awKeyId, .* } : keyStore.checker.keyRequest.put(awKeyId);    
-            { .*, tagged Valid .arKeyId } : keyStore.checker.keyRequest.put(arKeyId);  
+            { tagged Valid .awKeyId, .* } : keyStore.checker.keyRequest.put(awKeyId);
+            { .*, tagged Valid .arKeyId } : keyStore.checker.keyRequest.put(arKeyId);
             default : $display("SOMEHOW SET AW AND AR REQUEST AT THE SAME TIME");
         endcase  
     endrule
@@ -246,6 +246,7 @@ module mkSimpleIOCapExposerV6#(
 
     rule pump_keyResponse(keyStore.checker.keyResponse.canPeek());
         // $display(" // dropping from keyResponse");
+        konataEvent(kMode, "PumpKey", fshow(tpl_1(keyStore.checker.keyResponse.peek())));
         keyStore.checker.keyResponse.drop();
     endrule
     
@@ -370,20 +371,20 @@ module mkSimpleIOCapExposerV6#(
                     wValve.updateCredits(Pass, extend(unpack(nCredits)));
                     // Tell the key manager that we're using a keyId
                     keyStore.wValve.refcount.keyIncrementRefcountRequest.put(keyId);
-                    konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t20\tSendValid"));
+                    konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t50\tSendValid"));
                 end else begin
                     keyStore.wValve.perf.bumpPerfCounterBad();
                     if (blockInvalid) begin
                         // We will send the invalid-write-response once it passes through the scoreboard
                         // Tell the W valve to drop the right number of flits
                         wValve.updateCredits(Drop, extend(unpack(nCredits)));
-                        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t20\tBlockInvalid"));
+                        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t50\tBlockInvalid"));
                     end else begin
                         // Pass through the invalid write
                         awOut.enq(flit);
                         // Tell the W valve to let through the right number of flits
                         wValve.updateCredits(Pass, extend(unpack(nCredits)));
-                        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t20\tSendInvalid"));
+                        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t50\tSendInvalid"));
                         konataFlit(kMode, $format("R\t") + fshow(flitId) + $format("\t") + fshow(flitId) + $format("\t0"));
                     end
                 end
@@ -407,11 +408,11 @@ module mkSimpleIOCapExposerV6#(
                 if (lastAwBlocked != newAwBlocked) begin
 
                     if (valveBlocked && scoreboardBlocked)
-                        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t20\tVSBlocked"));
+                        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t50\tVSBlocked"));
                     else if (valveBlocked)
-                        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t20\tVBlocked"));
+                        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t50\tVBlocked"));
                     else if (scoreboardBlocked)
-                        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t20\tSBlocked"));
+                        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t50\tSBlocked"));
                 end
                 lastAwBlocked <= newAwBlocked;
             end
@@ -441,17 +442,17 @@ module mkSimpleIOCapExposerV6#(
                     // Pass through the valid AR flit
                     arOut.enq(flit);
                     // $display("// incref ", fshow(keyId));
-                    konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t20\tSendValid"));
+                    konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t50\tSendValid"));
                     keyStore.rValve.refcount.keyIncrementRefcountRequest.put(keyId);
                 end else begin
                     keyStore.rValve.perf.bumpPerfCounterBad();
                     if (blockInvalid) begin
                         // We will send the invalid-read-response once it passes through the scoreboard
-                        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t20\tBlockInvalid"));
+                        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t50\tBlockInvalid"));
                     end else begin
                         // Pass through the invalid AR flit
                         arOut.enq(flit);
-                        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t20\tSendInvalid"));
+                        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t50\tSendInvalid"));
                         konataFlit(kMode, $format("R\t") + fshow(flitId) + $format("\t") + fshow(flitId) + $format("\t0"));
                     end
                 end
@@ -465,7 +466,7 @@ module mkSimpleIOCapExposerV6#(
         case (arResp) matches
             { .flit, .flitId, .keyId, .allowed } : begin
                 if (lastArSblocked != tagged Valid flitId)
-                    konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t20\tSBlocked"));
+                    konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t50\tSBlocked"));
                 lastArSblocked <= tagged Valid flitId;
             end
         endcase
@@ -483,7 +484,7 @@ module mkSimpleIOCapExposerV6#(
 
     rule inform_wValve_keyid_completed;
         match { .flitId, .keyId } = wScoreboard.completedValidTxnMeta.peek();
-        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t20\tScoreboardCompleted"));
+        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t50\tScoreboardCompleted"));
         konataFlit(kMode, $format("R\t") + fshow(flitId) + $format("\t") + fshow(flitId) + $format("\t0"));
         wScoreboard.completedValidTxnMeta.drop();
         keyStore.wValve.refcount.keyDecrementRefcountRequest.put(keyId);
@@ -491,7 +492,7 @@ module mkSimpleIOCapExposerV6#(
 
     rule insert_invalid_b if (wScoreboard.invalidTxnsToComplete.canPeek());
         match { .txnId, { .flitId, .keyId } } = wScoreboard.invalidTxnsToComplete.peek();
-        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t20\tScoreboardCompleted"));
+        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t50\tScoreboardCompleted"));
         konataFlit(kMode, $format("R\t") + fshow(flitId) + $format("\t") + fshow(flitId) + $format("\t0"));
         // Insert the b into the stream
         bOut.enq(AXI4_BFlit {
@@ -520,7 +521,7 @@ module mkSimpleIOCapExposerV6#(
 
     rule inform_rValve_keyid_completed;
         match { .flitId, .keyId } = rScoreboard.completedValidTxnMeta.peek();
-        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t20\tScoreboardCompleted"));
+        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t50\tScoreboardCompleted"));
         konataFlit(kMode, $format("R\t") + fshow(flitId) + $format("\t") + fshow(flitId) + $format("\t0"));
         rScoreboard.completedValidTxnMeta.drop();
         keyStore.rValve.refcount.keyDecrementRefcountRequest.put(keyId);
@@ -528,7 +529,7 @@ module mkSimpleIOCapExposerV6#(
 
     rule insert_invalid_r if (rScoreboard.invalidTxnsToComplete.canPeek());
         match { .txnId, { .flitId, .keyId } } = rScoreboard.invalidTxnsToComplete.peek();
-        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t20\tScoreboardCompleted"));
+        konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t50\tScoreboardCompleted"));
         konataFlit(kMode, $format("R\t") + fshow(flitId) + $format("\t") + fshow(flitId) + $format("\t0"));
         // Insert the r into the stream
         rOut.enq(AXI4_RFlit {
