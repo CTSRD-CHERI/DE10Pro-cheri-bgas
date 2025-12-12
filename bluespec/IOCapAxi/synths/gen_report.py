@@ -41,6 +41,7 @@ def file_line_one_regex_match(f: TextIO, r: re.Pattern) -> re.Match:
 @dataclass
 class SynthStats:
     dut: str
+    seed: int
     fit_timestamp: str
     sta_timestamp: str
 
@@ -118,6 +119,7 @@ def project_stats(project_dir: str) -> SynthStats:
 
         stats.append(SynthStats(
             dut=dut,
+            seed=seed,
             sta_timestamp=timing_timestamp,
             fit_timestamp=placing_timestamp,
             fmax=fmax,
