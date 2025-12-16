@@ -137,6 +137,7 @@ def all_equal(xs: List) -> bool:
     return all(x == xs[0] for x in xs)
 
 RELEVANT_PROJECTS = {
+    "single_checker_null": "mkSingleChecker3_null_SingleChecker3_design_300MHz",
     "single_checker_1per": "mkSingleChecker3_1percycle_SingleChecker3_design_300MHz",
     "single_checker_2per": "mkSingleChecker3_2percycle_SingleChecker3_design_300MHz",
     "full_exposer_0checkers": "mkCombinedIOCapExposerV6_0pool_KeyManager2V1_64_Tb_UnifiedSingleExposerKeyMngr64Tb_design_200MHz",

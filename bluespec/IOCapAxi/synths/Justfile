@@ -32,7 +32,8 @@ gen-all: \
     (gen "SingleChecker3.txt" "mkSingleChecker3_1percycle" "200") \
     (gen "SingleChecker3.txt" "mkSingleChecker3_2percycle" "200") \
     (gen "SingleChecker3.txt" "mkSingleChecker3_1percycle" "300") \
-    (gen "SingleChecker3.txt" "mkSingleChecker3_2percycle" "300")
+    (gen "SingleChecker3.txt" "mkSingleChecker3_2percycle" "300") \
+    (gen "SingleChecker3.txt" "mkSingleChecker3_null" "300") \
 
 # gen-null:
 #     uv run python3 gen_design.py "UnifiedSingleExposerKeyMngrTb.txt" "null_UnifiedSingleExposerKeyMngrTb" "200" --null-tb
@@ -42,6 +43,7 @@ resynth-paper-reports:
     # just projects/null_SingleChecker3_SingleChecker3_design_300MHz/force-synth-seeds
     # just projects/null_UnifiedSingleExposerKeyMngrTb_UnifiedSingleExposerKeyMngrTb_design_200MHz/force-synth-seeds
 
+    just projects/mkSingleChecker3_null_SingleChecker3_design_300MHz/force-synth-seeds
     just projects/mkSingleChecker3_1percycle_SingleChecker3_design_300MHz/force-synth-seeds
     just projects/mkSingleChecker3_2percycle_SingleChecker3_design_300MHz/force-synth-seeds
     just projects/mkCombinedIOCapExposerV6_0pool_KeyManager2V1_64_Tb_UnifiedSingleExposerKeyMngr64Tb_design_200MHz/force-synth-seeds
