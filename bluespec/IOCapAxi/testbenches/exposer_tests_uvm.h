@@ -2927,11 +2927,42 @@ public:
     }
 };
 
+enum class TxnStreamKeyUsage {
+    OneKey,
+    Churn,
+    Random
+};
+auto format_as(TxnStreamKeyUsage x) {
+    switch (x) {
+        case TxnStreamKeyUsage::OneKey: return "OneKey";
+        case TxnStreamKeyUsage::Churn: return "Churn";
+        case TxnStreamKeyUsage::Random: return "Random";
+    }
+}
+
+enum class TxnStreamPerms {
+    Read,
+    Write,
+    Both,
+    Random
+};
+auto format_as(TxnStreamPerms x) {
+    switch (x) {
+        case TxnStreamPerms::Read: return "Read";
+        case TxnStreamPerms::Write: return "Write";
+        case TxnStreamPerms::Both: return "Both";
+        case TxnStreamPerms::Random: return "Random";
+    }
+}
+
+
 template<class DUT, CapType ctype, KeyMngrVersion V>
 class UVMStreamOfNLibRustValidTransactions : public ExposerStimulus<DUT, ctype, V> {
     uint64_t n_transactions;
     uint8_t n_data_flits_per_transaction;
     int n_cavs = -1;
+    TxnStreamPerms perms;
+    TxnStreamKeyUsage keys;
 
     uint64_t final_tick = 0;
     
@@ -2939,33 +2970,121 @@ public:
     virtual ~UVMStreamOfNLibRustValidTransactions() = default;
     virtual std::string name() override {
         if (n_cavs == -1) {
-            return fmt::format("Stream of {} librust random valid {} {}-flit transactions", n_transactions, ctype, n_data_flits_per_transaction);
+            return fmt::format("Stream of {} librust random valid {} {}-flit {}-perm {}-key transactions", n_transactions, ctype, n_data_flits_per_transaction, perms, keys);
         } else {
-            return fmt::format("Stream of {} librust random valid {} {}-caveat {}-flit transactions", n_transactions, ctype, n_cavs, n_data_flits_per_transaction);
+            return fmt::format("Stream of {} librust random valid {} {}-caveat {}-flit {}-perm {}-key transactions", n_transactions, ctype, n_cavs, n_data_flits_per_transaction, perms, keys);
         }
     }
-    UVMStreamOfNLibRustValidTransactions(uint64_t n_transactions, uint8_t n_data_flits_per_transaction, int n_cavs = -1) : ExposerStimulus<DUT, ctype, V>(
+    UVMStreamOfNLibRustValidTransactions(uint64_t n_transactions, uint8_t n_data_flits_per_transaction, int n_cavs = -1, TxnStreamPerms perms = TxnStreamPerms::Random, TxnStreamKeyUsage keys = TxnStreamKeyUsage::OneKey) : ExposerStimulus<DUT, ctype, V>(
         new BasicKeyManagerShimStimulus<DUT, V>(),
         new BasicSanitizedMemStimulus<DUT>()
-    ), n_transactions(n_transactions), n_data_flits_per_transaction(n_data_flits_per_transaction), n_cavs(n_cavs) {
+    ), n_transactions(n_transactions), n_data_flits_per_transaction(n_data_flits_per_transaction), n_cavs(n_cavs), perms(perms), keys(keys) {
         if (n_cavs < -1 || n_cavs > 2) {
             throw std::runtime_error(fmt::format("Cannot have a stream of {}-caveat transactions - invalid caveat count", n_cavs));
         }
     }
     virtual void setup(std::mt19937& rng) override {
-        const key_manager::KeyId secret_id = 111;
-        const U128 key = U128::random(rng);
+        key_manager::KeyId secret_id = 0;
 
-        this->keyMgr->secrets[secret_id] = key;
-        for (uint64_t i = 0; i < n_transactions; i++) {
-            uint8_t axi_id = i & 0xF;
-            auto cap_data = this->test_librust_random_valid_cap(rng, secret_id, n_cavs);
-            auto axi_params = cap_data.valid_transfer_params(32, n_data_flits_per_transaction);
-            if (cap_data.perms & CCapPerms_Read) {
-                this->enqueueReadBurst(cap_data.cap, axi_params, axi_id);
+        if (keys == TxnStreamKeyUsage::OneKey) {
+            secret_id = 111;
+            U128 key = U128::random(rng);
+            this->keyMgr->secrets[secret_id] = key;
+        } else {
+            for (int i = 0; i < 256; i++) {
+                this->keyMgr->secrets[i & 0xFF] = U128::random(rng);
             }
-            if (cap_data.perms & CCapPerms_Write) {
-                this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
+        }
+
+        for (uint64_t i = 0; i < n_transactions; i++) {
+            switch (perms) {
+                case TxnStreamPerms::Random: {
+                    uint8_t axi_id = i & 0xF;
+                    auto cap_data = this->test_librust_random_valid_cap(rng, secret_id, n_cavs);
+                    auto axi_params = cap_data.valid_transfer_params(32, n_data_flits_per_transaction);
+                    if (cap_data.perms & CCapPerms_Read) {
+                        this->enqueueReadBurst(cap_data.cap, axi_params, axi_id);
+                    }
+                    if (cap_data.perms & CCapPerms_Write) {
+                        this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
+                    }
+                    break;
+                }
+                case TxnStreamPerms::Read: {
+                    uint8_t axi_id = i & 0xF;
+                    auto cap_data = this->test_librust_random_valid_cap(rng, secret_id, n_cavs, CCapPerms_Read);
+                    auto axi_params = cap_data.valid_transfer_params(32, n_data_flits_per_transaction);
+                    if (cap_data.perms == CCapPerms_Read) {
+                        this->enqueueReadBurst(cap_data.cap, axi_params, axi_id);
+                    } else {
+                        throw std::runtime_error("Stimulus for StreamOfNLibRustValid tried to generate Read cap, it wasn't");
+                    }
+                    break;
+                }
+                case TxnStreamPerms::Write: {
+                    uint8_t axi_id = i & 0xF;
+                    auto cap_data = this->test_librust_random_valid_cap(rng, secret_id, n_cavs, CCapPerms_Write);
+                    auto axi_params = cap_data.valid_transfer_params(32, n_data_flits_per_transaction);
+                    if (cap_data.perms == CCapPerms_Write) {
+                        this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
+                    } else {
+                        throw std::runtime_error("Stimulus for StreamOfNLibRustValid tried to generate Write cap, it wasn't");
+                    }
+                    break;
+                }
+                case TxnStreamPerms::Both: {
+                    uint8_t axi_id = i & 0xF;
+
+                    // Generate Read
+                    auto cap_data = this->test_librust_random_valid_cap(rng, secret_id, n_cavs, CCapPerms_Read);
+                    auto axi_params = cap_data.valid_transfer_params(32, n_data_flits_per_transaction);
+                    if (cap_data.perms == CCapPerms_Read) {
+                        this->enqueueReadBurst(cap_data.cap, axi_params, axi_id);
+                    } else {
+                        throw std::runtime_error("Stimulus for StreamOfNLibRustValid tried to generate Read cap, it wasn't");
+                    }
+
+                    // Find new key for next txn
+                    switch (keys) {
+                        case TxnStreamKeyUsage::OneKey: {
+                            break;
+                        }
+                        case TxnStreamKeyUsage::Churn: {
+                            secret_id++;
+                            break;
+                        }
+                        case TxnStreamKeyUsage::Random: {
+                            secret_id = std::uniform_int_distribution<uint8_t>(0, 255)(rng);
+                            break;
+                        }
+                    }
+
+                    // Generate Write with new key
+                    cap_data = this->test_librust_random_valid_cap(rng, secret_id, n_cavs, CCapPerms_Write);
+                    axi_params = cap_data.valid_transfer_params(32, n_data_flits_per_transaction);
+                    if (cap_data.perms == CCapPerms_Write) {
+                        this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
+                    } else {
+                        throw std::runtime_error("Stimulus for StreamOfNLibRustValid tried to generate Write cap, it wasn't");
+                    }
+
+                    break;
+                }
+            }
+
+            // Find new key for next txn
+            switch (keys) {
+                case TxnStreamKeyUsage::OneKey: {
+                    break;
+                }
+                case TxnStreamKeyUsage::Churn: {
+                    secret_id++;
+                    break;
+                }
+                case TxnStreamKeyUsage::Random: {
+                    secret_id = std::uniform_int_distribution<uint8_t>(0, 255)(rng);
+                    break;
+                }
             }
         }
         
@@ -3421,15 +3540,24 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         ),
 
         new ExposerUVMishTest(
-            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_data_flits_per_transaction */ 1, /* n_cavs */ 0),
+            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_data_flits_per_transaction */ 4, /* n_cavs */ 0, /* perms */ TxnStreamPerms::Both, /* key */ TxnStreamKeyUsage::Random),
             expectPassthroughInvalidTransactions
         ),
         new ExposerUVMishTest(
-            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_data_flits_per_transaction */ 1, /* n_cavs */ 1),
+            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_data_flits_per_transaction */ 4, /* n_cavs */ 1, /* perms */ TxnStreamPerms::Both, /* key */ TxnStreamKeyUsage::Random),
             expectPassthroughInvalidTransactions
         ),
         new ExposerUVMishTest(
-            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_data_flits_per_transaction */ 1, /* n_cavs */ 2),
+            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_data_flits_per_transaction */ 4, /* n_cavs */ 2, /* perms */ TxnStreamPerms::Both, /* key */ TxnStreamKeyUsage::Random),
+            expectPassthroughInvalidTransactions
+        ),
+
+        new ExposerUVMishTest(
+            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_data_flits_per_transaction */ 4, /* n_cavs */ 2, /* perms */ TxnStreamPerms::Read, /* key */ TxnStreamKeyUsage::Random),
+            expectPassthroughInvalidTransactions
+        ),
+        new ExposerUVMishTest(
+            new UVMStreamOfNLibRustValidTransactions<TheDUT, ctype, V>(10'000, /* n_data_flits_per_transaction */ 4, /* n_cavs */ 2, /* perms */ TxnStreamPerms::Write, /* key */ TxnStreamKeyUsage::Random),
             expectPassthroughInvalidTransactions
         ),
     };

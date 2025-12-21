@@ -453,7 +453,7 @@ last_upload_tick = 0
 n_uploads = 0
 n_uploads_per_cycle = -nan
 
-[tests."Stream of 10000 librust random valid Cap2024_11 4-flit transactions"]
+[tests."Stream of 10000 librust random valid Cap2024_11 4-flit Random-perm OneKey-key transactions"]
 success = true
 ending_tick = 349966
 aw_throughput = 0.9722814498933902
@@ -488,7 +488,7 @@ last_upload_tick = 0
 n_uploads = 0
 n_uploads_per_cycle = -nan
 
-[tests."Stream of 10000 librust random valid Cap2024_11 0-caveat 4-flit transactions"]
+[tests."Stream of 10000 librust random valid Cap2024_11 0-caveat 4-flit Random-perm OneKey-key transactions"]
 success = true
 ending_tick = 368806
 aw_throughput = 1
@@ -523,7 +523,7 @@ last_upload_tick = 0
 n_uploads = 0
 n_uploads_per_cycle = -nan
 
-[tests."Stream of 10000 librust random valid Cap2024_11 1-caveat 4-flit transactions"]
+[tests."Stream of 10000 librust random valid Cap2024_11 1-caveat 4-flit Random-perm OneKey-key transactions"]
 success = true
 ending_tick = 342586
 aw_throughput = 1
@@ -558,7 +558,7 @@ last_upload_tick = 0
 n_uploads = 0
 n_uploads_per_cycle = -nan
 
-[tests."Stream of 10000 librust random valid Cap2024_11 2-caveat 4-flit transactions"]
+[tests."Stream of 10000 librust random valid Cap2024_11 2-caveat 4-flit Random-perm OneKey-key transactions"]
 success = true
 ending_tick = 349206
 aw_throughput = 0.9412352671692141
@@ -593,30 +593,30 @@ last_upload_tick = 0
 n_uploads = 0
 n_uploads_per_cycle = -nan
 
-[tests."Stream of 10000 librust random valid Cap2024_11 0-caveat 1-flit transactions"]
+[tests."Stream of 10000 librust random valid Cap2024_11 0-caveat 4-flit Both-perm Random-key transactions"]
 success = true
-ending_tick = 368806
+ending_tick = 508976
 aw_throughput = 1
-w_throughput = 0.25050573162508427
+w_throughput = 1
 ar_throughput = 1
 b_throughput = 1
 r_throughput = 1
 keymngr_aw_b_latency_mean = -nan
 keymngr_ar_r_latency_mean = -nan
 aw_aw_latency_mean = 120
-ar_ar_latency_mean = 120
-w_w_latency_mean = 629.3135935397039
+ar_ar_latency_mean = 129.961
+w_w_latency_mean = 120
 b_b_latency_mean = 20
 r_r_latency_mean = 20
-total_write = 6687
-confirmed_write = 6687
+total_write = 10000
+confirmed_write = 10000
 exp_invalid_write = 0
-perf_valid_write = 6687
+perf_valid_write = 10000
 perf_invalid_write = 0
-total_read = 6583
-confirmed_read = 6583
+total_read = 10000
+confirmed_read = 10000
 exp_invalid_read = 0
-perf_valid_read = 6583
+perf_valid_read = 10000
 perf_invalid_read = 0
 valid_txn_ratio = 1
 first_revoke_tick = 0
@@ -628,30 +628,30 @@ last_upload_tick = 0
 n_uploads = 0
 n_uploads_per_cycle = -nan
 
-[tests."Stream of 10000 librust random valid Cap2024_11 1-caveat 1-flit transactions"]
+[tests."Stream of 10000 librust random valid Cap2024_11 1-caveat 4-flit Both-perm Random-key transactions"]
 success = true
-ending_tick = 342566
+ending_tick = 508976
 aw_throughput = 1
-w_throughput = 0.2505088265835929
+w_throughput = 0.9370484262106553
 ar_throughput = 1
 b_throughput = 1
 r_throughput = 1
 keymngr_aw_b_latency_mean = -nan
 keymngr_ar_r_latency_mean = -nan
 aw_aw_latency_mean = 170
-ar_ar_latency_mean = 170
-w_w_latency_mean = 629.376554468579
+ar_ar_latency_mean = 179.961
+w_w_latency_mean = 160.75531602678691
 b_b_latency_mean = 20
 r_r_latency_mean = 20
-total_write = 6031
-confirmed_write = 6031
+total_write = 10000
+confirmed_write = 10000
 exp_invalid_write = 0
-perf_valid_write = 6031
+perf_valid_write = 10000
 perf_invalid_write = 0
-total_read = 6010
-confirmed_read = 6010
+total_read = 10000
+confirmed_read = 10000
 exp_invalid_read = 0
-perf_valid_read = 6010
+perf_valid_read = 10000
 perf_invalid_read = 0
 valid_txn_ratio = 1
 first_revoke_tick = 0
@@ -663,30 +663,100 @@ last_upload_tick = 0
 n_uploads = 0
 n_uploads_per_cycle = -nan
 
-[tests."Stream of 10000 librust random valid Cap2024_11 2-caveat 1-flit transactions"]
+[tests."Stream of 10000 librust random valid Cap2024_11 2-caveat 4-flit Both-perm Random-key transactions"]
 success = true
-ending_tick = 349206
-aw_throughput = 0.9412352671692141
-w_throughput = 0.2357703221498915
-ar_throughput = 0.9412619009197999
+ending_tick = 534026
+aw_throughput = 0.941220763330039
+w_throughput = 0.8596165157040349
+ar_throughput = 0.9411986164380338
 b_throughput = 1
 r_throughput = 1
 keymngr_aw_b_latency_mean = -nan
 keymngr_ar_r_latency_mean = -nan
-aw_aw_latency_mean = 234.98761061946902
-ar_ar_latency_mean = 234.987142122407
-w_w_latency_mean = 669.4053097345133
+aw_aw_latency_mean = 234.992
+ar_ar_latency_mean = 234.998
+w_w_latency_mean = 176.1338880070064
 b_b_latency_mean = 20
 r_r_latency_mean = 20
-total_write = 5650
-confirmed_write = 5650
+total_write = 10000
+confirmed_write = 10000
 exp_invalid_write = 0
-perf_valid_write = 5650
+perf_valid_write = 10000
 perf_invalid_write = 0
-total_read = 5833
-confirmed_read = 5833
+total_read = 10000
+confirmed_read = 10000
 exp_invalid_read = 0
-perf_valid_read = 5833
+perf_valid_read = 10000
+perf_invalid_read = 0
+valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
+
+[tests."Stream of 10000 librust random valid Cap2024_11 2-caveat 4-flit Read-perm Random-key transactions"]
+success = true
+ending_tick = 533956
+aw_throughput = -nan
+w_throughput = -nan
+ar_throughput = 0.941220763330039
+b_throughput = -nan
+r_throughput = 1
+keymngr_aw_b_latency_mean = -nan
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = -nan
+ar_ar_latency_mean = 234.992
+w_w_latency_mean = -nan
+b_b_latency_mean = -nan
+r_r_latency_mean = 20
+total_write = 0
+confirmed_write = 0
+exp_invalid_write = 0
+perf_valid_write = 0
+perf_invalid_write = 0
+total_read = 10000
+confirmed_read = 10000
+exp_invalid_read = 0
+perf_valid_read = 10000
+perf_invalid_read = 0
+valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
+
+[tests."Stream of 10000 librust random valid Cap2024_11 2-caveat 4-flit Write-perm Random-key transactions"]
+success = true
+ending_tick = 534006
+aw_throughput = 0.941220763330039
+w_throughput = 0.8614686022163142
+ar_throughput = -nan
+b_throughput = 1
+r_throughput = -nan
+keymngr_aw_b_latency_mean = -nan
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 234.992
+ar_ar_latency_mean = -nan
+w_w_latency_mean = 175.73972415676636
+b_b_latency_mean = 20
+r_r_latency_mean = -nan
+total_write = 10000
+confirmed_write = 10000
+exp_invalid_write = 0
+perf_valid_write = 10000
+perf_invalid_write = 0
+total_read = 0
+confirmed_read = 0
+exp_invalid_read = 0
+perf_valid_read = 0
 perf_invalid_read = 0
 valid_txn_ratio = 1
 first_revoke_tick = 0
@@ -3455,6 +3525,6 @@ n_uploads = 0
 n_uploads_per_cycle = -nan
 
 [summary]
-completed = 88
-success = 86
+completed = 90
+success = 88
 fail = 2

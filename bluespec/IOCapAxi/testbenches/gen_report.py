@@ -57,9 +57,9 @@ class LatencyStats:
     aw_mean_latency_0cav_4flit: int
     aw_mean_latency_1cav_4flit: int
     aw_mean_latency_2cav_4flit: int
-    aw_throughput_0cav_1flit: int
-    aw_throughput_1cav_1flit: int
-    aw_throughput_2cav_1flit: int
+    aw_throughput_0cav_4flit: int
+    aw_throughput_1cav_4flit: int
+    aw_throughput_2cav_4flit: int
 
     # Not means, have to be the same throughout
     kmngr_aw_b_latency: int
@@ -113,11 +113,12 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats:
         results = tomllib.load(f)
     
     aw_mean_latency_4flit = {}
-    aw_throughput_1flit = {}
+    aw_throughput_4flit = {}
 
     for cav in range(3):
-        aw_mean_latency_4flit[cav] = results["tests"][f"Stream of 10000 librust random valid Cap2024_11 {cav}-caveat 4-flit transactions"]["aw_aw_latency_mean"]
-        aw_throughput_1flit[cav] = results["tests"][f"Stream of 10000 librust random valid Cap2024_11 {cav}-caveat 1-flit transactions"]["aw_throughput"]
+        test = results["tests"][f"Stream of 10000 librust random valid Cap2024_11 {cav}-caveat 4-flit Both-perm Random-key transactions"]
+        aw_mean_latency_4flit[cav] = (test["aw_aw_latency_mean"] + test["ar_ar_latency_mean"]) / 2
+        aw_throughput_4flit[cav] = test["aw_throughput"]
 
     # Keymngr stats
     kmngr_aw_b_latencies = [
@@ -292,9 +293,9 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats:
         aw_mean_latency_0cav_4flit = aw_mean_latency_4flit[0],
         aw_mean_latency_1cav_4flit = aw_mean_latency_4flit[1],
         aw_mean_latency_2cav_4flit = aw_mean_latency_4flit[2],
-        aw_throughput_0cav_1flit = aw_throughput_1flit[0],
-        aw_throughput_1cav_1flit = aw_throughput_1flit[1],
-        aw_throughput_2cav_1flit = aw_throughput_1flit[2],
+        aw_throughput_0cav_4flit = aw_throughput_4flit[0],
+        aw_throughput_1cav_4flit = aw_throughput_4flit[1],
+        aw_throughput_2cav_4flit = aw_throughput_4flit[2],
 
         kmngr_aw_b_latency=all_eq_excl_nan(kmngr_aw_b_latencies),
         kmngr_ar_r_latency=all_eq_excl_nan(kmngr_ar_r_latencies),
