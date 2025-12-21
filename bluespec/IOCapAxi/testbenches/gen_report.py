@@ -117,7 +117,8 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats:
 
     for cav in range(3):
         test = results["tests"][f"Stream of 10000 librust random valid Cap2024_11 {cav}-caveat 4-flit Both-perm Random-key transactions"]
-        aw_mean_latency_4flit[cav] = (test["aw_aw_latency_mean"] + test["ar_ar_latency_mean"]) / 2
+        assert int(test["aw_aw_latency_mean"]) == int(test["ar_ar_latency_mean"]), f'Mismatching W/R latencies {test["aw_aw_latency_mean"]} {test["ar_ar_latency_mean"]}'
+        aw_mean_latency_4flit[cav] = test["aw_aw_latency_mean"]
         aw_throughput_4flit[cav] = test["aw_throughput"]
 
     # Keymngr stats
