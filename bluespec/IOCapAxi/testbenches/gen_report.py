@@ -55,11 +55,17 @@ class LatencyStats:
     timestamp: str
 
     aw_mean_latency_0cav_4flit: int
+    ar_mean_latency_0cav_4flit: int
     aw_mean_latency_1cav_4flit: int
+    ar_mean_latency_1cav_4flit: int
     aw_mean_latency_2cav_4flit: int
+    ar_mean_latency_2cav_4flit: int
     aw_throughput_0cav_4flit: int
+    ar_throughput_0cav_4flit: int
     aw_throughput_1cav_4flit: int
+    ar_throughput_1cav_4flit: int
     aw_throughput_2cav_4flit: int
+    ar_throughput_2cav_4flit: int
 
     # Not means, have to be the same throughout
     kmngr_aw_b_latency: int
@@ -114,12 +120,15 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats:
     
     aw_mean_latency_4flit = {}
     aw_throughput_4flit = {}
+    ar_mean_latency_4flit = {}
+    ar_throughput_4flit = {}
 
     for cav in range(3):
         test = results["tests"][f"Stream of 10000 librust random valid Cap2024_11 {cav}-caveat 4-flit Both-perm Random-key transactions"]
-        assert int(test["aw_aw_latency_mean"]) == int(test["ar_ar_latency_mean"]), f'Mismatching W/R latencies {test["aw_aw_latency_mean"]} {test["ar_ar_latency_mean"]}'
         aw_mean_latency_4flit[cav] = test["aw_aw_latency_mean"]
+        ar_mean_latency_4flit[cav] = test["ar_ar_latency_mean"]
         aw_throughput_4flit[cav] = test["aw_throughput"]
+        ar_throughput_4flit[cav] = test["ar_throughput"]
 
     # Keymngr stats
     kmngr_aw_b_latencies = [
@@ -297,6 +306,13 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats:
         aw_throughput_0cav_4flit = aw_throughput_4flit[0],
         aw_throughput_1cav_4flit = aw_throughput_4flit[1],
         aw_throughput_2cav_4flit = aw_throughput_4flit[2],
+
+        ar_mean_latency_0cav_4flit = ar_mean_latency_4flit[0],
+        ar_mean_latency_1cav_4flit = ar_mean_latency_4flit[1],
+        ar_mean_latency_2cav_4flit = ar_mean_latency_4flit[2],
+        ar_throughput_0cav_4flit = ar_throughput_4flit[0],
+        ar_throughput_1cav_4flit = ar_throughput_4flit[1],
+        ar_throughput_2cav_4flit = ar_throughput_4flit[2],
 
         kmngr_aw_b_latency=all_eq_excl_nan(kmngr_aw_b_latencies),
         kmngr_ar_r_latency=all_eq_excl_nan(kmngr_ar_r_latencies),

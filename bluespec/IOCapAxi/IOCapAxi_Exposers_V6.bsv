@@ -217,6 +217,10 @@ module mkSimpleIOCapExposerV6#(
     endfunction
 
     // Simple arbitration between AW and AR, prioritising AW
+    // This causes AR requests to be delayed by a cycle if they arrive on the same cycle as an AW,
+    // and it's impossible to get around this without using two read-ports. Even if we reconfigured the
+    // KeyData to accept two requests in a single cycle, it would have to service them both - without a second
+    // read port you'd just delay one of them by one cycle anyway :) 
     RWire#(KeyId) awKeyRequest <- mkRWire;
     RWire#(KeyId) arKeyRequest <- mkRWire;
     let awKeyReqIfc = interface Sink;
