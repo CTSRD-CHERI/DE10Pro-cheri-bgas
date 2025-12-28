@@ -271,7 +271,7 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats:
     # revoke_under_dma_0cav_max_data_flits = defaultdict(list)
 
     for n_flits in range(4, 28, 4):
-        for delay in range(0, 60, 10):
+        for delay in range(0, 16*24*10 + 10, 10):
             cav = 0
             if True:
                 test = results["tests"][f"UVMRevokeOverMMIOBenchmark (Stream of 100 {n_flits}-flit {cav}-cav txns, DMA 0 Revoke 0, delay {delay})"]

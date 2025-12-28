@@ -1,4 +1,4 @@
-timestamp = "2025-12-28_16:17:19+00:00"
+timestamp = "2025-12-28_15:54:13+00:00"
 generated_by = "gen_report.py"
 git_hash = "1f94b6d\n"
 
@@ -105,32 +105,32 @@ revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
-    90,
+    85.0,
     140,
 ]
 revoke_under_dma_8flits_debug_invalid_latency = [
     80,
-    140,
+    135.0,
     190,
 ]
 revoke_under_dma_12flits_debug_invalid_latency = [
     130,
-    190,
+    185.0,
     240,
 ]
 revoke_under_dma_16flits_debug_invalid_latency = [
     680,
-    1390,
+    1385.0,
     2120,
 ]
 revoke_under_dma_20flits_debug_invalid_latency = [
     1160,
-    2050,
+    2050.0,
     2500,
 ]
 revoke_under_dma_24flits_debug_invalid_latency = [
     1640,
-    2640,
+    2640.0,
     3020,
 ]
 n_revokes_per_cycle_rolling = 0.16937669376693767
@@ -173,32 +173,32 @@ revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
-    130,
+    130.0,
     160,
 ]
 revoke_under_dma_8flits_debug_invalid_latency = [
     450,
-    1070,
+    1070.0,
     1420,
 ]
 revoke_under_dma_12flits_debug_invalid_latency = [
     930,
-    1490,
+    1490.0,
     1760,
 ]
 revoke_under_dma_16flits_debug_invalid_latency = [
     1410,
-    1900,
+    1900.0,
     2460,
 ]
 revoke_under_dma_20flits_debug_invalid_latency = [
     1780,
-    2460,
+    2460.0,
     3150,
 ]
 revoke_under_dma_24flits_debug_invalid_latency = [
     2370,
-    3020,
+    3020.0,
     3750,
 ]
 n_revokes_per_cycle_rolling = 0.16937669376693767
@@ -241,32 +241,32 @@ revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
-    130,
+    130.0,
     160,
 ]
 revoke_under_dma_8flits_debug_invalid_latency = [
     700,
-    1120,
+    1120.0,
     1420,
 ]
 revoke_under_dma_12flits_debug_invalid_latency = [
     1140,
-    1550,
+    1550.0,
     1950,
 ]
 revoke_under_dma_16flits_debug_invalid_latency = [
     1460,
-    2000,
+    2000.0,
     2550,
 ]
 revoke_under_dma_20flits_debug_invalid_latency = [
-    1950,
-    2550,
+    1960,
+    2555.0,
     3150,
 ]
 revoke_under_dma_24flits_debug_invalid_latency = [
     2600,
-    3180,
+    3185.0,
     3750,
 ]
 n_revokes_per_cycle_rolling = 0.16937669376693767
@@ -309,32 +309,32 @@ revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
-    130,
+    130.0,
     160,
 ]
 revoke_under_dma_8flits_debug_invalid_latency = [
     700,
-    1130,
+    1130.0,
     1420,
 ]
 revoke_under_dma_12flits_debug_invalid_latency = [
     1140,
-    1560,
+    1560.0,
     1950,
 ]
 revoke_under_dma_16flits_debug_invalid_latency = [
     1460,
-    2020,
+    2025.0,
     2550,
 ]
 revoke_under_dma_20flits_debug_invalid_latency = [
-    1950,
-    2600,
+    1960,
+    2600.0,
     3150,
 ]
 revoke_under_dma_24flits_debug_invalid_latency = [
     2600,
-    3180,
+    3185.0,
     3750,
 ]
 n_revokes_per_cycle_rolling = 0.16937669376693767
@@ -377,32 +377,32 @@ revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
-    130,
+    130.0,
     160,
 ]
 revoke_under_dma_8flits_debug_invalid_latency = [
     700,
-    1130,
+    1130.0,
     1420,
 ]
 revoke_under_dma_12flits_debug_invalid_latency = [
     1140,
-    1570,
+    1570.0,
     1950,
 ]
 revoke_under_dma_16flits_debug_invalid_latency = [
     1460,
-    2030,
+    2030.0,
     2550,
 ]
 revoke_under_dma_20flits_debug_invalid_latency = [
-    1950,
-    2600,
+    1960,
+    2600.0,
     3150,
 ]
 revoke_under_dma_24flits_debug_invalid_latency = [
     2600,
-    3180,
+    3185.0,
     3750,
 ]
 n_revokes_per_cycle_rolling = 0.16937669376693767
@@ -445,32 +445,32 @@ revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_4flits_debug_invalid_latency = [
     80,
-    120,
+    120.0,
     150,
 ]
 revoke_under_dma_8flits_debug_invalid_latency = [
     270,
-    620,
+    620.0,
     910,
 ]
 revoke_under_dma_12flits_debug_invalid_latency = [
     800,
-    1400,
+    1395.0,
     1760,
 ]
 revoke_under_dma_16flits_debug_invalid_latency = [
     1280,
-    1840,
+    1835.0,
     2280,
 ]
 revoke_under_dma_20flits_debug_invalid_latency = [
     1760,
-    2380,
+    2380.0,
     3070,
 ]
 revoke_under_dma_24flits_debug_invalid_latency = [
     2240,
-    2940,
+    2940.0,
     3710,
 ]
 n_revokes_per_cycle_rolling = 0.2535496957403651
@@ -513,32 +513,32 @@ revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
-    130,
+    130.0,
     160,
 ]
 revoke_under_dma_8flits_debug_invalid_latency = [
     690,
-    1100,
+    1105.0,
     1420,
 ]
 revoke_under_dma_12flits_debug_invalid_latency = [
     1140,
-    1540,
+    1535.0,
     1950,
 ]
 revoke_under_dma_16flits_debug_invalid_latency = [
     1460,
-    1970,
+    1970.0,
     2550,
 ]
 revoke_under_dma_20flits_debug_invalid_latency = [
-    1900,
-    2520,
+    1910,
+    2520.0,
     3150,
 ]
 revoke_under_dma_24flits_debug_invalid_latency = [
-    2580,
-    3180,
+    2590,
+    3185.0,
     3750,
 ]
 n_revokes_per_cycle_rolling = 0.2535496957403651
@@ -581,32 +581,32 @@ revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
-    130,
+    130.0,
     160,
 ]
 revoke_under_dma_8flits_debug_invalid_latency = [
     700,
-    1120,
+    1120.0,
     1420,
 ]
 revoke_under_dma_12flits_debug_invalid_latency = [
     1140,
-    1550,
+    1550.0,
     1950,
 ]
 revoke_under_dma_16flits_debug_invalid_latency = [
     1460,
-    2000,
+    2000.0,
     2550,
 ]
 revoke_under_dma_20flits_debug_invalid_latency = [
-    1900,
-    2550,
+    1910,
+    2555.0,
     3150,
 ]
 revoke_under_dma_24flits_debug_invalid_latency = [
-    2580,
-    3180,
+    2590,
+    3185.0,
     3750,
 ]
 n_revokes_per_cycle_rolling = 0.2535496957403651
@@ -649,32 +649,32 @@ revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
-    130,
+    130.0,
     160,
 ]
 revoke_under_dma_8flits_debug_invalid_latency = [
     700,
-    1130,
+    1130.0,
     1420,
 ]
 revoke_under_dma_12flits_debug_invalid_latency = [
     1140,
-    1570,
+    1570.0,
     1950,
 ]
 revoke_under_dma_16flits_debug_invalid_latency = [
     1460,
-    2020,
+    2025.0,
     2550,
 ]
 revoke_under_dma_20flits_debug_invalid_latency = [
-    1900,
-    2600,
+    1910,
+    2600.0,
     3150,
 ]
 revoke_under_dma_24flits_debug_invalid_latency = [
-    2580,
-    3180,
+    2590,
+    3185.0,
     3750,
 ]
 n_revokes_per_cycle_rolling = 0.2535496957403651
@@ -717,32 +717,32 @@ revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
-    130,
+    130.0,
     160,
 ]
 revoke_under_dma_8flits_debug_invalid_latency = [
     700,
-    1130,
+    1130.0,
     1420,
 ]
 revoke_under_dma_12flits_debug_invalid_latency = [
     1140,
-    1570,
+    1570.0,
     1950,
 ]
 revoke_under_dma_16flits_debug_invalid_latency = [
     1460,
-    2030,
+    2030.0,
     2550,
 ]
 revoke_under_dma_20flits_debug_invalid_latency = [
-    1900,
-    2600,
+    1910,
+    2600.0,
     3150,
 ]
 revoke_under_dma_24flits_debug_invalid_latency = [
-    2580,
-    3180,
+    2590,
+    3185.0,
     3750,
 ]
 n_revokes_per_cycle_rolling = 0.2535496957403651

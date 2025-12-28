@@ -3658,7 +3658,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
 
         // and where txn_data_flits increases...
         for (uint8_t txn_data_flits = 4; txn_data_flits <= 24; txn_data_flits += 4) {
-            for (uint64_t revoke_delay = 0; revoke_delay <= 50; revoke_delay += 10) {
+            for (uint64_t revoke_delay = 0; revoke_delay <= 16 * 24; revoke_delay += 1) {
                 if (txn_data_flits == 4 && revoke_delay == 0) {
                     continue; // This has already been done
                 }
@@ -3666,7 +3666,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
                     new ExposerUVMishTest(
                         new UVMRevokeOverMMIOBenchmark<TheDUT, ctype, V>(
                             /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 100, txn_data_flits, /* txn_cavs */ 0,
-                            revoke_delay
+                            revoke_delay * 10
                         ),
                         expectPassthroughInvalidTransactions
                     )
