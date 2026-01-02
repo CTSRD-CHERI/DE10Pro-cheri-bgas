@@ -43,10 +43,8 @@ def all_eq_excl_nan(xs):
         for x in xs
         if not math.isnan(x)
     ]
-    if len(xs) == 0:
-        print("warning: found all-nan list")
-        return True
-    assert f"all were not equal: {xs}", all(x == xs[0] for x in xs)
+    assert len(xs) > 0, "list was all nans"
+    assert all(x == xs[0] for x in xs), f"all were not equal: {xs}"
     return xs[0]
 
 @dataclass
