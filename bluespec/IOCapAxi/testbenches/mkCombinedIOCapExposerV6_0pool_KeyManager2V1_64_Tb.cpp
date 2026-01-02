@@ -8,7 +8,10 @@ using TheDUT = VmkCombinedIOCapExposerV6_0pool_KeyManager2V1_64_Tb;
 constexpr bool expectPassthroughInvalidTransactions = true;
 
 int main(int argc, char** argv) {
-    auto tests = basicExposerUvmTests<TheDUT, CapType::Cap2024_11, KeyMngrV2_AsDUT_MMIO64>(expectPassthroughInvalidTransactions);
+    auto tests = basicExposerUvmTests<TheDUT, CapType::Cap2024_11, KeyMngrV2_AsDUT_MMIO64>(
+        expectPassthroughInvalidTransactions,
+        false /* includeRevokeTests */
+    );
 
     return tb_main(tests, argc, argv);
 }

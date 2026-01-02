@@ -3443,7 +3443,10 @@ public:
 #undef CANPUT_INPUT
 
 template<class TheDUT, CapType ctype, KeyMngrVersion V>
-constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInvalidTransactions) {
+constexpr std::vector<TestBase*> basicExposerUvmTests(
+    bool expectPassthroughInvalidTransactions,
+    bool includeRevokeTests=true
+) {
     std::vector<TestBase*> tests = {
         // UVM-style testing
         // TODO add tests for above todos, consider revocation
@@ -3562,6 +3565,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
         ),
     };
 
+    if (includeRevokeTests) {
     if constexpr (V == KeyMngrV1) {
         tests.push_back(
             // 5 cycles of revocations
@@ -3799,6 +3803,7 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(bool expectPassthroughInva
                 expectPassthroughInvalidTransactions
             )
         );
+    }
     }
 
     for (auto edge_case = 0; edge_case < ccap2024_11_rand_edge_case_num(); edge_case++) {

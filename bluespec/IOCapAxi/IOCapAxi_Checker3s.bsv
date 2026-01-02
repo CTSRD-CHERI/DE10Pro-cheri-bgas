@@ -505,22 +505,12 @@ module mkNullIOCapAxiChecker3V1#(KonataMode kMode)(IOCapAxiChecker3#(no_iocap_fl
     AxiCtrlFlit64#(no_iocap_flit),
     FShow#(no_iocap_flit)
 );
-    Vector#(4, FIFOF#(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool))) fifo <- replicateM(mkFIFOF);
+    Vector#(2, FIFOF#(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool))) fifo <- replicateM(mkFIFOF);
     Sink#(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool)) fifoSink = toSink(fifo[0]);
 
     rule move1;
         fifo[1].enq(fifo[0].first());
         fifo[0].deq();
-    endrule
-
-    rule move2;
-        fifo[2].enq(fifo[1].first());
-        fifo[1].deq();
-    endrule
-
-    rule move3;
-        fifo[3].enq(fifo[2].first());
-        fifo[2].deq();
     endrule
 
     interface in = interface Sink;
@@ -530,7 +520,7 @@ module mkNullIOCapAxiChecker3V1#(KonataMode kMode)(IOCapAxiChecker3#(no_iocap_fl
             fifoSink.put(tuple4(authFlit.flit, flitId, keyId, True));
         endmethod
     endinterface;
-    interface checkResponse = toSource(fifo[3]);
+    interface checkResponse = toSource(fifo[1]);
     interface keyToKill = interface WriteOnly;
         method Action _write(Maybe#(KeyId) val) = noAction;
     endinterface;

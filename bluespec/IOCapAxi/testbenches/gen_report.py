@@ -101,6 +101,28 @@ class LatencyStats:
     n_revokes_per_cycle_alone: int
     n_uploads_per_cycle_alone: int
 
+@dataclass
+class ReducedLatencyStats:
+    dut: str
+    timestamp: str
+
+    aw_mean_latency_0cav_4flit: int
+    ar_mean_latency_0cav_4flit: int
+    aw_mean_latency_1cav_4flit: int
+    ar_mean_latency_1cav_4flit: int
+    aw_mean_latency_2cav_4flit: int
+    ar_mean_latency_2cav_4flit: int
+    aw_throughput_0cav_4flit: int
+    ar_throughput_0cav_4flit: int
+    aw_throughput_1cav_4flit: int
+    ar_throughput_1cav_4flit: int
+    aw_throughput_2cav_4flit: int
+    ar_throughput_2cav_4flit: int
+
+    # Not means, have to be the same throughout
+    kmngr_aw_b_latency: int
+    kmngr_ar_r_latency: int
+
 # group 1 = project name
 PROJECT_NAME_PATTERN = re.compile(r'^project_name := "(\w+)"')
 # group 1 = DUT name
@@ -112,7 +134,7 @@ FMAX_PATTERN = re.compile(r'; (\d+\.\d\d) MHz\s+; (\d+\.\d\d) MHz\s+;\s+CLK_FAST
 # group 2 = total ALMs on device
 LUTS_PATTERN = re.compile(r'^; Logic utilization \(ALMs needed / total ALMs on device\)\s+; ([\d,]+)\s+/\s+([\d,]+)')
 
-def project_stats(results_toml: str, dut: str) -> LatencyStats:
+def project_stats(results_toml: str, dut: str) -> LatencyStats | ReducedLatencyStats:
     results_timestamp = file_timestamp(results_toml)
 
     with open(results_toml, "rb") as f:
@@ -140,6 +162,28 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats:
         for name, test in results["tests"].items()
     ]
 
+    if "0pool" in dut:
+        return ReducedLatencyStats(
+            dut=dut,
+            timestamp=results_timestamp,
+
+            aw_mean_latency_0cav_4flit = aw_mean_latency_4flit[0],
+            aw_mean_latency_1cav_4flit = aw_mean_latency_4flit[1],
+            aw_mean_latency_2cav_4flit = aw_mean_latency_4flit[2],
+            aw_throughput_0cav_4flit = aw_throughput_4flit[0],
+            aw_throughput_1cav_4flit = aw_throughput_4flit[1],
+            aw_throughput_2cav_4flit = aw_throughput_4flit[2],
+
+            ar_mean_latency_0cav_4flit = ar_mean_latency_4flit[0],
+            ar_mean_latency_1cav_4flit = ar_mean_latency_4flit[1],
+            ar_mean_latency_2cav_4flit = ar_mean_latency_4flit[2],
+            ar_throughput_0cav_4flit = ar_throughput_4flit[0],
+            ar_throughput_1cav_4flit = ar_throughput_4flit[1],
+            ar_throughput_2cav_4flit = ar_throughput_4flit[2],
+
+            kmngr_aw_b_latency=all_eq_excl_nan(kmngr_aw_b_latencies),
+            kmngr_ar_r_latency=all_eq_excl_nan(kmngr_ar_r_latencies),
+        )
     # Upload stats
     # upload_mmio_status_latency_mean = 20
     # upload_mmio_debug_enablekey_latency_mean = 30
