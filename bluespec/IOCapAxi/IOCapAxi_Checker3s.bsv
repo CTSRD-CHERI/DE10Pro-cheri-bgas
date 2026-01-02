@@ -505,22 +505,34 @@ module mkNullIOCapAxiChecker3V1#(KonataMode kMode)(IOCapAxiChecker3#(no_iocap_fl
     AxiCtrlFlit64#(no_iocap_flit),
     FShow#(no_iocap_flit)
 );
-    Vector#(2, FIFOF#(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool))) fifo <- replicateM(mkFIFOF);
+    // Before this was a pair of mkFIFOF.
+    // That worked, but had an extra cycle of latency overall.
+    // We don't need two FIFOs, we can handle a single one, but using a single mkFIFOF would
+    // make some rules not fire due to implicit ordering. A rule that wrote to the mkFIFOF would inherit the implicit condition (notFull)
+    // and a rule that read from the mkFIFOF would inherit the implicit dependency on (notEmpty) --- even if they checked canPut/canPeek! ---
+    // and one would be treated as more urgent than the other.
+    // Removing the implicit condition is safe because in practice all rules check canPut/canPeek.
+    Vector#(1, FIFOF#(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool))) fifo <- replicateM(mkUGFIFOF);
     Sink#(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool)) fifoSink = toSink(fifo[0]);
-
-    rule move1;
-        fifo[1].enq(fifo[0].first());
-        fifo[0].deq();
-    endrule
+    Source#(Tuple4#(no_iocap_flit, KFlitId, KeyId, Bool)) fifoSrc = toSource(fifo[0]);
 
     interface in = interface Sink;
         method Bool canPut = fifoSink.canPut;
         method Action put(Tuple4#(AuthenticatedFlit#(no_iocap_flit, Cap2024_11), KFlitId, KeyId, Maybe#(Key)) x);
             match { .authFlit, .flitId, .keyId, .key } = x;
             fifoSink.put(tuple4(authFlit.flit, flitId, keyId, True));
+            konataFlit(kMode, $format("S\t") + fshow(flitId) + $format("\t40\tSittingInNull"));
         endmethod
     endinterface;
-    interface checkResponse = toSource(fifo[1]);
+    interface checkResponse = interface Source;
+        method Bool canPeek = fifoSrc.canPeek;
+        method peek = fifoSrc.peek;
+        method Action drop();
+            match { .authFlit, .flitId, .keyId, .key } = fifoSrc.peek;
+            fifoSrc.drop();
+            konataFlit(kMode, $format("E\t") + fshow(flitId) + $format("\t40\tSittingInNull"));
+        endmethod
+    endinterface;
     interface keyToKill = interface WriteOnly;
         method Action _write(Maybe#(KeyId) val) = noAction;
     endinterface;
@@ -629,16 +641,23 @@ module mkInOrderIOCapAxiChecker3V1Pool_Read#(
    
     function IOCapAxiChecker3#(AXI4_ARFlit#(4, 64, 0)) baseCheckerOf(IOCapAxiChecker3_Read r) = r.checker;
 
-    Vector#(n, IOCapAxiChecker3_Read) checkers <- replicateM(makeChecker(
-        kMode
-    ));
+    if (valueOf(n) == 1) begin
+        let m <- makeChecker(kMode);
+        return m;
+    end else begin
+        Vector#(n, IOCapAxiChecker3_Read) checkers <- replicateM(makeChecker(
+            kMode
+        ));
 
-    let m <- mkInOrderIOCapAxiChecker3V1Pool(
-        kMode,
-        n_proxy,
-        map(baseCheckerOf, checkers)
-    );
-    interface checker = m;
+        let m <- mkInOrderIOCapAxiChecker3V1Pool(
+            kMode,
+            n_proxy,
+            map(baseCheckerOf, checkers)
+        );
+        return interface IOCapAxiChecker3_Read;
+            interface checker = m;
+        endinterface;
+    end
 endmodule
 
 module mkInOrderIOCapAxiChecker3V1Pool_Write#(
@@ -649,16 +668,23 @@ module mkInOrderIOCapAxiChecker3V1Pool_Write#(
    
     function IOCapAxiChecker3#(AXI4_AWFlit#(4, 64, 0)) baseCheckerOf(IOCapAxiChecker3_Write r) = r.checker;
 
-    Vector#(n, IOCapAxiChecker3_Write) checkers <- replicateM(makeChecker(
-        kMode
-    ));
+    if (valueOf(n) == 1) begin
+        let m <- makeChecker(kMode);
+        return m;
+    end else begin
+        Vector#(n, IOCapAxiChecker3_Write) checkers <- replicateM(makeChecker(
+            kMode
+        ));
 
-    let m <- mkInOrderIOCapAxiChecker3V1Pool(
-        kMode,
-        n_proxy,
-        map(baseCheckerOf, checkers)
-    );
-    interface checker = m;
+        let m <- mkInOrderIOCapAxiChecker3V1Pool(
+            kMode,
+            n_proxy,
+            map(baseCheckerOf, checkers)
+        );
+        return interface IOCapAxiChecker3_Write;
+            interface checker = m;
+        endinterface;
+    end
 endmodule
 
 typedef union tagged {
