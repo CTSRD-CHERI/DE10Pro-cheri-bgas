@@ -1,10 +1,10 @@
-timestamp = "2026-01-02_20:47:33+00:00"
+timestamp = "2026-01-02_19:49:08+00:00"
 generated_by = "gen_report.py"
-git_hash = "830307f\n"
+git_hash = "9029991\n"
 
 [full_exposer_0checkers]
 dut = "mkCombinedIOCapExposerV6_0pool_KeyManager2V1_64_Tb"
-timestamp = "2026-01-02_20:26:39+00:00"
+timestamp = "2026-01-02_19:27:57+00:00"
 aw_mean_latency_0cav_4flit = 60
 ar_mean_latency_0cav_4flit = 69.961
 aw_mean_latency_1cav_4flit = 60
@@ -20,7 +20,7 @@ ar_throughput_2cav_4flit = 1
 
 [full_exposer_1checkers_1per]
 dut = "mkCombinedIOCapExposerV6_blockinvalid_1pool_1percycle_KeyManager2V1_Tb"
-timestamp = "2026-01-02_20:28:10+00:00"
+timestamp = "2026-01-02_19:30:00+00:00"
 aw_mean_latency_0cav_4flit = 339.973
 ar_mean_latency_0cav_4flit = 339.976
 aw_mean_latency_1cav_4flit = 639.943
@@ -50,15 +50,10 @@ revoke_no_dma_killkey_latency = 20
 revoke_no_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
-revoke_under_other_lease_dma_debug_invalid_latency = [
-    50,
-    50,
-    70,
-]
 revoke_under_dma_0flits_debug_invalid_latency = [
     50,
     50,
-    50,
+    70,
 ]
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
@@ -97,7 +92,7 @@ n_uploads_per_cycle_alone = 0.16719612104999165
 
 [full_exposer_2checkers_1per]
 dut = "mkCombinedIOCapExposerV6_blockinvalid_2pool_1percycle_KeyManager2V1_Tb"
-timestamp = "2026-01-02_20:29:33+00:00"
+timestamp = "2026-01-02_19:31:30+00:00"
 aw_mean_latency_0cav_4flit = 219.988
 ar_mean_latency_0cav_4flit = 219.992
 aw_mean_latency_1cav_4flit = 419.968
@@ -127,15 +122,10 @@ revoke_no_dma_killkey_latency = 20
 revoke_no_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
-revoke_under_other_lease_dma_debug_invalid_latency = [
+revoke_under_dma_0flits_debug_invalid_latency = [
     50,
     60,
     80,
-]
-revoke_under_dma_0flits_debug_invalid_latency = [
-    50,
-    50,
-    50,
 ]
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
@@ -174,7 +164,7 @@ n_uploads_per_cycle_alone = 0.16719612104999165
 
 [full_exposer_3checkers_1per]
 dut = "mkCombinedIOCapExposerV6_blockinvalid_3pool_1percycle_KeyManager2V1_Tb"
-timestamp = "2026-01-02_20:31:09+00:00"
+timestamp = "2026-01-02_19:33:10+00:00"
 aw_mean_latency_0cav_4flit = 170
 ar_mean_latency_0cav_4flit = 180
 aw_mean_latency_1cav_4flit = 346.645
@@ -204,15 +194,10 @@ revoke_no_dma_killkey_latency = 20
 revoke_no_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
-revoke_under_other_lease_dma_debug_invalid_latency = [
+revoke_under_dma_0flits_debug_invalid_latency = [
     50,
     60,
     80,
-]
-revoke_under_dma_0flits_debug_invalid_latency = [
-    50,
-    50,
-    50,
 ]
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
@@ -251,7 +236,7 @@ n_uploads_per_cycle_alone = 0.16719612104999165
 
 [full_exposer_4checkers_1per]
 dut = "mkCombinedIOCapExposerV6_blockinvalid_4pool_1percycle_KeyManager2V1_Tb"
-timestamp = "2026-01-02_20:32:54+00:00"
+timestamp = "2026-01-02_19:35:02+00:00"
 aw_mean_latency_0cav_4flit = 170
 ar_mean_latency_0cav_4flit = 179.961
 aw_mean_latency_1cav_4flit = 309.982
@@ -281,15 +266,10 @@ revoke_no_dma_killkey_latency = 20
 revoke_no_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
-revoke_under_other_lease_dma_debug_invalid_latency = [
+revoke_under_dma_0flits_debug_invalid_latency = [
     50,
     60,
     80,
-]
-revoke_under_dma_0flits_debug_invalid_latency = [
-    50,
-    50,
-    50,
 ]
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
@@ -328,7 +308,7 @@ n_uploads_per_cycle_alone = 0.16719612104999165
 
 [full_exposer_9checkers_1per]
 dut = "mkCombinedIOCapExposerV6_blockinvalid_9pool_1percycle_KeyManager2V1_Tb"
-timestamp = "2026-01-02_20:36:45+00:00"
+timestamp = "2026-01-02_19:38:49+00:00"
 aw_mean_latency_0cav_4flit = 170
 ar_mean_latency_0cav_4flit = 179.961
 aw_mean_latency_1cav_4flit = 270
@@ -358,15 +338,10 @@ revoke_no_dma_killkey_latency = 20
 revoke_no_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
-revoke_under_other_lease_dma_debug_invalid_latency = [
+revoke_under_dma_0flits_debug_invalid_latency = [
     50,
     60,
     80,
-]
-revoke_under_dma_0flits_debug_invalid_latency = [
-    50,
-    50,
-    50,
 ]
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
@@ -405,7 +380,7 @@ n_uploads_per_cycle_alone = 0.16719612104999165
 
 [full_exposer_1checkers_2per_64]
 dut = "mkCombinedIOCapExposerV6_blockinvalid_1pool_2percycle_KeyManager2V1_64_Tb"
-timestamp = "2026-01-02_20:38:16+00:00"
+timestamp = "2026-01-02_19:40:49+00:00"
 aw_mean_latency_0cav_4flit = 189.988
 ar_mean_latency_0cav_4flit = 189.991
 aw_mean_latency_1cav_4flit = 339.973
@@ -435,15 +410,10 @@ revoke_no_dma_killkey_latency = 20
 revoke_no_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
-revoke_under_other_lease_dma_debug_invalid_latency = [
+revoke_under_dma_0flits_debug_invalid_latency = [
     50,
     60,
     70,
-]
-revoke_under_dma_0flits_debug_invalid_latency = [
-    50,
-    50,
-    50,
 ]
 revoke_under_dma_4flits_debug_invalid_latency = [
     80,
@@ -482,7 +452,7 @@ n_uploads_per_cycle_alone = 0.25119316754584275
 
 [full_exposer_2checkers_2per_64]
 dut = "mkCombinedIOCapExposerV6_blockinvalid_2pool_2percycle_KeyManager2V1_64_Tb"
-timestamp = "2026-01-02_20:39:34+00:00"
+timestamp = "2026-01-02_19:42:13+00:00"
 aw_mean_latency_0cav_4flit = 120
 ar_mean_latency_0cav_4flit = 129.961
 aw_mean_latency_1cav_4flit = 219.988
@@ -512,15 +482,10 @@ revoke_no_dma_killkey_latency = 20
 revoke_no_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
-revoke_under_other_lease_dma_debug_invalid_latency = [
+revoke_under_dma_0flits_debug_invalid_latency = [
     50,
     60,
     80,
-]
-revoke_under_dma_0flits_debug_invalid_latency = [
-    50,
-    50,
-    50,
 ]
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
@@ -559,7 +524,7 @@ n_uploads_per_cycle_alone = 0.25119316754584275
 
 [full_exposer_3checkers_2per_64]
 dut = "mkCombinedIOCapExposerV6_blockinvalid_3pool_2percycle_KeyManager2V1_64_Tb"
-timestamp = "2026-01-02_20:41:07+00:00"
+timestamp = "2026-01-02_19:43:50+00:00"
 aw_mean_latency_0cav_4flit = 120
 ar_mean_latency_0cav_4flit = 129.961
 aw_mean_latency_1cav_4flit = 170
@@ -589,15 +554,10 @@ revoke_no_dma_killkey_latency = 20
 revoke_no_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
-revoke_under_other_lease_dma_debug_invalid_latency = [
+revoke_under_dma_0flits_debug_invalid_latency = [
     50,
     60,
     80,
-]
-revoke_under_dma_0flits_debug_invalid_latency = [
-    50,
-    50,
-    50,
 ]
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
@@ -636,7 +596,7 @@ n_uploads_per_cycle_alone = 0.25119316754584275
 
 [full_exposer_4checkers_2per_64]
 dut = "mkCombinedIOCapExposerV6_blockinvalid_4pool_2percycle_KeyManager2V1_64_Tb"
-timestamp = "2026-01-02_20:43:19+00:00"
+timestamp = "2026-01-02_19:46:04+00:00"
 aw_mean_latency_0cav_4flit = 120
 ar_mean_latency_0cav_4flit = 129.961
 aw_mean_latency_1cav_4flit = 170
@@ -666,15 +626,10 @@ revoke_no_dma_killkey_latency = 20
 revoke_no_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
-revoke_under_other_lease_dma_debug_invalid_latency = [
+revoke_under_dma_0flits_debug_invalid_latency = [
     50,
     60,
     80,
-]
-revoke_under_dma_0flits_debug_invalid_latency = [
-    50,
-    50,
-    50,
 ]
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,
@@ -713,7 +668,7 @@ n_uploads_per_cycle_alone = 0.25119316754584275
 
 [full_exposer_5checkers_2per_64]
 dut = "mkCombinedIOCapExposerV6_blockinvalid_5pool_2percycle_KeyManager2V1_64_Tb"
-timestamp = "2026-01-02_20:45:41+00:00"
+timestamp = "2026-01-02_19:48:38+00:00"
 aw_mean_latency_0cav_4flit = 120
 ar_mean_latency_0cav_4flit = 129.961
 aw_mean_latency_1cav_4flit = 170
@@ -743,15 +698,10 @@ revoke_no_dma_killkey_latency = 20
 revoke_no_dma_state_invalidnotrevoked_latency = 20
 revoke_under_dma_killkey_latency = 20
 revoke_under_dma_state_invalidnotrevoked_latency = 20
-revoke_under_other_lease_dma_debug_invalid_latency = [
+revoke_under_dma_0flits_debug_invalid_latency = [
     50,
     60,
     80,
-]
-revoke_under_dma_0flits_debug_invalid_latency = [
-    50,
-    50,
-    50,
 ]
 revoke_under_dma_4flits_debug_invalid_latency = [
     30,

@@ -3599,6 +3599,19 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(
         // REVOKE LATENCY TESTS
         // ====================
 
+        // no DMAs
+        for (uint64_t revoke_delay = 0; revoke_delay <= 16 * 24; revoke_delay += 1) {
+            tests.push_back(
+                new ExposerUVMishTest(
+                    new UVMRevokeOverMMIOBenchmark<TheDUT, ctype, V>(
+                        /* dma_key */ 0, /* revoke_key */ 0, /* n_transactions */ 0, /* txn_data_flits */ 4, /* txn_cavs */ 0,
+                        revoke_delay * 10
+                    ),
+                    expectPassthroughInvalidTransactions
+                )
+            );
+        }
+
         // dma_key != revoke_key
         tests.push_back(
             new ExposerUVMishTest(
@@ -3632,6 +3645,18 @@ constexpr std::vector<TestBase*> basicExposerUvmTests(
                 expectPassthroughInvalidTransactions
             )
         );
+
+        for (uint64_t revoke_delay = 0; revoke_delay <= 16 * 24; revoke_delay += 1) {
+            tests.push_back(
+                new ExposerUVMishTest(
+                    new UVMRevokeOverMMIOBenchmark<TheDUT, ctype, V>(
+                        /* dma_key */ 0, /* revoke_key */ 1, /* n_transactions */ 100, /* txn_data_flits */ 4, /* txn_cavs */ 0,
+                        revoke_delay * 10
+                    ),
+                    expectPassthroughInvalidTransactions
+                )
+            );
+        }
 
         // dma_key == revoke_key
         // where txn_cavs increases...

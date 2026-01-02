@@ -83,10 +83,12 @@ class LatencyStats:
 
     revoke_no_dma_killkey_latency: int
     revoke_no_dma_state_invalidnotrevoked_latency: int
-    revoke_no_dma_state_invalid_latency: int
+    # revoke_no_dma_state_invalid_latency: List[int]
 
     revoke_under_dma_killkey_latency: int
     revoke_under_dma_state_invalidnotrevoked_latency: int
+    revoke_under_other_lease_dma_debug_invalid_latency: List[int]
+    revoke_under_dma_0flits_debug_invalid_latency: List[int]
     revoke_under_dma_4flits_debug_invalid_latency: List[int]
     revoke_under_dma_8flits_debug_invalid_latency: List[int]
     revoke_under_dma_12flits_debug_invalid_latency: List[int]
@@ -117,10 +119,6 @@ class ReducedLatencyStats:
     aw_throughput_2cav_4flit: int
     ar_throughput_2cav_4flit: int
 
-    # Not means, have to be the same throughout
-    kmngr_aw_b_latency: int
-    kmngr_ar_r_latency: int
-
 # group 1 = project name
 PROJECT_NAME_PATTERN = re.compile(r'^project_name := "(\w+)"')
 # group 1 = DUT name
@@ -150,17 +148,8 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats | ReducedLatencyS
         aw_throughput_4flit[cav] = test["aw_throughput"]
         ar_throughput_4flit[cav] = test["ar_throughput"]
 
-    # Keymngr stats
-    kmngr_aw_b_latencies = [
-        test["keymngr_aw_b_latency_mean"]
-        for name, test in results["tests"].items()
-    ]
-    kmngr_ar_r_latencies = [
-        test["keymngr_ar_r_latency_mean"]
-        for name, test in results["tests"].items()
-    ]
-
-    if "0pool" in dut:
+    if "0pool" in dut or "0pool" in results_toml:
+        print(dut)
         return ReducedLatencyStats(
             dut=dut,
             timestamp=results_timestamp,
@@ -178,10 +167,18 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats | ReducedLatencyS
             ar_throughput_0cav_4flit = ar_throughput_4flit[0],
             ar_throughput_1cav_4flit = ar_throughput_4flit[1],
             ar_throughput_2cav_4flit = ar_throughput_4flit[2],
-
-            kmngr_aw_b_latency=all_eq_excl_nan(kmngr_aw_b_latencies),
-            kmngr_ar_r_latency=all_eq_excl_nan(kmngr_ar_r_latencies),
         )
+    
+    # Keymngr stats
+    kmngr_aw_b_latencies = [
+        test["keymngr_aw_b_latency_mean"]
+        for name, test in results["tests"].items()
+    ]
+    kmngr_ar_r_latencies = [
+        test["keymngr_ar_r_latency_mean"]
+        for name, test in results["tests"].items()
+    ]
+
     # Upload stats
     # upload_mmio_status_latency_mean = 20
     # upload_mmio_debug_enablekey_latency_mean = 30
@@ -302,9 +299,15 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats | ReducedLatencyS
             test["revoke_mmio_debug_state_invalid_latency_mean"]
         )
 
-    # check that cav doesn't change anything
+
     print(dut)
-    all_eq_excl_nan(test_invalid_latency_with_diff_caps)
+
+    # Cavs don't have a specific effect BUT they do randomly affect how fast other transactions go and therefore how much refcount traffic is found and therefore how long revokes take.
+    # # check that cav doesn't change anything
+    # try:
+    #     all_eq_excl_nan(test_invalid_latency_with_diff_caps)
+    # except AssertionError:
+    #     print("err all_eq ", test_invalid_latency_with_diff_caps)
 
     # [n_flits][delay/10]
     revoke_under_dma_debug_killkey_latency = []
@@ -312,20 +315,36 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats | ReducedLatencyS
     revoke_under_dma_state_debug_invalid_latency: Dict[str, List[int]] = defaultdict(list)
     # revoke_under_dma_0cav_max_data_flits = defaultdict(list)
 
-    for n_flits in range(4, 28, 4):
-        for delay in range(0, 16*24*10 + 10, 10):
-            cav = 0
-            if True:
-                test = results["tests"][f"UVMRevokeOverMMIOBenchmark (Stream of 100 {n_flits}-flit {cav}-cav txns, DMA 0 Revoke 0, delay {delay})"]
-                revoke_under_dma_debug_killkey_latency.append(
-                    test["revoke_mmio_debug_killkey_latency_mean"]
-                )
-                revoke_under_dma_state_debug_invalidnotrevoked_latency.append(
-                    test["revoke_mmio_debug_state_invalidnotrevoked_latency_mean"]
-                )
-                revoke_under_dma_state_debug_invalid_latency[str(n_flits)].append(
-                    test["revoke_mmio_debug_state_invalid_latency_mean"]
-                )
+    delay_range = list(range(0, 16*24*10 + 10, 10))
+
+    for n_flits in range(0, 28, 4):
+        for delay in delay_range:
+            if n_flits == 0:
+                test = results["tests"][f"UVMRevokeOverMMIOBenchmark (Stream of 0 4-flit 0-cav txns, DMA 0 Revoke 0, delay {delay})"]
+            else:
+                test = results["tests"][f"UVMRevokeOverMMIOBenchmark (Stream of 100 {n_flits}-flit 0-cav txns, DMA 0 Revoke 0, delay {delay})"]
+            revoke_under_dma_debug_killkey_latency.append(
+                test["revoke_mmio_debug_killkey_latency_mean"]
+            )
+            revoke_under_dma_state_debug_invalidnotrevoked_latency.append(
+                test["revoke_mmio_debug_state_invalidnotrevoked_latency_mean"]
+            )
+            revoke_under_dma_state_debug_invalid_latency[str(n_flits)].append(
+                test["revoke_mmio_debug_state_invalid_latency_mean"]
+            )
+
+    revoke_4flits_under_other_lease_dma_state_debug_invalid_latency = []
+    for delay in delay_range:
+        test = results["tests"][f"UVMRevokeOverMMIOBenchmark (Stream of 100 4-flit 0-cav txns, DMA 0 Revoke 1, delay {delay})"]
+        revoke_under_dma_debug_killkey_latency.append(
+            test["revoke_mmio_debug_killkey_latency_mean"]
+        )
+        revoke_under_dma_state_debug_invalidnotrevoked_latency.append(
+            test["revoke_mmio_debug_state_invalidnotrevoked_latency_mean"]
+        )
+        revoke_4flits_under_other_lease_dma_state_debug_invalid_latency.append(
+            test["revoke_mmio_debug_state_invalid_latency_mean"]
+        )
 
     latency_stats = lambda xs: [min(xs), median(xs), max(xs)]
 
@@ -373,10 +392,12 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats | ReducedLatencyS
 
         revoke_no_dma_killkey_latency=all_eq_excl_nan(revoke_no_dma_debug_killkey_latency),
         revoke_no_dma_state_invalidnotrevoked_latency=all_eq_excl_nan(revoke_no_dma_debug_state_invalidnotrevoked_latency),
-        revoke_no_dma_state_invalid_latency=all_eq_excl_nan(revoke_no_dma_debug_state_invalid_latency),
+        # revoke_no_dma_state_invalid_latency=latency_stats(revoke_no_dma_debug_state_invalid_latency),
 
         revoke_under_dma_killkey_latency=all_eq_excl_nan(revoke_under_dma_debug_killkey_latency),
         revoke_under_dma_state_invalidnotrevoked_latency=all_eq_excl_nan(revoke_under_dma_state_debug_invalidnotrevoked_latency),
+        revoke_under_other_lease_dma_debug_invalid_latency=latency_stats(revoke_4flits_under_other_lease_dma_state_debug_invalid_latency),
+        revoke_under_dma_0flits_debug_invalid_latency=latency_stats(revoke_under_dma_state_debug_invalid_latency["0"]),
         revoke_under_dma_4flits_debug_invalid_latency=latency_stats(revoke_under_dma_state_debug_invalid_latency["4"]),
         revoke_under_dma_8flits_debug_invalid_latency=latency_stats(revoke_under_dma_state_debug_invalid_latency["8"]),
         revoke_under_dma_12flits_debug_invalid_latency=latency_stats(revoke_under_dma_state_debug_invalid_latency["12"]),
