@@ -19,18 +19,15 @@
 #
 # Quartus Prime
 # Version 23.2.0 Build 94 06/14/2023 SC Pro Edition
-# Date created = 10:41:58  December 11, 2025
+# Date created = 15:39:23  January 04, 2026
 #
 # -------------------------------------------------------------------------- #
 
 QUARTUS_VERSION = "23.2"
-DATE = "10:41:58  December 11, 2025"
+DATE = "15:39:23  January 04, 2026"
 
 # Revisions
 
-PROJECT_REVISION = "mkCombinedIOCapExposerV6_blockinvalid_5pool_2percycle_KeyManager2V1_64_Tb_UnifiedSingleExposerKeyMngr64Tb_design"
-PROJECT_REVISION = "Seed31"
-PROJECT_REVISION = "Seed30"
 PROJECT_REVISION = "Seed29"
 PROJECT_REVISION = "Seed28"
 PROJECT_REVISION = "Seed27"
@@ -61,3 +58,6 @@ PROJECT_REVISION = "Seed03"
 PROJECT_REVISION = "Seed02"
 PROJECT_REVISION = "Seed01"
 PROJECT_REVISION = "Seed00"
+PROJECT_REVISION = "mkCombinedIOCapExposerV6_blockinvalid_5pool_2percycle_KeyManager2V1_64_Tb_UnifiedSingleExposerKeyMngr64Tb_design"
+PROJECT_REVISION = "Seed30"
+PROJECT_REVISION = "Seed31"
