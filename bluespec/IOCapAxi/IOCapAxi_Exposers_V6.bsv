@@ -366,7 +366,7 @@ module mkSimpleIOCapExposerV6#(
             { .flit, .flitId, .keyId, .allowed } : begin
                 Bit#(8) awlen = flit.awlen;
                 Bit#(9) nCredits = zeroExtend(awlen) + 1;
-                wScoreboard.beginTxn(flit.awid, tuple2(flitId, keyId), allowed);
+                wScoreboard.beginTxn(flit.awid, tuple2(flitId, keyId), allowed || !blockInvalid);
                 if (allowed) begin
                     keyStore.wValve.perf.bumpPerfCounterGood();
                     // Pass through the valid write
@@ -438,7 +438,7 @@ module mkSimpleIOCapExposerV6#(
         // If invalid, send a failure response
         case (arResp) matches
             { .flit, .flitId, .keyId, .allowed } : begin
-                rScoreboard.beginTxn(flit.arid, tuple2(flitId, keyId), allowed);
+                rScoreboard.beginTxn(flit.arid, tuple2(flitId, keyId), allowed || !blockInvalid);
                 $display("// ALLOWED ", fshow(allowed));
                 if (allowed) begin
                     keyStore.rValve.perf.bumpPerfCounterGood();
