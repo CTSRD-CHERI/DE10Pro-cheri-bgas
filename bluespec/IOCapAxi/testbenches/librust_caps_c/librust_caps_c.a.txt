@@ -1,0 +1,2 @@
+librust_caps_c.a was a binary static library file and therefore excluded.
+It was built from v0.6.4 of iocap-impls/rust_caps_c.
