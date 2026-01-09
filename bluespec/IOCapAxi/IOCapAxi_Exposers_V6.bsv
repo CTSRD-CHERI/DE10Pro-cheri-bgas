@@ -178,7 +178,7 @@ endmodule
 // NOT AXI COMPLIAMT
 // - doesn't support WRAP bursts
 // - doesn't correctly handle ordering for same-ID transaction responses if one of those transactions is correctly authenticated and the other isn't.
-//      TODO Samuel's guess about this is that if the second transaction is bad, it might send a response first.
+//      TODO My guess about this is that if the second transaction is bad, it might send a response first.
 //      TODO this may be fixed? Need to write a test
 // Changes from V1
 // - correctly blocks invalid transactions

@@ -39,7 +39,6 @@ function Bool andVec(Vector#(n, Bool) bools) = allHigh(pack(bools));
 // Assertion
 function Action myAssert(Bool b, String s) =
   action
-    // Samuel Note: genC() == "is the compiler generating C"
     if (!b && genC()) begin
       $display("Assertion failed: ", s);
       $finish();
