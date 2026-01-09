@@ -1688,16 +1688,20 @@ protected:
     std::vector<axi::IOCapAxi::ARFlit_id4_addr64_user3> arInProgress;
     ReadTxnScoreboard rTxns;
 
-    // We can't understand what should be good/bad ahead of time, because txns could be cancelled while still in progress.
+    // We can't understand what should be good/bad ahead of time on certain models, because txns could be cancelled while still in progress.
     // Monitor the actual outputs of the exposer, which are checked by the read/write txnscoreboards, and check the performance counters against *those*.
     // NOTE: this means if a valid txn stalls out, it won't be "confirmed" and therefore will show up as "expected bad" instead of "expected good"
     uint64_t totalWriteTxns;
     uint64_t totalReadTxns;
-    // Confirmed i.e. were valid at the point they passed out of the exposed.
-    // signalledGoodWrite should match this.
-    uint64_t confirmedWriteTxns;
-    uint64_t confirmedReadTxns;
+    // Confirmed i.e. were valid at the point they passed out of the exposer.
+    // signalledGood{Read,Write} should match this.
+    uint64_t passedThroughWriteTxns;
+    uint64_t passedThroughReadTxns;
     // expectedBad{Read,Write} = total{Read,Write} - confirmed{Read,Write}
+
+    // Older models *can* predict ahead of time which transactions will be good or bad.
+    uint64_t writesExpectedValidAtArrival = 0;
+    uint64_t readsExpectedValidAtArrival = 0;
 
     uint64_t signalledGoodWrite = 0;
     uint64_t signalledBadWrite = 0;
@@ -1771,9 +1775,15 @@ protected:
 
             // TODO this might not work if axiBase+axiLen = end of addrspace?
             bool rangeIsValid = len64 || (axiBase >= base && (axiTop - base) <= len);
+            bool isValid = (capIsValid && rangeIsValid);
+
             // The performance counters should reflect the validity of the capability/access in all cases.
-            // We can't predict the goodness of a txn ahead of time - it could be cancelled after it comes through!
+            // We can't necessarily predict the goodness of a txn ahead of time - it could be cancelled after it comes through!
             totalWriteTxns++;
+            if (isValid) {
+                writesExpectedValidAtArrival++;
+            }
+
             // If the capability and ranges are valid,
             // expect an AW flit to come out *and* the right number of W flits!
             uint8_t txnId = awInProgress[0].awid;
@@ -1781,7 +1791,7 @@ protected:
             wTxns.pushUnconfirmedTxn(
                 txnId,
                 secret_key_id,
-                (capIsValid && rangeIsValid) || expectPassthroughInvalidTransactions, // valid
+                isValid || expectPassthroughInvalidTransactions, // valid
                 nDataFlits,
                 {
                     awInProgress_firstTick,
@@ -1862,15 +1872,21 @@ protected:
 
             // TODO this might not work if axiBase+axiLen = end of addrspace?
             bool rangeIsValid = len64 || (axiBase >= base && axiTop <= (base + len));
+            bool isValid = (capIsValid && rangeIsValid);
+
             // The performance counters should reflect the validity of the capability/access in all cases
-            // We can't predict the goodness of a txn ahead of time - it could be cancelled after it comes through!
+            // We can't necessarily predict the goodness of a txn ahead of time - under certain models, 
+            // it could be cancelled after it comes through!
             totalReadTxns++;
-            bool isValid = (capIsValid && rangeIsValid) || expectPassthroughInvalidTransactions;
+            if (isValid) {
+                readsExpectedValidAtArrival++;
+            }
+
             // If the capability and ranges are valid, expect an AR flit to come out
             rTxns.pushUnconfirmedTxn(
                 arInProgress[0].arid,
                 secret_key_id,
-                (capIsValid && rangeIsValid) || expectPassthroughInvalidTransactions, // valid
+                isValid || expectPassthroughInvalidTransactions, // valid
                 axi::len_to_n_transfers(arInProgress[0].arlen),
                 {
                     arInProgress_firstTick,
@@ -1909,13 +1925,13 @@ public:
             outputs.push_back(output);
 
         if (output.clean_flit_aw) {
-            confirmedWriteTxns++;
+            passedThroughWriteTxns++;
             fmt::println(stdout, "V\tAwRecv\t{}", tick);
             wTxns.checkAndFwdAwFlit(tick, output.clean_flit_aw.value());
         }
 
         if (output.clean_flit_ar) {
-            confirmedReadTxns++;
+            passedThroughReadTxns++;
             fmt::println(stdout, "V\tArRecv\t{}", tick);
             rTxns.checkAndFwdArFlit(tick, output.clean_flit_ar.value());
         }
@@ -1966,10 +1982,10 @@ public:
         if (
             !this->wTxns.empty() ||
             !this->rTxns.empty() ||
-            (this->confirmedWriteTxns != this->signalledGoodWrite) ||
-            (this->totalWriteTxns - this->confirmedWriteTxns != this->signalledBadWrite) ||
-            (this->confirmedReadTxns != this->signalledGoodRead) ||
-            (this->totalReadTxns - this->confirmedReadTxns != this->signalledBadRead)
+            (this->passedThroughWriteTxns != this->signalledGoodWrite) ||
+            (this->totalWriteTxns - this->passedThroughWriteTxns != this->signalledBadWrite) ||
+            (this->passedThroughReadTxns != this->signalledGoodRead) ||
+            (this->totalReadTxns - this->passedThroughReadTxns != this->signalledBadRead)
         ) {
             throw test_failure(fmt::format(
                 "BaseExposerScoreboard unexpected outcome:\n"
@@ -1982,10 +1998,10 @@ public:
                 "bad read {}/{}\n"
                 ,
                 this->wTxns, this->rTxns,
-                this->confirmedWriteTxns, this->signalledGoodWrite,
-                this->totalWriteTxns - this->confirmedWriteTxns, this->signalledBadWrite,
-                this->confirmedReadTxns, this->signalledGoodRead,
-                this->totalReadTxns - this->confirmedReadTxns, this->signalledBadRead
+                this->passedThroughWriteTxns, this->signalledGoodWrite,
+                this->totalWriteTxns - this->passedThroughWriteTxns, this->signalledBadWrite,
+                this->passedThroughReadTxns, this->signalledGoodRead,
+                this->totalReadTxns - this->passedThroughReadTxns, this->signalledBadRead
             ));
         }
     }
@@ -1999,16 +2015,16 @@ public:
         DUMP_MEAN_OF(b_b_latency, wTxns.b_b_latency);
         DUMP_MEAN_OF(r_r_latency, rTxns.r_r_latency);
         fmt::println(stats, "total_write = {}", totalWriteTxns);
-        fmt::println(stats, "confirmed_write = {}", confirmedWriteTxns);
-        fmt::println(stats, "exp_invalid_write = {}", totalWriteTxns - confirmedWriteTxns);
+        fmt::println(stats, "confirmed_write = {}", passedThroughWriteTxns);
+        fmt::println(stats, "exp_invalid_write = {}", totalWriteTxns - passedThroughWriteTxns);
         fmt::println(stats, "perf_valid_write = {}", signalledGoodWrite);
         fmt::println(stats, "perf_invalid_write = {}", signalledBadWrite);
         fmt::println(stats, "total_read = {}", totalReadTxns);
-        fmt::println(stats, "confirmed_read = {}", confirmedReadTxns);
-        fmt::println(stats, "exp_invalid_read = {}", totalReadTxns - confirmedReadTxns);
+        fmt::println(stats, "confirmed_read = {}", passedThroughReadTxns);
+        fmt::println(stats, "exp_invalid_read = {}", totalReadTxns - passedThroughReadTxns);
         fmt::println(stats, "perf_valid_read = {}", signalledGoodRead);
         fmt::println(stats, "perf_invalid_read = {}", signalledBadRead);
-        fmt::println(stats, "valid_txn_ratio = {}", (double(confirmedWriteTxns + confirmedReadTxns))/(double(totalWriteTxns + totalReadTxns)));
+        fmt::println(stats, "valid_txn_ratio = {}", (double(passedThroughWriteTxns + passedThroughReadTxns))/(double(totalWriteTxns + totalReadTxns)));
     }
     #undef DUMP_MEAN_OF
     #undef STRINGIFY2
@@ -2083,16 +2099,26 @@ public:
             !expectedEpochCompletions.empty() ||
             !this->wTxns.empty() ||
             !this->rTxns.empty() ||
-            (this->confirmedWriteTxns != this->signalledGoodWrite) ||
-            (this->totalWriteTxns - this->confirmedWriteTxns != this->signalledBadWrite) ||
-            (this->confirmedReadTxns != this->signalledGoodRead) ||
-            (this->totalReadTxns - this->confirmedReadTxns != this->signalledBadRead)
+            // Use {read,write}sExpectedValidAtArrival as comparisons for the perf counters
+            // because it holds up when expectPassthroughInvalidTransactions
+            (this->writesExpectedValidAtArrival != this->signalledGoodWrite) ||
+            (this->totalWriteTxns - this->writesExpectedValidAtArrival != this->signalledBadWrite) ||
+            (this->readsExpectedValidAtArrival != this->signalledGoodRead) ||
+            (this->totalReadTxns - this->readsExpectedValidAtArrival != this->signalledBadRead) ||
+
+            // if expectPassthroughInvalidTransactions, should always output valid
+            (this->expectPassthroughInvalidTransactions && (this->passedThroughWriteTxns != this->totalWriteTxns)) ||
+            (this->expectPassthroughInvalidTransactions && (this->passedThroughReadTxns != this->totalReadTxns))
         ) {
             throw test_failure(fmt::format(
                 "BaseExposerScoreboard unexpected outcome:\n"
                 "epoch completions: {}\n"
                 "wTxns: {}\n"
                 "rTxns: {}\n"
+                "total wTxns: {}\n"
+                "output wTxns: {}\n"
+                "total rTxns: {}\n"
+                "output rTxns: {}\n"
                 "perf counters exp/act:\n"
                 "good write {}/{}\n"
                 "bad write {}/{}\n"
@@ -2101,10 +2127,12 @@ public:
                 ,
                 expectedEpochCompletions,
                 this->wTxns, this->rTxns,
-                this->confirmedWriteTxns, this->signalledGoodWrite,
-                this->totalWriteTxns - this->confirmedWriteTxns, this->signalledBadWrite,
-                this->confirmedReadTxns, this->signalledGoodRead,
-                this->totalReadTxns - this->confirmedReadTxns, this->signalledBadRead
+                this->totalWriteTxns, this->passedThroughWriteTxns,
+                this->totalReadTxns, this->passedThroughReadTxns,
+                this->writesExpectedValidAtArrival, this->signalledGoodWrite,
+                this->totalWriteTxns - this->writesExpectedValidAtArrival, this->signalledBadWrite,
+                this->readsExpectedValidAtArrival, this->signalledGoodRead,
+                this->totalReadTxns - this->readsExpectedValidAtArrival, this->signalledBadRead
             ));
         }
     }
@@ -2377,8 +2405,10 @@ protected:
 
         if (revoke_on_tick.contains(tick)) {
             key_manager::KeyId revoking_key = revoke_on_tick[tick];
-            this->wTxns.invalidateFromKey(revoking_key);
-            this->rTxns.invalidateFromKey(revoking_key);
+            if (!this->expectPassthroughInvalidTransactions) {
+                this->wTxns.invalidateFromKey(revoking_key);
+                this->rTxns.invalidateFromKey(revoking_key);
+            }
             revoke_on_tick.erase(tick);
         }
 
@@ -2466,17 +2496,35 @@ public:
             !revokes.empty() || !uploads.empty() ||
             !this->wTxns.empty() ||
             !this->rTxns.empty() ||
-            (this->confirmedWriteTxns != this->signalledGoodWrite) ||
-            (this->totalWriteTxns - this->confirmedWriteTxns != this->signalledBadWrite) ||
-            (this->confirmedReadTxns != this->signalledGoodRead) ||
-            (this->totalReadTxns - this->confirmedReadTxns != this->signalledBadRead)
+
+            // Only check performance counters if not expectPassthroughInvalidTransactions.
+            // We don't have a way to count exactly how many transactions should be good or bad,
+            // because if we had any incoming upload/revoke MMIO signals the exact timing could define how many were actually
+            // good/bad in an implementation-dependent way.
+            // We can rely on two properties to ensure the performance counters are correct:
+            // - tests for the non-expectPassthroughInvalidTransactions cases passing, where the performance counters are consistent with whether transactions were actually passed out as invalid/valid
+            // - source code inspection such that the performance counters are set independently of expectPassthroughInvalidTransactions.
+            (!this->expectPassthroughInvalidTransactions && (
+                (this->passedThroughWriteTxns != this->signalledGoodWrite) ||
+                (this->totalWriteTxns - this->passedThroughWriteTxns != this->signalledBadWrite) ||
+                (this->passedThroughReadTxns != this->signalledGoodRead) ||
+                (this->totalReadTxns - this->passedThroughReadTxns != this->signalledBadRead)
+            )) ||
+
+            // if expectPassthroughInvalidTransactions, should always output valid
+            (this->expectPassthroughInvalidTransactions && (this->passedThroughWriteTxns != this->totalWriteTxns)) ||
+            (this->expectPassthroughInvalidTransactions && (this->passedThroughReadTxns != this->totalReadTxns))
         ) {
             throw test_failure(fmt::format(
-                "BaseExposerScoreboard unexpected outcome:\n"
+                "BaseMMIOExposerScoreboard unexpected outcome:\n"
                 "revocations: {}\n"
                 "uploads: {}\n"
                 "wTxns: {}\n"
                 "rTxns: {}\n"
+                "total wTxns: {}\n"
+                "output wTxns: {}\n"
+                "total rTxns: {}\n"
+                "output rTxns: {}\n"
                 "perf counters exp/act:\n"
                 "good write {}/{}\n"
                 "bad write {}/{}\n"
@@ -2485,10 +2533,12 @@ public:
                 ,
                 this->revokes, this->uploads,
                 this->wTxns, this->rTxns,
-                this->confirmedWriteTxns, this->signalledGoodWrite,
-                this->totalWriteTxns - this->confirmedWriteTxns, this->signalledBadWrite,
-                this->confirmedReadTxns, this->signalledGoodRead,
-                this->totalReadTxns - this->confirmedReadTxns, this->signalledBadRead
+                this->totalWriteTxns, this->passedThroughWriteTxns,
+                this->totalReadTxns, this->passedThroughReadTxns,
+                this->passedThroughWriteTxns, this->signalledGoodWrite,
+                this->totalWriteTxns - this->passedThroughWriteTxns, this->signalledBadWrite,
+                this->passedThroughReadTxns, this->signalledGoodRead,
+                this->totalReadTxns - this->passedThroughReadTxns, this->signalledBadRead
             ));
         }
     }
