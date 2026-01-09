@@ -1,0 +1,19 @@
+[tests."Write and enable key over AXI"]
+success = true
+
+[tests."Write and enable key over AXI - event-based construction"]
+success = true
+
+[tests."Invalidation Epochs"]
+success = true
+
+[tests."Key Request - 1/cycle Throughput"]
+success = true
+
+[tests."Performance Counting"]
+success = true
+
+[summary]
+completed = 5
+success = 5
+fail = 0

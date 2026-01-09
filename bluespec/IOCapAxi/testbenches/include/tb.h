@@ -175,7 +175,7 @@ struct CycleTest : TestBase {
     CycleTest() : rng(0) {}
     virtual ~CycleTest() override = default;
 
-    virtual void setup(std::mt19937&& rng) override {
+    virtual void setup(std::mt19937&& rng, TestSetup& setup) override {
         this->rng = rng;
     }
 
