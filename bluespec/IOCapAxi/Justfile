@@ -62,6 +62,7 @@ test-combined-v6-2per-2pool-64 *args: (sim-v "mkCombinedIOCapExposerV6_blockinva
 test-combined-v6-2per-3pool-64 *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_3pool_2percycle_KeyManager2V1_64_Tb" args)
 test-combined-v6-2per-4pool-64 *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_4pool_2percycle_KeyManager2V1_64_Tb" args)
 test-combined-v6-2per-5pool-64 *args: (sim-v "mkCombinedIOCapExposerV6_blockinvalid_5pool_2percycle_KeyManager2V1_64_Tb" args)
+test-combined-v6-2per-1pool-noblock *args: (sim-v "mkCombinedIOCapExposerV6_noblockinvalid_1pool_2percycle_KeyManager2V1_64_Tb" args)
 
 test-combined-v6-allpool: (test-combined-v6-1per-0pool-64) \
     (test-combined-v6-1per-1pool) \
@@ -75,7 +76,7 @@ test-combined-v6-allpool: (test-combined-v6-1per-0pool-64) \
     (test-combined-v6-2per-4pool-64) \
     (test-combined-v6-2per-5pool-64)
 
-test-soc-ver *args: (sim-v "mkCombinedIOCapExposerV6_noblockinvalid_1pool_2percycle_KeyManager2V1_64_Tb" args)
+test-soc-ver *args: test-exposer-v4-noblock
 
 test-single-checker3-1per *args: (sim-v "mkSingleChecker3_1percycle" args)
 test-single-checker3-2per *args: (sim-v "mkSingleChecker3_2percycle" args)
