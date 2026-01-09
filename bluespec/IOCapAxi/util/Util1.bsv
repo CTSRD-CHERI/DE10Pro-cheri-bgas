@@ -1,6 +1,6 @@
 // From https://github.com/POETSII/twine/blob/e8c529e4037b7d0bd53f64ab094287b2653241af/rtl/Util.bsv
 
-package MattUtil; // This is the only edit
+package Util1; // This is the only edit
 
 import DReg      :: *;
 import ConfigReg :: *;

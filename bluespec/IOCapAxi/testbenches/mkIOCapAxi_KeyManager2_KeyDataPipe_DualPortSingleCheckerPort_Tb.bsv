@@ -3,7 +3,7 @@ import IOCapAxi_KeyManager2_Types :: *;
 import IOCapAxi_KeyManager2_KeyStatePipe :: *;
 import IOCapAxi_KeyManager2_KeyDataPipe :: *;
 import IOCapAxi_ErrorUnit :: *;
-import SamUtil :: *;
+import Util2 :: *;
 import Vector :: *;
 import Tests :: *;
 

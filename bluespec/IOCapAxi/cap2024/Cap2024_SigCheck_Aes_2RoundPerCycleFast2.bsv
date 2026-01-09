@@ -7,8 +7,8 @@ import ClientServer::*;
 import Cap2024::*;
 import Cap2024_11::*;
 import FIFO::*;
-import MattUtil::*;
-import SamUtil::*;
+import Util1::*;
+import Util2::*;
 import IOCapAxi_Konata::*;
 
 export mk2RoundPerCycleCapSigCheckFast2;

@@ -1,4 +1,4 @@
-package SamUtil;
+package Util2;
 
 import Vector::*;
 import FIFOF :: *;

@@ -9,7 +9,7 @@ import Cap2024_02::*;
 import GetPut::*;
 import StmtFSM::*;
 import LeftShift::*;
-import MattUtil::*;
+import Util1::*;
 
 export mkFastFSMCapDecode_2024_02;
 export connectFastFSMCapDecode_2024_02;

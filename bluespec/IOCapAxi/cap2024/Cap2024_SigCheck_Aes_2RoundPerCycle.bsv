@@ -6,8 +6,8 @@ import GetPut::*;
 import ClientServer::*;
 import Cap2024::*;
 import FIFO::*;
-import MattUtil::*;
-import SamUtil::*;
+import Util1::*;
+import Util2::*;
 
 export mk2RoundPerCycleCapSigCheck;
 

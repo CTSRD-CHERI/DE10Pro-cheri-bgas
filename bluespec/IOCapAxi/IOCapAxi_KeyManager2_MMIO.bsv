@@ -12,7 +12,7 @@ import IOCapAxi_KeyManager2_Types :: *;
 import IOCapAxi_KeyManager2_KeyStatePipe :: *;
 import IOCapAxi_KeyManager2_KeyDataPipe :: *;
 import IOCapAxi_Konata :: *;
-import SamUtil :: *;
+import Util2 :: *;
 import MapFIFO :: *;
 
 interface IOCapAxi_KeyManager2_MMIO_PerfCounterIfc;

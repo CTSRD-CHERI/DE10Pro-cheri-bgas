@@ -2,7 +2,7 @@ import Cap2024 :: *;
 import BlueAXI4 :: *;
 import FIFOF :: *;
 import SourceSink :: *;
-import SamUtil :: *;
+import Util2 :: *;
 import Vector :: *;
 
 import IOCapAxi_Types :: *;

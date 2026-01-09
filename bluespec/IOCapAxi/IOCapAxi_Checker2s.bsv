@@ -7,7 +7,7 @@ import Vector :: *;
 import BlueBasics :: *;
 import MapFIFO :: *;
 import ConfigReg :: *;
-import SamUtil :: *;
+import Util2 :: *;
 import Assert :: *;
 
 import IOCapAxi_Types :: *;

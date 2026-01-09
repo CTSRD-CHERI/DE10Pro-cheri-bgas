@@ -14,7 +14,7 @@ import IOCapAxi_KeyManager2_KeyDataPipe :: *;
 import IOCapAxi_KeyManager2_RefCountPipe :: *;
 import IOCapAxi_KeyManager2_MMIO :: *;
 import IOCapAxi_Konata :: *;
-import SamUtil :: *;
+import Util2 :: *;
 
 interface IOCapAxi_KeyManager2_CheckerIfc;
     // Used by the checker to request keys from the KeyManager
