@@ -64,7 +64,7 @@ module mk1RoundPerCycleCapSigCheckFast2#(ReadOnly#(Maybe#(CapSigCheckIn#(Cap2024
     rule process_item(fsmWorking);
         case (fsmState) matches
             tagged Standard { state: .inState, roundKey: .inRoundKey, round: .inRound }: action
-                konataEvent(KONATA_FLIT, "Aes1Round", fshow(inRound));
+                konataEvent(KONATA_OFF, "Aes1Round", fshow(inRound));
 
                 // round 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
                 AesState state = addRoundKey(inState, inRoundKey);
@@ -112,7 +112,7 @@ module mk1RoundPerCycleCapSigCheckFast2#(ReadOnly#(Maybe#(CapSigCheckIn#(Cap2024
                             };
                         end
                     end else begin
-                        konataEvent(KONATA_FLIT, "AesEnd", fshow(pack(finalState) == currentSig));
+                        konataEvent(KONATA_OFF, "AesEnd", fshow(pack(finalState) == currentSig));
                         // calc.newRound = 6 && currentCavLevel == expectedCavLevel
                         // => we need to check that the signatures match
                         if (pack(finalState) == currentSig)
@@ -153,7 +153,7 @@ module mk1RoundPerCycleCapSigCheckFast2#(ReadOnly#(Maybe#(CapSigCheckIn#(Cap2024
         //     state: stateOfCap(atRoot(i.cap)),
         //     roundKey: unpack(i.secret)
         // });
-        konataEvent(KONATA_FLIT, "AesStart", fshow(""));
+        konataEvent(KONATA_OFF, "AesStart", fshow(""));
         fsmState <= tagged Standard {
             round: 0,
             state: stateOfCap(atRoot(i.cap)),

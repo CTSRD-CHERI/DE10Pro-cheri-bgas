@@ -58,3 +58,14 @@ interface IOCapSingleExposer#(numeric type t_iocap_id, numeric type t_iocap_data
 
     interface AXI4_Master#(t_iocap_id, 64, t_iocap_data, 0, 0, 0, 0, 0) sanitizedOut;
 endinterface
+
+function IOCapSingleExposer#(id_out, t_iocap_data)
+  mapIOCapSingleExposer_id ( function Bit #(id_out) fReq (Bit #(id_in)  x)
+                    , function Bit #(id_in)  fRsp (Bit #(id_out) x)
+                    , IOCapSingleExposer#(id_in, t_iocap_data) m) =
+  interface IOCapSingleExposer;
+    interface iocapsIn = interface IOCapAXI4_Slave#(id_out, t_iocap_data);
+      interface axiSignals = mapAXI4_Slave_id(fRsp, fReq, m.iocapsIn.axiSignals);
+    endinterface;
+    interface sanitizedOut = mapAXI4_Master_id(fReq, fRsp, m.sanitizedOut);
+  endinterface;
