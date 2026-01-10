@@ -143,8 +143,8 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats | ReducedLatencyS
 
     for cav in range(3):
         # Note: these tests make the AR and AW txns arrive at the same time, and our arbitration takes AW first.
-        # This means AW latency values will be one cycle (10 units) less than AR,
-        # which we account for in the paper with the extra .5 cycle quoted in Table 3.
+        # This means AW latency values will be one cycle (10 units) less than AR.
+        # We note this in the paper.
         test = results["tests"][f"Stream of 10000 librust random valid Cap2024_11 {cav}-caveat 4-flit Both-perm Random-key transactions"]
         aw_mean_latency_4flit[cav] = test["aw_aw_latency_mean"]
         ar_mean_latency_4flit[cav] = test["ar_ar_latency_mean"]
