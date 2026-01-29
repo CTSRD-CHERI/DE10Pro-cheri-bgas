@@ -33,7 +33,7 @@
 #
 
 COMPILER_FILE="gcc-linaro-7.2.1-2017.11-x86_64_aarch64-linux-gnu"
-COMPILER_URL="https://releases.linaro.org/components/toolchain/binaries/7.2-2017.11/aarch64-linux-gnu/${COMPILER_FILE}.tar.xz" 
+COMPILER_URL="https://www.cl.cam.ac.uk/~jdw57/${COMPILER_FILE}.tar.xz"
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 CWD=$(pwd)
 
