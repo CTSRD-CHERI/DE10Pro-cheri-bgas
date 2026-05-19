@@ -190,10 +190,6 @@ module mkCHERI_BGAS_Top_Sim (Empty);
   // topmodule to simulate
   DE10ProIfc cheri_bgas_top <- mkCHERI_BGAS_Top;
 
-  // serial lite 3 wrapper
-  SerialLite3Wrapper#(`H2F_LW_ADDR,0,0,0,0,0,Bit #(512))
-    sl3wrapper <- mkSerialLite3Wrapper;
-
   // H2F_LW port
   AXI4_Master #( 0, `H2F_LW_ADDR, `H2F_LW_DATA
                , `H2F_LW_AWUSER, `H2F_LW_WUSER, `H2F_LW_BUSER
@@ -232,24 +228,9 @@ module mkCHERI_BGAS_Top_Sim (Empty);
   /////////////////
 
   // h2flw traffic
-  function route_lw (addr);
-    Vector #(2, Bool) res = replicate (False);
-    case (addr[20:0] & ~'h3fff) matches
-      21'h14_0000: res[0] = True;
-      default: res[1] = True;
-    endcase
-    return res;
-  endfunction
-  mkAXI4LiteBus ( route_lw
-                  //
-                , cons (
-                    fromAXI4ToAXI4Lite_Master(
-                      debugAXI4_Master (h2f_lw_mngr, $format ("h2f_lw_mngr")))
-                    , nil)
-                  //
-                , cons (sl3wrapper.mngmnt
-                , cons (cheri_bgas_top.axls_h2f_lw, nil))
-                );
+  // Implicitly connect AXI_Lite to normal AXI4.
+  mkConnection ( debugAXI4_Master (h2f_lw_mngr, $format ("h2f_lw_mngr"))
+               , cheri_bgas_top.axls_h2f_lw );
   // h2f traffic
   mkConnection ( debugAXI4_Master (h2f_mngr, $format ("h2f_mngr"))
                , cheri_bgas_top.axs_h2f );
@@ -266,18 +247,9 @@ module mkCHERI_BGAS_Top_Sim (Empty);
   mkConnection ( cheri_bgas_top.axm_ddrd
                , debugAXI4_Slave (fakeDDRD, $format ("ddrd")));
                //, fakeDDRD );
-  // global tx/rx
-  mkConnection (cheri_bgas_top.tx_east,  sl3wrapper.internalTX_a);
-  mkConnection (cheri_bgas_top.tx_north, sl3wrapper.internalTX_b);
-  mkConnection (cheri_bgas_top.tx_south, sl3wrapper.internalTX_c);
-  mkConnection (cheri_bgas_top.tx_west,  sl3wrapper.internalTX_d);
-  mkConnection (cheri_bgas_top.rx_east,  sl3wrapper.internalRX_a);
-  mkConnection (cheri_bgas_top.rx_north, sl3wrapper.internalRX_b);
-  mkConnection (cheri_bgas_top.rx_south, sl3wrapper.internalRX_c);
-  mkConnection (cheri_bgas_top.rx_west,  sl3wrapper.internalRX_d);
 
 endmodule
-
+/*
 module mkCHERI_BGAS_Top_Sim_AvalonDDR (Empty);
 
   // topmodule to simulate
@@ -371,5 +343,5 @@ module mkCHERI_BGAS_Top_Sim_AvalonDDR (Empty);
   mkConnection (masterD, debugSlave (fakeDDRD, $format ("ddrd")));
                //, fakeDDRD );
 endmodule
-
+*/
 endpackage
