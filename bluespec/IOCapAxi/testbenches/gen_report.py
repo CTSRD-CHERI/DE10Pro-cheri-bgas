@@ -101,6 +101,9 @@ class LatencyStats:
     n_revokes_per_cycle_alone: int
     n_uploads_per_cycle_alone: int
 
+    test_successes: List[str]
+    test_failures: List[str]
+
 @dataclass
 class ReducedLatencyStats:
     dut: str
@@ -357,6 +360,24 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats | ReducedLatencyS
     n_revokes_per_cycle_alone = upload_then_revoke["n_revokes_per_cycle"]
     n_uploads_per_cycle_alone = rolling["n_uploads_per_cycle"]
 
+    # Exclude benchmarks from test statistics.
+    # There are roughly two benchmarks which 'fail' testing: they are both rolling-upload-revoke tests, and they fail when the test tries to upload a new key too quickly.
+    tests = [
+        t #
+        for t in results["tests"].keys() #
+        if "Benchmark" not in t #
+    ]
+    test_successes = [
+        t #
+        for t in tests #
+        if results["tests"][t]["success"] #
+    ]
+    test_failures = [
+        t #
+        for t in tests #
+        if not results["tests"][t]["success"] #
+    ]
+
     return LatencyStats(
         dut=dut,
         timestamp=results_timestamp,
@@ -410,6 +431,9 @@ def project_stats(results_toml: str, dut: str) -> LatencyStats | ReducedLatencyS
 
         n_revokes_per_cycle_alone=n_revokes_per_cycle_alone,
         n_uploads_per_cycle_alone=n_uploads_per_cycle_alone,
+
+        test_successes=test_successes,
+        test_failures=test_failures,
     )
 
 RELEVANT_PROJECTS = {
