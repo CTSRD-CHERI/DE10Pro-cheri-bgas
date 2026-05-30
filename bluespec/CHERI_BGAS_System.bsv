@@ -377,11 +377,20 @@ module mkCHERI_BGAS_System ( CHERI_BGAS_System_Ifc #(
   let ctrSubH2FAddrCtrl =
     tuple2 (h2fWindow.windowCtrl, Range { base: 'h0000_5000, size: 'h0000_1000 });
   // Connect the h2fWindow to an IOCap Exposer, which checks the IOCap against the keys written in by the host.
-  IOCap_KeyManager#(Wd_Data_Periph) iocapKeyStore <- mkSimpleIOCapKeyManager(reset_by newRst.new_rst);
-  // Use a V4 exposer which *doesn't* block invalid transactions
+  IOCapAxi_KeyManager2#(Wd_Data_Periph, 1) iocapKeyStore <- mkIOCapAxi_KeyManager2_V1(KONATA_OFF, reset_by newRst.new_rst);
+  // Use a V6 exposer which *doesn't* block invalid transactions
   // - invalid txns are necessary for e.g. uploading code via the debug infrastructure which isn't IOCap-compatible
   // - invalid txns are still counted by performance counters, so OSs can verify no invalid txns pass through
-  let iocapExposer <- mkSimpleIOCapExposerV4(iocapKeyStore, False /* Don't block invalid */, reset_by newRst.new_rst);
+  NumProxy#(5) exposerPoolSize = ?;
+  let iocapExposer_id4 <- mkSimpleIOCapExposerV6(
+    KONATA_OFF, iocapKeyStore.exposerPorts[0], False, /* Don't block invalid */
+    exposerPoolSize,
+    mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Read,
+    mkSimpleIOCapAxiChecker3V1_FastDecode_2CycleAES_Write,
+    reset_by newRst.new_rst
+  );
+  // Reduce to ID=3 (what everyone expects) by zeroExtend-ing incoming IDs, then truncate-ing them on the way out
+  IOCapSingleExposer#(3, Wd_Data_Periph) iocapExposer = mapIOCapSingleExposer_id(zeroExtend, truncate, iocapExposer_id4);
   mkConnection(iocapExposer.iocapsIn.axiSignals, h2fWindow.postWindow, reset_by newRst.new_rst);
 
   // Virtual device for emulating control registers, e.g. for virtio.
