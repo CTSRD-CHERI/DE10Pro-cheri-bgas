@@ -77,8 +77,8 @@ test-combined-v6-allpool: (test-combined-v6-1per-0pool-64) \
     (test-combined-v6-2per-4pool-64) \
     (test-combined-v6-2per-5pool-64)
 
-# Test the SOC versions of the Enforcer (ExposerV4) and Lease Manager (keymgr)
-test-soc-ver: test-exposer-v4-noblock test-keymgr
+# Test the SOC versions of the Enforcer (ExposerV6 5pool and 1pool-noblocks, which evens out to 5pool-noblock) and Lease Manager (keymgr2)
+test-soc-ver: test-combined-v6-2per-5pool test-combined-v6-2per-1pool-noblock test-keymgr2-all
 
 test-single-checker3-1per *args: (sim-v "mkSingleChecker3_1percycle" args)
 test-single-checker3-2per *args: (sim-v "mkSingleChecker3_2percycle" args)

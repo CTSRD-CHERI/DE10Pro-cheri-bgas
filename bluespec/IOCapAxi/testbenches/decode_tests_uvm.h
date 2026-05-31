@@ -71,8 +71,8 @@ public:
     virtual bool shouldFinish(uint64_t tick) override {
         return (count == 0 && tick > end_tick);
     }
-    virtual void dump_toml_stats() override {
-        fmt::println(stderr, "throughput, {}", throughput.asDouble());
+    virtual void dump_toml_stats(FILE* stats) override {
+        fmt::println(stats, "throughput, {}", throughput.asDouble());
     }
 };
 
@@ -245,12 +245,12 @@ public:
     }
     #define STRINGIFY(x) STRINGIFY2(x)
     #define STRINGIFY2(x) #x
-    #define DUMP_MEAN_OF(x) fmt::println(stderr, STRINGIFY(x) ", {}", mean_of(x));
-    virtual void dump_toml_stats() override {
+    #define DUMP_MEAN_OF(x) fmt::println(stats, STRINGIFY(x) ", {}", mean_of(x));
+    virtual void dump_toml_stats(FILE* stats) override {
         DUMP_MEAN_OF(latency);
-        fmt::println(stderr, "valid caps, {}", n_valid);
-        fmt::println(stderr, "invalid caps, {}", n_invalid);
-        fmt::println(stderr, "valid cap ratio, {}%", (double(n_valid))/(double(n_valid+n_invalid))*100.0);
+        fmt::println(stats, "valid caps, {}", n_valid);
+        fmt::println(stats, "invalid caps, {}", n_invalid);
+        fmt::println(stats, "valid cap ratio, {}%", (double(n_valid))/(double(n_valid+n_invalid))*100.0);
     }
     #undef DUMP_MEAN_OF
     #undef STRINGIFY2

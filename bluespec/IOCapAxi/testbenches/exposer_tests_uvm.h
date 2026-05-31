@@ -13,6 +13,8 @@
 #include <deque>
 #include <memory>
 #include <random>
+#include <unordered_map>
+#include <functional>
 
 struct AxiParams {
     uint64_t address;
@@ -128,7 +130,7 @@ struct MaybeValidCapWithRange {
  * (e.g. a simple test may say "shove this queue of AW transactions into the unit as fast as possible")
  * which don't react to the output of the DUT (e.g. the DUT will expect to pass transactions on to memory and have them complete at some point - those completions aren't pre-planned.)
  * KeyManagerShimStimulus and SanitizedMemStimulus are convenience interfaces which objects can implement to observe the outputs of the DUT and dynamically generate relevant inputs.
- * 
+ *
  * The ExposerStimulus stimulus generator class is the base class for ShimmedExposer UVM tests,
  * and subclasses should pass instances of KeyManagerShimStimulus and SanitizedMemStimulus to its base constructor.
  */
@@ -313,7 +315,7 @@ public:
 
 template<class DUT>
 class BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO32>: public KeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO32> {
-    // For the setup state: a queue of the 
+    // For the setup state: a queue of the
     std::deque<std::pair<axi::AxiLite::AWFlit_addr13_user0, axi::AxiLite::WFlit_data32_user0>> setupWrites;
     uint64_t pendingSetupResponses;
 
@@ -328,7 +330,7 @@ public:
     // publically growable, the list of pending writes and pending reads
     std::deque<std::pair<axi::AxiLite::AWFlit_addr13_user0, axi::AxiLite::WFlit_data32_user0>> pendingWrites;
     std::deque<axi::AxiLite::ARFlit_addr13_user0> pendingReads;
-    
+
     // publically readable, the results of previously-pending reads
     std::deque<std::pair<axi::AxiLite::ARFlit_addr13_user0, axi::AxiLite::RFlit_data32_user0>> reads;
 
@@ -435,7 +437,7 @@ public:
 
                 PUT_INPUT(keyStore_aw, awFlit.pack());
                 PUT_INPUT(keyStore_w, wFlit.pack());
-                
+
                 writesInProgress.push_back(LatencyTracked {
                     .tick_initiated = tick,
                     .value = awFlit
@@ -473,7 +475,7 @@ public:
                 auto arFlit = pendingReads.front();
 
                 PUT_INPUT(keyStore_ar, arFlit.pack());
-                
+
                 readsInProgress.push_back(LatencyTracked {
                     .tick_initiated = tick,
                     .value = arFlit
@@ -518,7 +520,7 @@ public:
 
 template<class DUT>
 class BasicKeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO64>: public KeyManagerShimStimulus<DUT, KeyMngrV2_AsDUT_MMIO64> {
-    // For the setup state: a queue of the 
+    // For the setup state: a queue of the
     std::deque<std::pair<axi::AxiLite::AWFlit_addr13_user0, axi::AxiLite::WFlit_data64_user0>> setupWrites;
     uint64_t pendingSetupResponses;
 
@@ -533,7 +535,7 @@ public:
     // publically growable, the list of pending writes and pending reads
     std::deque<std::pair<axi::AxiLite::AWFlit_addr13_user0, axi::AxiLite::WFlit_data64_user0>> pendingWrites;
     std::deque<axi::AxiLite::ARFlit_addr13_user0> pendingReads;
-    
+
     // publically readable, the results of previously-pending reads
     std::deque<std::pair<axi::AxiLite::ARFlit_addr13_user0, axi::AxiLite::RFlit_data64_user0>> reads;
 
@@ -620,7 +622,7 @@ public:
 
                 PUT_INPUT(keyStore_aw, awFlit.pack());
                 PUT_INPUT(keyStore_w, verilate_array(wFlit.pack()));
-                
+
                 writesInProgress.push_back(LatencyTracked {
                     .tick_initiated = tick,
                     .value = awFlit
@@ -658,7 +660,7 @@ public:
                 auto arFlit = pendingReads.front();
 
                 PUT_INPUT(keyStore_ar, arFlit.pack());
-                
+
                 readsInProgress.push_back(LatencyTracked {
                     .tick_initiated = tick,
                     .value = arFlit
@@ -899,7 +901,7 @@ protected:
             });
         }
     }
-    
+
     virtual void enqueueKeyUploadWrites(key_manager::KeyId upload_key_id, U128 upload_key){};
     virtual void enqueueKeyRevokeWrite(key_manager::KeyId revoke_key_id){};
 
@@ -1346,7 +1348,7 @@ public:
                 if (isRead) {
                     txn.nDataFlits = 1;
                 }
-            } 
+            }
         }
         cleanupTxns(isRead); // TODO maybe this won't ever do anything...
     }
@@ -1355,7 +1357,7 @@ public:
         for (const auto& txn : txns) {
             if (txn.keyId == keyId && txn.valid && txn.addrForwardedDownstream) {
                 flits += txn.nDataFlits - txn.nDataFlitsForwarded;
-            } 
+            }
         }
         return flits;
     }
@@ -1439,7 +1441,7 @@ public:
     void pushUnconfirmedTxn(uint8_t txnId, key_manager::KeyId keyId, bool valid, uint64_t nDataFlits, LatencyTracked<AddrFlit> upstreamAddr) {
         txnIdBoards[txnId].pushUnconfirmedTxn(keyId, valid, nDataFlits, upstreamAddr);
     }
-    void checkAndFwdAwFlit(uint64_t tick, AddrFlit& awFlit) {   
+    void checkAndFwdAwFlit(uint64_t tick, AddrFlit& awFlit) {
         try {
             txnIdBoards[awFlit.awid].checkAndFwdAddrFlit([&](auto& expected){
                 if (awFlit != expected.value) {
@@ -1450,7 +1452,7 @@ public:
         } catch (test_failure& e) {
             throw test_failure(fmt::format("{}\ntick: {}\ngot: {}\n", e.what(), tick, awFlit));
         }
-        
+
         expectedOutgoingDataFlitTarget.push_back({
             awFlit.awid, axi::len_to_n_transfers(awFlit.awlen)
         });
@@ -1487,7 +1489,7 @@ public:
             throw test_failure(fmt::format("{}\ntick: {}\ngot: {}\ntxns: {}\n", e.what(), tick, bFlit, txnIdBoards));
         }
         expectedBFromDownstream[bFlit.bid].push_back({
-            tick, 
+            tick,
             axi::IOCapAxi::BFlit_id4 {
                 .bresp = bFlit.bresp,
                 .bid = bFlit.bid
@@ -1499,7 +1501,7 @@ public:
             txnIdBoards[bFlit.bid].checkCompletionFlitSentUpstream([&](auto& expectedTxn) {
                 if (expectedTxn.valid) {
                     auto expectedFlit = expectedBFromDownstream[bFlit.bid].front();
-                    
+
                     if (bFlit != expectedFlit.value) {
                         throw test_failure(fmt::format("Sent unexpected b flit upstream:\nexpected: {}", expectedFlit.value));
                     }
@@ -1543,7 +1545,7 @@ public:
         return expectedIncomingDataFlitTarget.empty() && expectedOutgoingDataFlitTarget.empty();
     }
 };
-    
+
 template <> class fmt::formatter<WriteTxnScoreboard> {
     public:
     constexpr auto parse (fmt::format_parse_context& ctx) { return ctx.begin(); }
@@ -1607,7 +1609,7 @@ public:
             txnIdBoards[rFlit.rid].checkAndFwdDataFlit_noValidBypassInvalid([&](auto nullablePtrToExpected) {
                 if (nullablePtrToExpected) {
                     auto& expectedFlit = *nullablePtrToExpected;
-                    
+
                     if (rFlit != expectedFlit.value) {
                         throw test_failure(fmt::format("Sent unexpected r flit upstream:\nexpected: {}", expectedFlit.value));
                     }
@@ -1668,7 +1670,7 @@ template <> class fmt::formatter<ReadTxnScoreboard> {
  * Can be instantiated directly or subclassed.
  * Does not do anything to handle revocation, but revocation can be simulated by modifying the KeyID -> Key map `secrets` the scoreboard uses
  * to determine if incoming requests will be valid or not.
- * 
+ *
  * By AXI convention, Upstream = the Manager who speaks IOCapAxi, Downstream = the Subordinate who speaks plain AXI.
  */
 template<class DUT, CapType ctype, KeyMngrVersion V>
@@ -1746,7 +1748,7 @@ protected:
             data.to_le(cap.data);
             uint32_t secret_key_id;
 
-            // Find the address range 
+            // Find the address range
             uint64_t axiBase = awInProgress[0].awaddr;
             uint64_t axiTop;
             try {
@@ -1754,14 +1756,14 @@ protected:
             } catch (std::runtime_error& ex) {
                 throw test_failure(fmt::format("BaseExposerScoreboard got nonsensical set of aw flits - {} - {}", awInProgress, ex.what()));
             }
-            
+
             uint64_t base = 0;
             uint64_t len = 0;
             bool len64 = false;
             CCapPerms perms = CCapPerms_ReadWrite;
             bool capIsValid = (cap.read_secret_id(&secret_key_id) == CCapResult_Success) &&
                                 (cap.read_range(&base, &len, &len64) == CCapResult_Success) &&
-                                (cap.read_perms(&perms) == CCapResult_Success) && 
+                                (cap.read_perms(&perms) == CCapResult_Success) &&
                                 ((perms & CCapPerms_Write) != 0);
             if (capIsValid && secrets.contains(secret_key_id & 0xFF)) {
                 CCapU128 secret_key;
@@ -1845,7 +1847,7 @@ protected:
             data.to_le(cap.data);
             uint32_t secret_key_id;
 
-            // Find the address range 
+            // Find the address range
             uint64_t axiBase = arInProgress[0].araddr;
             uint64_t axiTop;
             try {
@@ -1853,14 +1855,14 @@ protected:
             } catch (std::runtime_error& ex) {
                 throw test_failure(fmt::format("BaseExposerScoreboard got nonsensical set of ar flits - {} - {}", arInProgress, ex.what()));
             }
-            
+
             uint64_t base = 0;
             uint64_t len = 0;
             bool len64 = false;
             CCapPerms perms = CCapPerms_ReadWrite;
             bool capIsValid = (cap.read_secret_id(&secret_key_id) == CCapResult_Success) &&
                                 (cap.read_range(&base, &len, &len64) == CCapResult_Success) &&
-                                (cap.read_perms(&perms) == CCapResult_Success) && 
+                                (cap.read_perms(&perms) == CCapResult_Success) &&
                                 ((perms & CCapPerms_Read) != 0);
             if (capIsValid && secrets.contains(secret_key_id & 0xFF)) {
                 CCapU128 secret_key;
@@ -1875,7 +1877,7 @@ protected:
             bool isValid = (capIsValid && rangeIsValid);
 
             // The performance counters should reflect the validity of the capability/access in all cases
-            // We can't necessarily predict the goodness of a txn ahead of time - under certain models, 
+            // We can't necessarily predict the goodness of a txn ahead of time - under certain models,
             // it could be cancelled after it comes through!
             totalReadTxns++;
             if (isValid) {
@@ -2178,6 +2180,7 @@ protected:
         // }
 
         if (inputKeyManager.killKeyMessage.has_value()) {
+            fmt::println(stderr, "invalidate key {}\n", inputKeyManager.killKeyMessage.value());
             this->wTxns.invalidateFromKey(inputKeyManager.killKeyMessage.value());
             this->rTxns.invalidateFromKey(inputKeyManager.killKeyMessage.value());
         } else {
@@ -2205,7 +2208,7 @@ protected:
             onKeyMngrKeyResponse(inputKeyManager.keyResponse.value());
         }
 
-        
+
     }
 public:
     ExposerScoreboard(BasicKeyManagerShimStimulus<DUT, KeyMngrV2>* keyMgr, bool expectPassthroughInvalidTransactions = false) :
@@ -2228,7 +2231,7 @@ struct MMIORevokeLatencyStats {
     uint64_t debug_state_invalidnotrevoked_tick = 0;
     // // The tick that debugState is observed to change to invalid, which should always be after invalid-not-revoked
     // uint64_t debug_state_invalid_tick = 0;
-    
+
     uint64_t r_data_flits_at_mmio;
     uint64_t w_data_flits_at_mmio;
 
@@ -2318,7 +2321,7 @@ protected:
         // track upload and revocation latencies
         if (inputKeyManager.aw && inputKeyManager.w) {
             if (inputKeyManager.aw.value().awaddr < 16*256 && inputKeyManager.w.value().wdata == 0) {
-                // Now revoking key 
+                // Now revoking key
                 key_manager::KeyId revoking_key = inputKeyManager.aw.value().awaddr / 16;
                 if (revokes.contains(revoking_key)) {
                     throw test_failure(fmt::format("Tried to revoke {} while it was already in progress", (int)revoking_key));
@@ -2356,7 +2359,7 @@ protected:
                     }
                 }
             } else if (inputKeyManager.aw.value().awaddr < 16*256 && inputKeyManager.w.value().wdata == 1) {
-                // Now uploading key 
+                // Now uploading key
                 key_manager::KeyId uploading_key = inputKeyManager.aw.value().awaddr / 16;
                 if (revokes.contains(uploading_key)) {
                     throw test_failure(fmt::format("Tried to finalize upload for {} while it was being revoked", (int)uploading_key));
@@ -2398,13 +2401,15 @@ protected:
             revokes[revoking_key].kill_key_observed_tick = tick;
             revokes[revoking_key].r_data_flits_at_killkey = this->rTxns.pendingDataFlitsForKey(revoking_key);
             revokes[revoking_key].w_data_flits_at_killkey = this->wTxns.pendingDataFlitsForKey(revoking_key);
+	    fmt::println(stderr, "tick {} revoking {}\n", tick, revoking_key);
 
             this->secrets.erase(revoking_key);
             revoke_on_tick[tick + 0] = revoking_key;
         }
 
         if (revoke_on_tick.contains(tick)) {
-            key_manager::KeyId revoking_key = revoke_on_tick[tick];
+	    key_manager::KeyId revoking_key = revoke_on_tick[tick];
+	    fmt::println(stderr, "tick {} revoking {}\n", tick, revoking_key);
             if (!this->expectPassthroughInvalidTransactions) {
                 this->wTxns.invalidateFromKey(revoking_key);
                 this->rTxns.invalidateFromKey(revoking_key);
@@ -2453,10 +2458,10 @@ protected:
                 it = revokes.erase(it);
                 continue;
             }
-            
+
             it++;
         }
-        
+
         // for all uploads in progress, track their state
         for (auto it = uploads.begin(); it != uploads.end();) {
             auto& [uploading_key, upload_stats] = *it;
@@ -2480,7 +2485,7 @@ protected:
                 last_upload_tick = tick;
                 continue;
             }
-            
+
             it++;
         }
     }
@@ -2616,7 +2621,7 @@ public:
 template<class DUT, CapType ctype, KeyMngrVersion V>
 class UVMValidKeyValidInitialCapValidAccess : public ExposerStimulus<DUT, ctype, V> {
     CCapPerms perms;
-    
+
 public:
     virtual ~UVMValidKeyValidInitialCapValidAccess() = default;
     virtual std::string name() override {
@@ -2652,7 +2657,7 @@ public:
 template<class DUT, CapType ctype, KeyMngrVersion V>
 class UVMValidKeyValidInitialCapOOBAccess : public ExposerStimulus<DUT, ctype, V> {
     CCapPerms perms;
-    
+
 public:
     virtual ~UVMValidKeyValidInitialCapOOBAccess() = default;
     virtual std::string name() override {
@@ -2689,7 +2694,7 @@ public:
 template<class DUT, CapType ctype, KeyMngrVersion V>
 class UVMInvalidKeyAccess : public ExposerStimulus<DUT, ctype, V> {
     CCapPerms perms;
-    
+
 public:
     virtual ~UVMInvalidKeyAccess() = default;
     virtual std::string name() override {
@@ -2751,7 +2756,7 @@ public:
             auto axi_params = cap_data.valid_transfer_params(32, 20);
             this->enqueueReadBurst(cap_data.cap, axi_params, axi_id);
         }
-        
+
         ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual bool shouldFinish(uint64_t tick) override {
@@ -2793,7 +2798,7 @@ public:
             auto axi_params = cap_data.valid_transfer_params(32, 20);
             this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
         }
-        
+
         ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual bool shouldFinish(uint64_t tick) override {
@@ -2935,7 +2940,7 @@ class UVMStreamOfNValidTransactions : public ExposerStimulus<DUT, ctype, V> {
     uint8_t n_data_flits_per_transaction;
 
     uint64_t final_tick = 0;
-    
+
 public:
     virtual ~UVMStreamOfNValidTransactions() = default;
     virtual std::string name() override {
@@ -2961,7 +2966,7 @@ public:
                 this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
             }
         }
-        
+
         ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual bool shouldFinish(uint64_t tick) override {
@@ -3015,7 +3020,7 @@ class UVMStreamOfNLibRustValidTransactions : public ExposerStimulus<DUT, ctype, 
     TxnStreamKeyUsage keys;
 
     uint64_t final_tick = 0;
-    
+
 public:
     virtual ~UVMStreamOfNLibRustValidTransactions() = default;
     virtual std::string name() override {
@@ -3137,7 +3142,7 @@ public:
                 }
             }
         }
-        
+
         ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual bool shouldFinish(uint64_t tick) override {
@@ -3159,7 +3164,7 @@ class UVMStreamOfNLibRustEdgeCaseTransactions : public ExposerStimulus<DUT, ctyp
     uintptr_t edge_case;
 
     uint64_t final_tick = 0;
-    
+
 public:
     virtual ~UVMStreamOfNLibRustEdgeCaseTransactions() = default;
     virtual std::string name() override {
@@ -3185,7 +3190,7 @@ public:
                 this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
             }
         }
-        
+
         ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual bool shouldFinish(uint64_t tick) override {
@@ -3227,7 +3232,7 @@ public:
     virtual void setup(std::mt19937& rng) override {
         const U128 dma_key = U128::random(rng);
         this->keyMgr->secrets[dma_key_id] = dma_key;
-        
+
         if (revoke_key_id != dma_key_id) {
             const U128 revoke_key = U128::random(rng);
             this->keyMgr->secrets[revoke_key_id] = revoke_key;
@@ -3244,7 +3249,7 @@ public:
                 this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
             }
         }
-        
+
         ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual void driveInputsForTick(std::mt19937& rng, DUT& dut, uint64_t tick) {
@@ -3320,7 +3325,7 @@ public:
                 this->enqueueWriteBurst(cap_data.cap, axi_params, axi_id);
             }
         }
-        
+
         ExposerStimulus<DUT, ctype, V>::setup(rng);
     }
     virtual void driveInputsForTick(std::mt19937& rng, DUT& dut, uint64_t tick) {
