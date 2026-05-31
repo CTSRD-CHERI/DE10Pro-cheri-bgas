@@ -1130,7 +1130,7 @@ struct AxiTxn {
     // tick_initiated = the tick on which each data flit arrived from (upstream if write else downstream) and was put into the DUT
     std::vector<LatencyTracked<DataFlit>> data;
 
-    AxiTxn(key_manager::KeyId, bool valid, uint64_t nDataFlits, LatencyTracked<AddrFlit> upstreamAddr) :
+    AxiTxn(key_manager::KeyId keyId, bool valid, uint64_t nDataFlits, LatencyTracked<AddrFlit> upstreamAddr) :
         keyId(keyId),
         valid(valid),
         addrForwardedDownstream(false),
@@ -1190,6 +1190,7 @@ public:
             if (txn.valid) {
                 // we can assume txn.nDataFlits == txn.nDataFlitsForwarded == txn.data.size()
                 txns.pop_front();
+		continue;
             }
             // For invalid txns we can't make that assumption - we have to check
             // txn.data.size() == txn.nDataFlits
@@ -1203,6 +1204,7 @@ public:
                 } else {
                     break;
                 }
+		continue;
             }
         }
     }
@@ -1693,12 +1695,12 @@ protected:
     // We can't understand what should be good/bad ahead of time on certain models, because txns could be cancelled while still in progress.
     // Monitor the actual outputs of the exposer, which are checked by the read/write txnscoreboards, and check the performance counters against *those*.
     // NOTE: this means if a valid txn stalls out, it won't be "confirmed" and therefore will show up as "expected bad" instead of "expected good"
-    uint64_t totalWriteTxns;
-    uint64_t totalReadTxns;
+    uint64_t totalWriteTxns=0;
+    uint64_t totalReadTxns=0;
     // Confirmed i.e. were valid at the point they passed out of the exposer.
     // signalledGood{Read,Write} should match this.
-    uint64_t passedThroughWriteTxns;
-    uint64_t passedThroughReadTxns;
+    uint64_t passedThroughWriteTxns=0;
+    uint64_t passedThroughReadTxns=0;
     // expectedBad{Read,Write} = total{Read,Write} - confirmed{Read,Write}
 
     // Older models *can* predict ahead of time which transactions will be good or bad.
