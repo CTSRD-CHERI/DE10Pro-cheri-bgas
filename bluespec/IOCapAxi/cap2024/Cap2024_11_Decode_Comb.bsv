@@ -39,6 +39,10 @@ typedef struct {
     ChkUInt#(15) elem_count;
     // Cap2024_11 EDIT END
     ChkUInt#(6) elem_width_log2;
+    // Cap2026_04 EDIT
+    // Caveat 2 is allowed to be a null caveat e.g. for the same of permissions
+    Maybe#(UInt#(65)) clamp_length;
+    // Cap2026_04 EDIT END
 } PostCaveat2 deriving (Bits, FShow);
 
 typeclass EncodesRange#(type a);
@@ -87,9 +91,22 @@ endinstance
 
 instance EncodesRange#(PostCaveat2);
     function ActionValue#(CapRange) rangeOf(PostCaveat2 cav2) = actionvalue
-        ChkUInt#(65) length <- shl(zeroExtend(cav2.elem_count), cav2.elem_width_log2, "PostCaveat2 rangeOf");
-        let top <- add(zeroExtend(cav2.base_addr), length, "PostCaveat2 rangeOf");
-        return CapRange{base: pack(zeroExtend(currVal(cav2.base_addr))), top: pack(currVal(top))};
+        // Cap2026_04 EDIT
+        case (cav2.clamp_length) matches
+            tagged Invalid : begin
+                ChkUInt#(65) length <- shl(zeroExtend(cav2.elem_count), cav2.elem_width_log2, "PostCaveat2 rangeOf");
+                let top <- add(zeroExtend(cav2.base_addr), length, "PostCaveat2 rangeOf");
+                return CapRange{base: pack(zeroExtend(currVal(cav2.base_addr))), top: pack(currVal(top))};
+            end
+            tagged Valid .length : begin
+                // .length here is reconstructed in a roundabout way: we use rangeOf to get the (top) value then subtract base to get length.
+                // We lose the bounds information but we know the resulting (top) will be in bounds.
+                // Thus we don't use the checked math here.
+                UInt#(65) top = zeroExtend(currVal(cav2.base_addr)) + length;
+                return CapRange{base: pack(zeroExtend(currVal(cav2.base_addr))), top: pack(currVal(top))};
+            end
+        endcase
+        // Cap2026_04 EDIT END
     endactionvalue;
 endinstance
 
@@ -315,14 +332,24 @@ module mkCombCapDecode#(Get#(Cap2024_11) in, Put#(CapCheckResult#(Tuple2#(CapPer
                 endcase
 
                 if (exceeds_cav1_clamp_length) begin
-                    return tagged Invalid;
+                    if (currVal(range_x) == 0) begin
+                        return tagged Valid PostCaveat2 {
+                            base_addr: cav1.base_addr,
+                            elem_count: 0,
+                            elem_width_log2: 0,
+                            clamp_length: cav1.clamp_length
+                        };
+                    end else begin
+                        return tagged Invalid;
+                    end
                 end else begin
                     case (add_overflow(cav1.base_addr, start_offset)) matches
                         tagged Invalid : return tagged Invalid;
                         tagged Valid .new_base : return tagged Valid PostCaveat2 {
                             base_addr: new_base,
                             elem_count: elem_count,
-                            elem_width_log2: elem_width_log2
+                            elem_width_log2: elem_width_log2,
+                            clamp_length: tagged Invalid
                         };
                     endcase
                 end

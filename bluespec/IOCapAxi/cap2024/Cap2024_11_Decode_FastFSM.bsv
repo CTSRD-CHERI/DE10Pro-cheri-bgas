@@ -288,6 +288,7 @@ module mkFastFSMCapDecode_2024_11#(Get#(Cap2024_11) in, Put#(CapCheckResult#(Tup
     // scratch registers
     Reg#(Bit#(43)) working_scratch <- mkReg(?);
     Reg#(Bit#(65)) working_top_addr <- mkReg(?);
+    Reg#(Bit#(65)) working_initial_top_addr <- mkReg(?);
     Reg#(Bit#(65)) working_end_offset <- mkReg(?);
 
     // This is set by the state machine if a failure condition is reached during processing.
@@ -421,16 +422,17 @@ module mkFastFSMCapDecode_2024_11#(Get#(Cap2024_11) in, Put#(CapCheckResult#(Tup
                     working_scratch <= {?, msb(elem_width_log2_sub14)}; // This value will be used later
 
                     if (msbSet(elem_width_log2_sub14)) begin
-                        // cav1.elem_width_log2 is smaller than 14, saturate cav2_elem_width_log2 to 0
-                        working_elem_width_log2 <= 0;
-                        // We now need to shift down elem_count and range_x to keep them inside the range.
+
+                        // If working_range_x = 0, we need to compute the initial_length early so we can compute initial_top.
+                        // Otherwise, compute (cav2_elem_count << cav1_elem_width_log2) and (range_x << cav1_elem_width_log2)
+                        // together in one shift. Taking specific windows in the next cycle turns this into
+                        // a dual *right*-shift of (14-cav1_elem_width_log2)
+                        Bit#(65) shl_to_shift = (working_range_x == 0) ? zeroExtend(initial_elem_count) : {0, cav2_elem_count[14:0], 13'd0, working_range_x[13:0]};
+                        Bit#(7) shl_amt = (working_range_x == 0) ? initial_elem_width_log2 : working_elem_width_log2;
 
                         calc.in.put(CalcInput {
-                            // Compute (cav2_elem_count << cav1_elem_width_log2) and (range_x << cav1_elem_width_log2)
-                            // together in one shift. Taking specific windows in the next cycle turns this into
-                            // a dual *right*-shift of (14-cav1_elem_width_log2)
-                            shl_to_shift: {0, cav2_elem_count[14:0], 13'd0, working_range_x[13:0]},
-                            shl_amt: working_elem_width_log2,
+                            shl_to_shift: shl_to_shift,
+                            shl_amt: shl_amt,
 
                             // Compute base + cav1_start_offset
                             add_op_65: add(working_base_addr, cav1_start_offset),
@@ -496,91 +498,158 @@ module mkFastFSMCapDecode_2024_11#(Get#(Cap2024_11) in, Put#(CapCheckResult#(Tup
 
                     // working_scratch[0] is set if elem_width_log2_sub14 was negative in the last cycle.
                     if (unpack(working_scratch[0])) begin
-                        // In that case we need to unpack the pair of elements we shifted in before
-                        let shifted = calc.shifted();
-                        let start_offset = shifted[26:14];
-                        let length = shifted[54:41];
+                        // cav1.elem_width_log2 is smaller than 14, saturate cav2_elem_width_log2 to 0
+                        working_elem_width_log2 <= 0;
 
-                        working_scratch <= {0, length, working_scratch[0]};
+                        if (working_range_x == 0) begin
+                            let initial_length = calc.shifted();
 
-                        calc.in.put(CalcInput {
-                            // Don't need to shift anything.
-                            shl_to_shift: ?,
-                            shl_amt: ?,
-                            // Compute cav1_base + cav2_start_offset
-                            add_op_65: add(base, start_offset),
-                            // Compute start_offset + length to find end_offset
-                            add_op_16: add(start_offset, length),
-                            add_op_9: ?
-                        });
+                            calc.in.put(CalcInput {
+                                // We now need to shift down elem_count and range_x to keep them inside the range.
+                                shl_to_shift: {0, working_elem_count[14:0], 13'd0, working_range_x[13:0]},
+                                shl_amt: working_elem_width_log2,
+                                // Compute cav1_base + initial_length - if we end up using this, it will be as initial_top when base_cav1 == base0.
+                                add_op_65: add(base, initial_length),
+                                add_op_16: ?,
+                                add_op_9: ?
+                            });
+                        end else begin
+                            // In that case we need to unpack the pair of elements we shifted in before
+                            let shifted = calc.shifted();
+                            let start_offset = shifted[26:14];
+                            let length = shifted[54:41];
+
+                            working_scratch <= {0, start_offset, length, working_scratch[0]};
+
+                            calc.in.put(CalcInput {
+                                // Don't need to shift anything.
+                                shl_to_shift: ?,
+                                shl_amt: ?,
+                                // Compute cav1_base + cav2_start_offset
+                                add_op_65: add(base, start_offset),
+                                add_op_16: ?,
+                                add_op_9: ?
+                            });
+                        end
                     end else begin
                         // In the normal case, we just shifted range_y 
                         Bit#(65) end_offset = calc.shifted();
                         working_end_offset <= end_offset;
-                        Bit#(28) elem_count = working_elem_count;
-                        calc.in.put(CalcInput {
-                            shl_to_shift: zeroExtend(working_range_x), // range_x
-                            shl_amt: working_elem_width_log2, // cav2 elem_width_log2
-                            // Compute cav1_base + cav2_end_offset
-                            add_op_65: add(base, end_offset),
-                            add_op_16: ?,
-                            add_op_9: ?
-                        });
+
+                        if (working_range_x == 0) begin
+                            calc.in.put(CalcInput {
+                                // Compute max_length so we can compute the initial_top early next cycle
+                                shl_to_shift: zeroExtend(initial_elem_count),
+                                shl_amt: initial_elem_width_log2,
+                                // Compute cav1_base + cav2_end_offset
+                                add_op_65: add(base, end_offset),
+                                add_op_16: ?,
+                                add_op_9: ?
+                            });
+                        end else begin
+                            calc.in.put(CalcInput {
+                                shl_to_shift: zeroExtend(working_range_x), // range_x
+                                shl_amt: working_elem_width_log2, // cav2 elem_width_log2
+                                // Compute cav1_base + cav2_end_offset
+                                add_op_65: add(base, end_offset),
+                                add_op_16: ?,
+                                add_op_9: ?
+                            });
+                        end
                     end
                 endaction
 
                 action
                     // working_scratch[0] is set if elem_width_log2_sub14 was negative in the last cycle.
                     if (unpack(working_scratch[0])) begin
-                        let base = calc.added_65(); // cav1_base + cav2_start_offset
-                        if (msbSet(base)) begin
-                            working_fail <= tagged Valid InvalidCaveat;
+                        Bit#(65) base;
+                        Bit#(13) start_offset;
+                        Bit#(14) length;
+
+                        if (working_range_x == 0) begin
+                            // base is unchanged, by definition
+                            base = zeroExtend(working_base_addr);
+                            working_initial_top_addr <= calc.added_65();
+
+                            // Unpack the pair of elements we shifted in before
+                            let shifted = calc.shifted();
+                            start_offset = shifted[26:14];
+                            length = shifted[54:41];
+
+                            working_scratch <= {0, start_offset, length, working_scratch[0]};
+                        end else begin
+                            base = calc.added_65(); // cav1_base + cav2_start_offset
+                            if (msbSet(base)) begin
+                                working_fail <= tagged Valid InvalidCaveat;
+                            end
+                            working_base_addr <= base[63:0];
+
+                            start_offset = working_scratch[27:15];
+                            length = working_scratch[14:1];
                         end
-                        working_base_addr <= base[63:0];
-
-                        let length = working_scratch[15:1];
-
-                        let end_offset = calc.added_16();
-                        working_end_offset <= zeroExtend(end_offset);
+                        
 
                         calc.in.put(CalcInput {
                             // Compute max_length (which we need to test against for the identity cav1 case)
+                            // In some 2026_04 cases this is redundant, but I don't care about that right now
                             shl_to_shift: zeroExtend(initial_elem_count),
                             shl_amt: initial_elem_width_log2,
                             // Compute top = base + length
                             add_op_65: add(base, length),
-                            add_op_16: ?,
+                            // Compute start_offset + length to find end_offset
+                            add_op_16: add(start_offset, length),
                             add_op_9: ?
                         });
                     end else begin
                         let top = calc.added_65();
                         working_top_addr <= top;
 
-                        let start_offset = calc.shifted();
+                        if (working_range_x == 0) begin
+                            let initial_length = calc.shifted();
 
-                        calc.in.put(CalcInput {
-                            // Compute max_length (which we need to test against for the identity cav1 case)
-                            shl_to_shift: zeroExtend(initial_elem_count),
-                            shl_amt: initial_elem_width_log2,
-                            // Compute base = base + start_offset
-                            add_op_65: add(working_base_addr, start_offset),
-                            add_op_16: ?,
-                            add_op_9: ?
-                        });
+                            calc.in.put(CalcInput {
+                                shl_to_shift: ?,
+                                shl_amt: ?,
+                                // Compute top = base + initial_length
+                                add_op_65: add(working_base_addr, initial_length),
+                                add_op_16: ?,
+                                add_op_9: ?
+                            });
+                        end else begin
+                            let start_offset = calc.shifted();
+
+                            calc.in.put(CalcInput {
+                                // Compute max_length (which we need to test against for the identity cav1 case)
+                                shl_to_shift: zeroExtend(initial_elem_count),
+                                shl_amt: initial_elem_width_log2,
+                                // Compute base = base + start_offset
+                                add_op_65: add(working_base_addr, start_offset),
+                                add_op_16: ?,
+                                add_op_9: ?
+                            });
+                        end
                     end
                 endaction
 
                 action
+                    Bit#(65) end_offset;
+
                     if (unpack(working_scratch[0])) begin
                         let top = calc.added_65(); // cav2_base + cav2_length
-
+                        end_offset = zeroExtend(calc.added_16());
                         working_top_addr <= top;
                     end else begin
-                        let base = calc.added_65(); // cav1_base + cav2_start_offset
-                        if (msbSet(base)) begin
-                            working_fail <= tagged Valid InvalidCaveat;
+                        if (working_range_x == 0) begin
+                            working_initial_top_addr <= calc.added_65();
+                        end else begin
+                            let base = calc.added_65(); // cav1_base + cav2_start_offset
+                            if (msbSet(base)) begin
+                                working_fail <= tagged Valid InvalidCaveat;
+                            end
+                            working_base_addr <= base[63:0];
                         end
-                        working_base_addr <= base[63:0];
+
+                        end_offset = working_end_offset;
                     end
 
                     let initial_length = calc.shifted();
@@ -589,7 +658,7 @@ module mkFastFSMCapDecode_2024_11#(Get#(Cap2024_11) in, Put#(CapCheckResult#(Tup
                     calc.in.put(CalcInput {
                         shl_to_shift: ?,
                         shl_amt: ?,
-                        add_op_65: sub(initial_length, working_end_offset),
+                        add_op_65: sub(initial_length, end_offset),
                         add_op_16: ?,
                         add_op_9: ?
                     });
@@ -599,14 +668,11 @@ module mkFastFSMCapDecode_2024_11#(Get#(Cap2024_11) in, Put#(CapCheckResult#(Tup
                     // if the top bit of (initial_length - end_offset) is set, then end_offset > initial_length and we are OOB
                     let cav2_outside_cav1 = msbSet(calc.added_65());
 
-                    let fail = working_fail;
-                    if (cav2_outside_cav1) begin
-                        fail = tagged Valid InvalidCaveat;
-                    end
-
-                    case (fail) matches
-                        tagged Valid .failReason : out.put(tagged Fail failReason);
-                        tagged Invalid : out.put(tagged Succ tuple2(working_perms, CapRange { base: working_base_addr, top: working_top_addr }));
+                    case (tuple4(working_fail, cav2_outside_cav1, working_identity_cav1, working_range_x)) matches
+                        { tagged Valid .failReason, .*, .*, .* } : out.put(tagged Fail failReason);
+                        { tagged Invalid, True, True, 0 } : out.put(tagged Succ tuple2(working_perms, CapRange { base: working_base_addr, top: working_initial_top_addr }));
+                        { tagged Invalid, True, .*, .* } : out.put(tagged Fail InvalidCaveat);
+                        default : out.put(tagged Succ tuple2(working_perms, CapRange { base: working_base_addr, top: working_top_addr }));
                     endcase
 
                     // TODO this is inefficient - could be doing fetch on this cycle...
