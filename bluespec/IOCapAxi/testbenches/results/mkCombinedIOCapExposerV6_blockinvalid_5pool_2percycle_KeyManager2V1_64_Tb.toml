@@ -131302,7 +131302,42 @@ last_upload_tick = 0
 n_uploads = 0
 n_uploads_per_cycle = -nan
 
-[tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_TooBig_IndexZero_Cav2_ExceedsIdentity_Invalid Cap2024_11 transactions"]
+[tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_TooBig_IndexZero_Cav2_TooBig_IndexZero_Valid Cap2024_11 transactions"]
+success = true
+ending_tick = 113996
+aw_throughput = 0.36574746008708275
+w_throughput = 0.994475138121547
+ar_throughput = 0.48106904231625836
+b_throughput = 1
+r_throughput = 1
+keymngr_aw_b_latency_mean = -nan
+keymngr_ar_r_latency_mean = -nan
+aw_aw_latency_mean = 2658.4126984126983
+ar_ar_latency_mean = 2580.5555555555557
+w_w_latency_mean = 150.88888888888889
+b_b_latency_mean = 20
+r_r_latency_mean = 20
+total_write = 63
+confirmed_write = 63
+exp_invalid_write = 0
+perf_valid_write = 63
+perf_invalid_write = 0
+total_read = 54
+confirmed_read = 54
+exp_invalid_read = 0
+perf_valid_read = 54
+perf_invalid_read = 0
+valid_txn_ratio = 1
+first_revoke_tick = 0
+last_revoke_tick = 0
+n_revokes = 0
+n_revokes_per_cycle = -nan
+first_upload_tick = 0
+last_upload_tick = 0
+n_uploads = 0
+n_uploads_per_cycle = -nan
+
+[tests."Stream of 100 librust random edge case Cap2024_11_EdgeCase::Cav1_TooBig_IndexZero_Cav2_TooBig_IndexNonZero_Invalid Cap2024_11 transactions"]
 success = true
 ending_tick = 113996
 aw_throughput = 1
@@ -131373,6 +131408,6 @@ n_uploads = 0
 n_uploads_per_cycle = -nan
 
 [summary]
-completed = 3134
-success = 3132
+completed = 3135
+success = 3133
 fail = 2
