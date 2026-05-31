@@ -2403,7 +2403,6 @@ protected:
             revokes[revoking_key].kill_key_observed_tick = tick;
             revokes[revoking_key].r_data_flits_at_killkey = this->rTxns.pendingDataFlitsForKey(revoking_key);
             revokes[revoking_key].w_data_flits_at_killkey = this->wTxns.pendingDataFlitsForKey(revoking_key);
-	    fmt::println(stderr, "tick {} revoking {}\n", tick, revoking_key);
 
             this->secrets.erase(revoking_key);
             revoke_on_tick[tick + 0] = revoking_key;
@@ -2411,7 +2410,6 @@ protected:
 
         if (revoke_on_tick.contains(tick)) {
 	    key_manager::KeyId revoking_key = revoke_on_tick[tick];
-	    fmt::println(stderr, "tick {} revoking {}\n", tick, revoking_key);
             if (!this->expectPassthroughInvalidTransactions) {
                 this->wTxns.invalidateFromKey(revoking_key);
                 this->rTxns.invalidateFromKey(revoking_key);
