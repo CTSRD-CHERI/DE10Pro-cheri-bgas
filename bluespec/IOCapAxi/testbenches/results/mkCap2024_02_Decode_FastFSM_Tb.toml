@@ -1,0 +1,22 @@
+[tests."2000 random valid Cap2024_02 caps"]
+success = true
+ending_tick = 60951
+throughput=0.333667000333667
+latency=79.97
+valid_caps=2000
+invalid_caps=0
+valid_cap_ratio=100
+
+[tests."2000 random bits"]
+success = true
+ending_tick = 71171
+throughput=0.28506271379703535
+latency=95.24
+valid_caps=31
+invalid_caps=1969
+valid_cap_ratio=1.55
+
+[summary]
+completed = 2
+success = 2
+fail = 0
