@@ -462,6 +462,33 @@ RELEVANT_PROJECTS.update({
     )
 })
 
+def decode_tb_stats(results_toml):
+    with open(results_toml, "rb") as f:
+        results = tomllib.load(f)
+
+    tests = [
+        t #
+        for t in results["tests"].keys() #
+        if "Benchmark" not in t #
+    ]
+    test_successes = [
+        t #
+        for t in tests #
+        if results["tests"][t]["success"] #
+    ]
+    test_failures = [
+        t #
+        for t in tests #
+        if not results["tests"][t]["success"] #
+    ]
+
+    print(results_toml)
+    
+    return {
+        "test_successes": test_successes,
+        "test_failures": test_failures,
+    }
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("results_dir", type=str, help="Directory of historical result files, gets a new file added with the current timestamp on the name")
@@ -483,6 +510,8 @@ if __name__ == '__main__':
     else:
         for (project_shortname, dut) in RELEVANT_PROJECTS.items():
             toml[project_shortname] = asdict(project_stats(os.path.join("results", f"{dut}.toml"), dut))
+        for dut in ["mkCap2024_11_Decode_Comb_Tb", "mkCap2024_11_Decode_FastFSM_Tb"]:
+            toml[dut] = decode_tb_stats(os.path.join("results", f"{dut}.toml"))
         # Only write the file to the backup directory if it wasn't specific to one test
         with open(os.path.join(args.results_dir, f"hardware_latency_{cur_timestamp}.toml"), "wb") as f:
             tomli_w.dump(toml, f)

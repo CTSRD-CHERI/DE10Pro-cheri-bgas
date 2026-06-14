@@ -75,7 +75,9 @@ test-combined-v6-allpool: (test-combined-v6-1per-0pool-64) \
     (test-combined-v6-2per-2pool-64) \
     (test-combined-v6-2per-3pool-64) \
     (test-combined-v6-2per-4pool-64) \
-    (test-combined-v6-2per-5pool-64)
+    (test-combined-v6-2per-5pool-64) \
+    (test-decoder-comb-11) \
+    (test-decoder-fsm-11)
 
 # Test the SOC versions of the Enforcer (ExposerV6 5pool and 1pool-noblocks, which evens out to 5pool-noblock) and Lease Manager (keymgr2)
 test-soc-ver: test-combined-v6-2per-5pool test-combined-v6-2per-1pool-noblock test-keymgr2-all

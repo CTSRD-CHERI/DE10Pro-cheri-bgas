@@ -35,6 +35,7 @@ template<class DUT>
 class ManyRandomBits : public StimulusGenerator<DUT> {
 protected:
     uint64_t count;
+    uint64_t remaining;
     uint64_t end_tick;
     ThroughputTracker throughput;
 
@@ -43,7 +44,7 @@ protected:
     }
 
 public:
-    ManyRandomBits(uint64_t count) : count(count), end_tick(~0), throughput() {}
+    ManyRandomBits(uint64_t count) : count(count), remaining(count), end_tick(~0), throughput() {}
     virtual ~ManyRandomBits() = default;
 
     virtual std::string name() override {
@@ -51,7 +52,7 @@ public:
     }
     virtual void driveInputsForTick(std::mt19937& rng, DUT& dut, uint64_t tick) override {
         NOPUT_INPUT(stimulusIn);
-        if (count > 0) {
+        if (remaining > 0) {
             throughput.trackCycleWithAvailableInput();
             if (CANPUT_INPUT(stimulusIn)) {
                 auto cap128 = random_cap(rng).verilate();
@@ -59,9 +60,9 @@ public:
                 PUT_INPUT(stimulusIn, cap128);
                 throughput.trackAccepted();
 
-                count--;
-                
-                if (count == 0) {
+                remaining--;
+
+                if (remaining == 0) {
                     // Give it 100 cycles to push everything out
                     end_tick = tick + 1000;
                 }
@@ -69,10 +70,10 @@ public:
         }
     }
     virtual bool shouldFinish(uint64_t tick) override {
-        return (count == 0 && tick > end_tick);
+        return (remaining == 0 && tick > end_tick);
     }
     virtual void dump_toml_stats(FILE* stats) override {
-        fmt::println(stats, "throughput, {}", throughput.asDouble());
+        fmt::println(stats, "throughput={}", throughput.asDouble());
     }
 };
 
@@ -245,12 +246,12 @@ public:
     }
     #define STRINGIFY(x) STRINGIFY2(x)
     #define STRINGIFY2(x) #x
-    #define DUMP_MEAN_OF(x) fmt::println(stats, STRINGIFY(x) ", {}", mean_of(x));
+    #define DUMP_MEAN_OF(x) fmt::println(stats, STRINGIFY(x) "={}", mean_of(x));
     virtual void dump_toml_stats(FILE* stats) override {
         DUMP_MEAN_OF(latency);
-        fmt::println(stats, "valid caps, {}", n_valid);
-        fmt::println(stats, "invalid caps, {}", n_invalid);
-        fmt::println(stats, "valid cap ratio, {}%", (double(n_valid))/(double(n_valid+n_invalid))*100.0);
+        fmt::println(stats, "valid_caps={}", n_valid);
+        fmt::println(stats, "invalid_caps={}", n_invalid);
+        fmt::println(stats, "valid_cap_ratio={}", (double(n_valid))/(double(n_valid+n_invalid))*100.0);
     }
     #undef DUMP_MEAN_OF
     #undef STRINGIFY2
