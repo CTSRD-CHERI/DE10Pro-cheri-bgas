@@ -118,3 +118,10 @@ konatify name pattern *args:
 
 regen-tb-paper-reports:
     cd testbenches && uv run python3 gen_report.py ./results/reports ./results/hardware_latency.toml
+
+build-aes:
+    bsc -bdir build -info-dir build -simdir build -p ./aes:./util:./testbenches:+ -sim -u -aggressive-conditions -g mkTb ./testbenches/AesTest.bsv
+    bsc -bdir build -info-dir build -simdir build -p ./aes:./util:./testbenches:+ -sim -u -aggressive-conditions -e mkTb -o build/aes-bluespec.out
+test-aes:
+    # Note: requires TCL to be installed, something like `sudo apt-get install libtcl8.6`
+    build/aes-bluespec.out
