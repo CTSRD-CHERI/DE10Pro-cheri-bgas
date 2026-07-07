@@ -28,7 +28,14 @@ export VIPBUNDLEDIR = $(CURDIR)/vipbundle
 export VIPBUNDLE = $(VIPBUNDLEDIR)/vipbundle
 DE10SERIALLITE3DIR = $(CURDIR)/de10pro-seriallite3
 QPF = $(CURDIR)/DE10Pro-cheri-bgas.qpf
-export VDIR = $(CURDIR)/cheri-bgas-rtl
+
+# Builds with separate flags can be sandboxed by setting OUTPUT_DIR_POSTFIX before running make.
+# This places all Bluespec compiled files (BUILDDIR) and generated Verilog files (VDIR) into folders with the given postfix.
+# Compiled FPGA output_files folders, both the current "output_files" and the archival "output_files_<TIMESTAMP>_<GITHASH>", are postfixed too: "output_files$(OUTPUT_DIR_POSTFIX)", "output_files$(OUTPUT_DIR_POSTFIX)_<TIMESTAMP>_<GITHASH>"
+OUTPUT_DIR_POSTFIX ?=
+OUTPUT_DIR = output_files$(OUTPUT_DIR_POSTFIX)
+export BUILDDIR = $(CURDIR)/build$(OUTPUT_DIR_POSTFIX)
+export VDIR = $(CURDIR)/cheri-bgas-rtl$(OUTPUT_DIR_POSTFIX)
 
 BSC = bsc
 BLUESPECDIR ?= $(shell which $(BSC) | xargs dirname | xargs dirname)/lib
@@ -50,23 +57,23 @@ gen-rbf: $(BOOTLOADER)
 	$(eval GITREV = $(shell git rev-parse HEAD))
 	$(eval GITDIRTY = $(shell git diff --quiet || echo "_dirty"))
 	$(eval TAGNAME = $(NOW)-$(GITREV)$(GITDIRTY))
-	$(eval OUTDIR = output_files_$(TAGNAME))
+	$(eval OUTDIR = $(OUTPUT_DIR)_$(TAGNAME))
 	$(eval TEMPLATENAME = "cheri-bgas-socfpga")
 	$(eval SOF = "$(OUTDIR)/DE10Pro-cheri-bgas.sof")
 	$(eval OUTNAME = "$(OUTDIR)/$(TEMPLATENAME)-$(TAGNAME)")
-	cp -r output_files $(OUTDIR)
+	cp -r $(OUTPUT_DIR) $(OUTDIR)
 	quartus_pfg -c $(SOF) -o hps=ON -o hps_path=$(BOOTLOADER) $(OUTNAME).rbf
 
 ci-gen-rbf: $(BOOTLOADER)
-	$(eval SOF = "output_files/DE10Pro-cheri-bgas.sof")
+	$(eval SOF = "$(OUTPUT_DIR)/DE10Pro-cheri-bgas.sof")
 	$(eval NOW = $(shell date +"%Y%m%d_%H_%M"))
 	$(eval GITREV = $(shell git rev-parse HEAD))
 	$(eval GITDIRTY = $(shell git diff --quiet || echo "_dirty"))
 	$(eval TAGNAME = $(NOW)-$(GITREV)$(GITDIRTY))
-	$(eval OUTNAME = "output_files/cheri-bgas-socfpga-$(TAGNAME)")
+	$(eval OUTNAME = "$(OUTPUT_DIR)/cheri-bgas-socfpga-$(TAGNAME)")
 	quartus_pfg -c $(SOF) -o hps=ON -o hps_path=$(BOOTLOADER) $(OUTNAME).rbf
 
-synthesize output_files/DE10Pro-cheri-bgas.sof &: gen-ip
+synthesize $(OUTPUT_DIR)/DE10Pro-cheri-bgas.sof &: gen-ip
 	BLUESPECDIR=$(BLUESPECDIR) BLUESTUFFDIR=$(BLUESTUFFDIR) DE10SERIALLITE3DIR=$(DE10SERIALLITE3DIR) time quartus_sh --flow compile $(QPF)
 
 gen-ip: $(CURDIR)/mkCHERI_BGAS_Top_Sig_hw.tcl $(addprefix $(DE10SERIALLITE3DIR)/, mkBERT_hw.tcl mkSerialLite3_hw.tcl mkStatusDevice_Status15_hw.tcl)
@@ -96,7 +103,11 @@ gen-bluespec-rtl: $(VDIR)/mkCHERI_BGAS_Top_Sig.v
 $(VDIR)/mkCHERI_BGAS_Top_Sig.v:
 	$(MAKE) -C $(BSVSRCDIR) rtl
 
-.PHONY: clean mrproper $(VDIR)/mkCHERI_BGAS_Top_Sig.v
+# Build the simulated SoC with the next level makefile, passing through any build-directory overrides created here
+bluesim:
+	$(MAKE) -C $(BSVSRCDIR) bluesim
+
+.PHONY: clean mrproper $(VDIR)/mkCHERI_BGAS_Top_Sig.v bluesim
 
 clean-bluespec-rtl:
 	$(MAKE) -C $(BSVSRCDIR) clean
@@ -165,4 +176,4 @@ mrproper-bluespec-rtl:
 	$(MAKE) -C $(BSVSRCDIR) mrproper
 
 mrproper: clean mrproper-bluespec-rtl mrproper-vipbundle mrproper-bert mrproper-seriallite3 mrproper-status_dev_15
-	rm -rf $(CURDIR)/qdb $(CURDIR)/output_files
+	rm -rf $(CURDIR)/qdb $(OUTPUT_DIR)

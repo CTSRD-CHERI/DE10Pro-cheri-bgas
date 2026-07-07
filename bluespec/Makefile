@@ -49,6 +49,7 @@ endif
 # => if `bluesim` is one of the goals, include these defines.
 ifneq ($(filter bluesim,$(MAKECMDGOALS)),)
 RVFI ?= true
+BUILDDIR ?= $(CURDIR)/build-sim
 endif
 
 TOPFILE = $(CURDIR)/CHERI_BGAS_Top.bsv
