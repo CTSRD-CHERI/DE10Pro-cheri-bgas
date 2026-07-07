@@ -1,5 +1,6 @@
 mkCHERI_BGAS_Top_Sig_hw.tcl
 
+build*/
 output_files*/
 qdb/
 software/uboot_build/
